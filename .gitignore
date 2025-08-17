@@ -22,3 +22,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Qodo Configuration - Keep for permanent initialization
+# All .qodo files are tracked to ensure permanent setup
+# Only exclude temporary/cache files
+.qodo/temp/
+.qodo/cache/
+.qodo/*.tmp

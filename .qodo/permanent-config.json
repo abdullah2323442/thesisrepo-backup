@@ -1,0 +1,42 @@
+{
+  "permanent_initialization": {
+    "enabled": true,
+    "initialized_date": "2025-01-16",
+    "version": "1.0.0",
+    "auto_restore": true,
+    "backup_configs": true
+  },
+  "project_persistence": {
+    "maintain_config": true,
+    "preserve_customizations": true,
+    "auto_update_templates": false,
+    "lock_core_settings": true
+  },
+  "git_integration": {
+    "track_qodo_files": true,
+    "ignore_temporary": true,
+    "commit_config_changes": true,
+    "pre_commit_validation": true
+  },
+  "backup_strategy": {
+    "create_backups": true,
+    "backup_frequency": "weekly",
+    "max_backups": 5,
+    "backup_location": ".qodo/backups/"
+  },
+  "validation": {
+    "check_on_startup": true,
+    "validate_config_integrity": true,
+    "repair_missing_files": true,
+    "notify_config_changes": true
+  },
+  "features": {
+    "laravel_optimization": true,
+    "security_scanning": true,
+    "performance_monitoring": true,
+    "code_quality_enforcement": true,
+    "ai_assistance": true,
+    "template_generation": true,
+    "auto_documentation": true
+  }
+}
