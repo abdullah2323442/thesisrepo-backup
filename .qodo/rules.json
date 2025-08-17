@@ -1,0 +1,158 @@
+{
+  "rules": {
+    "php": {
+      "laravel_specific": {
+        "use_eloquent_relationships": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Prefer Eloquent relationships over manual joins"
+        },
+        "use_form_requests": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Use Form Request classes for validation"
+        },
+        "use_resource_controllers": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Use resource controllers for RESTful operations"
+        },
+        "avoid_raw_queries": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Avoid raw SQL queries when possible"
+        },
+        "use_migrations": {
+          "enabled": true,
+          "severity": "error",
+          "description": "Use migrations for database schema changes"
+        }
+      },
+      "security": {
+        "sql_injection": {
+          "enabled": true,
+          "severity": "error",
+          "description": "Check for potential SQL injection vulnerabilities"
+        },
+        "xss_protection": {
+          "enabled": true,
+          "severity": "error",
+          "description": "Ensure proper XSS protection"
+        },
+        "csrf_protection": {
+          "enabled": true,
+          "severity": "error",
+          "description": "Verify CSRF protection is in place"
+        },
+        "mass_assignment": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Check for mass assignment vulnerabilities"
+        }
+      },
+      "performance": {
+        "n_plus_one": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Detect N+1 query problems"
+        },
+        "eager_loading": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Suggest eager loading for relationships"
+        },
+        "query_optimization": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Suggest query optimizations"
+        }
+      },
+      "code_quality": {
+        "psr12_compliance": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Ensure PSR-12 coding standard compliance"
+        },
+        "method_length": {
+          "enabled": true,
+          "severity": "info",
+          "max_lines": 50,
+          "description": "Methods should not be too long"
+        },
+        "class_length": {
+          "enabled": true,
+          "severity": "info",
+          "max_lines": 300,
+          "description": "Classes should not be too long"
+        },
+        "cyclomatic_complexity": {
+          "enabled": true,
+          "severity": "warning",
+          "max_complexity": 10,
+          "description": "Reduce cyclomatic complexity"
+        }
+      }
+    },
+    "javascript": {
+      "code_quality": {
+        "use_const_let": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Use const/let instead of var"
+        },
+        "no_console_log": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Remove console.log statements in production"
+        },
+        "prefer_arrow_functions": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Prefer arrow functions for callbacks"
+        }
+      },
+      "performance": {
+        "avoid_dom_manipulation": {
+          "enabled": true,
+          "severity": "info",
+          "description": "Minimize direct DOM manipulation"
+        }
+      }
+    },
+    "blade": {
+      "security": {
+        "escape_output": {
+          "enabled": true,
+          "severity": "error",
+          "description": "Always escape output in Blade templates"
+        },
+        "csrf_tokens": {
+          "enabled": true,
+          "severity": "error",
+          "description": "Include CSRF tokens in forms"
+        }
+      },
+      "performance": {
+        "minimize_queries": {
+          "enabled": true,
+          "severity": "warning",
+          "description": "Avoid database queries in Blade templates"
+        }
+      }
+    }
+  },
+  "severity_levels": {
+    "error": {
+      "color": "red",
+      "block_commit": true
+    },
+    "warning": {
+      "color": "yellow",
+      "block_commit": false
+    },
+    "info": {
+      "color": "blue",
+      "block_commit": false
+    }
+  }
+}

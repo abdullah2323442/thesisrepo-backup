@@ -1,0 +1,47 @@
+# Qodo Ignore File
+# Files and directories to exclude from Qodo analysis
+
+# Dependencies
+vendor/
+node_modules/
+
+# Build outputs
+public/build/
+public/hot
+public/storage
+
+# Cache and temporary files
+bootstrap/cache/
+storage/app/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/testing/
+storage/framework/views/
+storage/logs/
+
+# Environment and configuration
+.env
+.env.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+*.lcov
+
+# Compiled assets
+public/css/
+public/js/
+public/mix-manifest.json

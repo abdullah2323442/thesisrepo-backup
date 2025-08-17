@@ -1,0 +1,1 @@
+<img src="{{ url('Picture1.png') }}" alt="My Image" class="w-12 h-12 object-contain hover:opacity-80 transition-opacity">

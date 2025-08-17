@@ -1,0 +1,82 @@
+{
+  "project": {
+    "name": "Laravel Thesis Repository",
+    "type": "laravel",
+    "description": "Final Year Project - Laravel Application"
+  },
+  "language": {
+    "primary": "php",
+    "secondary": ["javascript", "css", "html"]
+  },
+  "framework": {
+    "name": "laravel",
+    "version": "12.0"
+  },
+  "quality": {
+    "php": {
+      "standard": "PSR-12",
+      "tools": ["phpstan", "php-cs-fixer", "pest"]
+    },
+    "frontend": {
+      "tools": ["eslint", "prettier"]
+    }
+  },
+  "testing": {
+    "framework": "pest",
+    "directories": ["tests/Feature", "tests/Unit"],
+    "coverage": {
+      "enabled": true,
+      "threshold": 80
+    }
+  },
+  "patterns": {
+    "include": [
+      "app/**/*.php",
+      "config/**/*.php",
+      "database/**/*.php",
+      "routes/**/*.php",
+      "resources/**/*.js",
+      "resources/**/*.vue",
+      "resources/**/*.blade.php",
+      "resources/**/*.css",
+      "tests/**/*.php"
+    ],
+    "exclude": [
+      "vendor/**",
+      "node_modules/**",
+      "storage/**",
+      "bootstrap/cache/**",
+      "public/build/**",
+      ".git/**",
+      "*.log"
+    ]
+  },
+  "review": {
+    "auto_review": true,
+    "focus_areas": [
+      "security",
+      "performance",
+      "maintainability",
+      "laravel_best_practices"
+    ]
+  },
+  "assistant": {
+    "context_awareness": true,
+    "laravel_specific": true,
+    "suggest_improvements": true
+  },
+  "integrations": {
+    "git": {
+      "enabled": true,
+      "auto_commit_messages": true
+    },
+    "composer": {
+      "enabled": true,
+      "auto_update_suggestions": true
+    },
+    "npm": {
+      "enabled": true,
+      "auto_update_suggestions": true
+    }
+  }
+}
