@@ -77,6 +77,8 @@ Route::middleware(['auth', 'advisor'])->group(function () {
     Route::post('/advisor/groups/add', [\App\Http\Controllers\Advisor\GroupController::class, 'addGroup'])->name('advisor.groups.add');
     Route::post('/advisor/groups/assign-student', [\App\Http\Controllers\Advisor\GroupController::class, 'assignStudent'])->name('advisor.groups.assign-student');
     Route::post('/advisor/groups/assign-area-of-interest', [\App\Http\Controllers\Advisor\GroupController::class, 'assignAreaOfInterest'])->name('advisor.groups.assign-area-of-interest');
+    Route::post('/advisor/groups/unassign-all-areas-of-interest', [\App\Http\Controllers\Advisor\GroupController::class, 'unassignAllAreasOfInterest'])->name('advisor.groups.unassign-all-areas-of-interest');
+    Route::post('/advisor/groups/remove-all-groups', [\App\Http\Controllers\Advisor\GroupController::class, 'removeAllGroups'])->name('advisor.groups.remove-all-groups');
     Route::post('/advisor/groups/remove-student', [\App\Http\Controllers\Advisor\GroupController::class, 'removeStudent'])->name('advisor.groups.remove-student');
     Route::post('/advisor/groups/upload-excel', [\App\Http\Controllers\Advisor\GroupController::class, 'uploadExcel'])->name('advisor.groups.upload-excel');
     Route::get('/advisor/groups/download-template', [\App\Http\Controllers\Advisor\GroupController::class, 'downloadTemplate'])->name('advisor.groups.download-template');
@@ -85,6 +87,7 @@ Route::middleware(['auth', 'advisor'])->group(function () {
     Route::get('/advisor/supervisor-assignment', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'index'])->name('advisor.supervisor-assignment.index');
     Route::post('/advisor/supervisor-assignment/assign-manual', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'assignManual'])->name('advisor.supervisor-assignment.assign-manual');
     Route::post('/advisor/supervisor-assignment/unassign', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'unassign'])->name('advisor.supervisor-assignment.unassign');
+    Route::post('/advisor/supervisor-assignment/unassign-all', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'unassignAll'])->name('advisor.supervisor-assignment.unassign-all');
     Route::post('/advisor/supervisor-assignment/run-lottery', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'runLottery'])->name('advisor.supervisor-assignment.run-lottery');
     Route::get('/advisor/supervisor-assignment/available-supervisors', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'getAvailableSupervisors'])->name('advisor.supervisor-assignment.available-supervisors');
     Route::get('/advisor/supervisor-assignment/preview-lottery', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'previewLottery'])->name('advisor.supervisor-assignment.preview-lottery');

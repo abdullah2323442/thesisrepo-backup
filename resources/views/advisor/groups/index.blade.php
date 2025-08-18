@@ -75,6 +75,34 @@
                         <button onclick="toggleAddGroup()" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
                             Add Group
                         </button>
+                        
+                        @php
+                            $groupsWithAOI = $groups->filter(function($group) {
+                                return $group->area_of_interest_id !== null;
+                            });
+                        @endphp
+                        
+                        @if($groupsWithAOI->count() > 0)
+                            <form method="POST" action="{{ route('advisor.groups.unassign-all-areas-of-interest') }}" class="inline">
+                                @csrf
+                                <input type="hidden" name="batch" value="{{ $selectedBatch }}">
+                                <button type="submit" 
+                                        class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                                        onclick="return confirm('This will remove area of interest assignments from all groups in this batch. Are you sure?')">
+                                    Unassign All Areas of Interest
+                                </button>
+                            </form>
+                        @endif
+                        
+                        <form method="POST" action="{{ route('advisor.groups.remove-all-groups') }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="batch" value="{{ $selectedBatch }}">
+                            <button type="submit" 
+                                    class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-900 transition-colors"
+                                    onclick="return confirm('This will permanently delete ALL groups and student assignments in this batch. This action cannot be undone. Are you sure?')">
+                                Remove All Groups
+                            </button>
+                        </form>
                     @endif
                     
                     <button onclick="toggleExcelUpload()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">

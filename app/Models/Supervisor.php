@@ -49,14 +49,26 @@ class Supervisor extends Model
      */
     public function getRankPriorityAttribute(): int
     {
-        $ranks = [
-            'Professor' => 1,
-            'Associate Professor' => 2,
-            'Assistant Professor' => 3,
-            'Lecturer' => 4,
-        ];
+        // Normalize designation: lowercase, strip punctuation and non-letters, collapse spaces
+        $designation = mb_strtolower((string) $this->designation, 'UTF-8');
+        $normalized = preg_replace('/[^a-z]+/u', ' ', $designation); // keep only letters as words
+        $normalized = trim(preg_replace('/\s+/', ' ', $normalized));
 
-        return $ranks[$this->designation] ?? 5; // Default to lowest priority
+        // Determine priority based on tokens present
+        if (str_contains($normalized, 'associate') && str_contains($normalized, 'professor')) {
+            return 2;
+        }
+        if (str_contains($normalized, 'assistant') && str_contains($normalized, 'professor')) {
+            return 3;
+        }
+        if (str_contains($normalized, 'professor')) {
+            return 1;
+        }
+        if (str_contains($normalized, 'lecturer')) {
+            return 4;
+        }
+
+        return 5; // Default to lowest priority
     }
 
     /**
@@ -97,13 +109,13 @@ class Supervisor extends Model
     public function scopeByRankPriority($query)
     {
         return $query->orderByRaw("
-            CASE designation
-                WHEN 'Professor' THEN 1
-                WHEN 'Associate Professor' THEN 2
-                WHEN 'Assistant Professor' THEN 3
-                WHEN 'Lecturer' THEN 4
+            CASE
+                WHEN (LOWER(TRIM(designation)) LIKE '%associate%' AND LOWER(TRIM(designation)) LIKE '%professor%') THEN 2
+                WHEN (LOWER(TRIM(designation)) LIKE '%assistant%' AND LOWER(TRIM(designation)) LIKE '%professor%') THEN 3
+                WHEN LOWER(TRIM(designation)) LIKE '%professor%' THEN 1
+                WHEN LOWER(TRIM(designation)) LIKE '%lecturer%' THEN 4
                 ELSE 5
-            END
+            END ASC, fullname ASC
         ");
     }
 

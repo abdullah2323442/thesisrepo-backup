@@ -7,10 +7,21 @@ use App\Models\Supervisor;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Production-grade Supervisor Assignment Service
+ *
+ * Implements strict, fair assignment:
+ * - AOI match only
+ * - Rank priority (Professor < Associate < Assistant < Lecturer by numeric rank_priority)
+ * - Strict no-consecutive supervisor within the same AOI when an alternative exists
+ * - Per-AOI low-watermark balancing during a run (distributes evenly within an AOI)
+ * - Global capacity enforcement (shared across AOIs)
+ * - Concurrency safety is provided by the controller transaction and DB row locks
+ */
 class SupervisorAssignmentService
 {
     /**
-     * Run the lottery assignment process for groups
+     * Run lottery assignment with strict AOI fairness and global capacity.
      */
     public function runLotteryAssignment(Collection $groups): array
     {
@@ -21,34 +32,66 @@ class SupervisorAssignmentService
             'assignments' => []
         ];
 
-        // Sort groups by name (Group 1, 2, 3...)
         $sortedGroups = $this->sortGroupsByNumber($groups);
 
+        // Build AOI pools and global capacity
+        $areaIds = $sortedGroups->pluck('area_of_interest_id')->filter()->unique()->values();
+        [$pools, $areaHasSupervisors, $globalCapacity] = $this->buildAOIPools($areaIds);
+
+        // Per-run AOI fairness trackers
+        $lastPickPerAoi = []; // [aoiId => supervisorId]
+        $aoiRunCounts = [];   // [aoiId => [supervisorId => count]]
+
         foreach ($sortedGroups as $group) {
-            $assignment = $this->assignSupervisorToGroup($group);
-            
-            if ($assignment['success']) {
-                $results['assigned']++;
-                $results['assignments'][] = [
-                    'group' => $group->name,
-                    'supervisor' => $assignment['supervisor']->fullname,
-                    'designation' => $assignment['supervisor']->designation,
-                    'method' => $assignment['method']
-                ];
-            } else {
-                if ($assignment['reason'] === 'no_matches') {
+            if (!$group->area_of_interest_id) {
+                $results['unassigned']++;
+                continue;
+            }
+
+            $aoiId = (int) $group->area_of_interest_id;
+
+            $pick = $this->selectSupervisor(
+                $pools,
+                $globalCapacity,
+                $aoiId,
+                $lastPickPerAoi,
+                $aoiRunCounts
+            );
+
+            if ($pick === null) {
+                if (!($areaHasSupervisors[$aoiId] ?? false)) {
                     $results['no_matches']++;
                 } else {
                     $results['unassigned']++;
                 }
+                continue;
             }
+
+            // Concurrency-safe recheck is handled by controller transaction + row locks
+            $supId = $pick['supervisor']->id;
+
+            // Persist assignment
+            $group->update([
+                'supervisor_id' => $supId,
+                'is_manual_assignment' => false,
+                'assigned_at' => now(),
+                'assignment_priority' => $pick['rank_priority'],
+            ]);
+
+            $results['assigned']++;
+            $results['assignments'][] = [
+                'group' => $group->name,
+                'supervisor' => $pick['supervisor']->fullname,
+                'designation' => $pick['supervisor']->designation,
+                'method' => 'aoi_round_robin_low_watermark',
+            ];
         }
 
         return $results;
     }
 
     /**
-     * Preview lottery assignment without saving to database
+     * Preview lottery assignment without persistence.
      */
     public function previewLotteryAssignment(Collection $groups): array
     {
@@ -63,232 +106,235 @@ class SupervisorAssignmentService
             ]
         ];
 
-        // Sort groups by name (Group 1, 2, 3...)
         $sortedGroups = $this->sortGroupsByNumber($groups);
 
-        // Track supervisor availability for preview
-        $supervisorAvailability = $this->buildSupervisorAvailabilityMap();
+        $areaIds = $sortedGroups->pluck('area_of_interest_id')->filter()->unique()->values();
+        [$pools, $areaHasSupervisors, $globalCapacity] = $this->buildAOIPools($areaIds);
+
+        // Per-run AOI fairness trackers
+        $lastPickPerAoi = [];
+        $aoiRunCounts = [];
 
         foreach ($sortedGroups as $group) {
-            $assignment = $this->findBestSupervisorForGroup($group, $supervisorAvailability, true);
-            
-            if ($assignment['success']) {
-                $preview['assignments'][] = [
-                    'group_id' => $group->id,
-                    'group_name' => $group->name,
-                    'area_of_interest' => $group->areaOfInterest->name,
-                    'supervisor_id' => $assignment['supervisor']->id,
-                    'supervisor_name' => $assignment['supervisor']->fullname,
-                    'designation' => $assignment['supervisor']->designation,
-                    'rank_priority' => $assignment['supervisor']->rank_priority,
-                    'method' => $assignment['method']
-                ];
-                
-                // Reduce supervisor availability for preview
-                $supervisorAvailability[$assignment['supervisor']->id]--;
-                $preview['stats']['will_be_assigned']++;
-            } else {
+            if (!$group->area_of_interest_id) {
                 $preview['unassigned'][] = [
                     'group_id' => $group->id,
                     'group_name' => $group->name,
-                    'area_of_interest' => $group->areaOfInterest->name,
-                    'reason' => $assignment['reason']
+                    'area_of_interest' => 'Not Set',
+                    'reason' => 'no_area_of_interest'
                 ];
-                
-                if ($assignment['reason'] === 'no_matches') {
+                $preview['stats']['will_remain_unassigned']++;
+                continue;
+            }
+
+            $aoiId = (int) $group->area_of_interest_id;
+
+            $pick = $this->selectSupervisor(
+                $pools,
+                $globalCapacity,
+                $aoiId,
+                $lastPickPerAoi,
+                $aoiRunCounts
+            );
+
+            if ($pick === null) {
+                $preview['unassigned'][] = [
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'area_of_interest' => optional($group->areaOfInterest)->name,
+                    'reason' => (!($areaHasSupervisors[$aoiId] ?? false)) ? 'no_matches' : 'no_available_slots',
+                ];
+                if (!($areaHasSupervisors[$aoiId] ?? false)) {
                     $preview['stats']['no_matching_supervisors']++;
                 } else {
                     $preview['stats']['will_remain_unassigned']++;
                 }
+                continue;
             }
+
+            $preview['assignments'][] = [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'area_of_interest' => optional($group->areaOfInterest)->name,
+                'supervisor_id' => $pick['supervisor']->id,
+                'supervisor_name' => $pick['supervisor']->fullname,
+                'designation' => $pick['supervisor']->designation,
+                'rank_priority' => $pick['rank_priority'],
+                'method' => 'aoi_round_robin_low_watermark'
+            ];
+            $preview['stats']['will_be_assigned']++;
         }
 
         return $preview;
     }
 
     /**
-     * Assign a supervisor to a specific group
+     * Build AOI pools grouped by rank, plus a global availability map and AOI availability flags.
+     *
+     * pools[aoiId][rank] = [
+     *   'cursor' => int,
+     *   'supervisors' => [ [ 'id' => int, 'model' => Supervisor ], ... ]
+     * ]
      */
-    private function assignSupervisorToGroup(Group $group): array
+    private function buildAOIPools(Collection $areaIds): array
     {
-        if (!$group->area_of_interest_id) {
-            return [
-                'success' => false,
-                'reason' => 'no_area_of_interest',
-                'message' => 'Group has no area of interest assigned'
-            ];
+        $pools = [];
+        $areaHasSupervisors = [];
+        $availability = [];
+
+        if ($areaIds->isEmpty()) {
+            return [$pools, $areaHasSupervisors, $availability];
         }
 
-        $assignment = $this->findBestSupervisorForGroup($group);
-
-        if (!$assignment['success']) {
-            return $assignment;
-        }
-
-        // Actually assign the supervisor
-        $group->update([
-            'supervisor_id' => $assignment['supervisor']->id,
-            'is_manual_assignment' => false,
-            'assigned_at' => now(),
-            'assignment_priority' => $assignment['supervisor']->rank_priority
-        ]);
-
-        Log::info("Lottery assignment: {$group->name} assigned to {$assignment['supervisor']->fullname}");
-
-        return $assignment;
-    }
-
-    /**
-     * Find the best available supervisor for a group
-     */
-    private function findBestSupervisorForGroup(Group $group, ?array $availabilityMap = null, bool $previewMode = false): array
-    {
-        // Get supervisors with matching area of interest
-        $matchingSupervisors = Supervisor::where('is_active', true)
-            ->whereHas('areasOfInterest', function($query) use ($group) {
-                $query->where('area_of_interests.id', $group->area_of_interest_id);
-            })
-            ->byRankPriority()
+        $supervisors = Supervisor::where('is_active', true)
+            ->with('areasOfInterest')
             ->get();
 
-        if ($matchingSupervisors->isEmpty()) {
-            return [
-                'success' => false,
-                'reason' => 'no_matches',
-                'message' => 'No supervisors found with matching area of interest'
-            ];
+        $targetAreas = $areaIds->map(fn($id) => (int) $id)->toArray();
+
+        foreach ($supervisors as $s) {
+            $availability[$s->id] = $s->available_slots;
         }
 
-        // Filter supervisors with available slots
-        $availableSupervisors = $matchingSupervisors->filter(function ($supervisor) use ($availabilityMap, $previewMode) {
-            if ($previewMode && $availabilityMap) {
-                return isset($availabilityMap[$supervisor->id]) && $availabilityMap[$supervisor->id] > 0;
+        foreach ($supervisors as $s) {
+            if (($availability[$s->id] ?? 0) <= 0) {
+                continue;
             }
-            return $supervisor->available_slots > 0;
-        });
-
-        if ($availableSupervisors->isEmpty()) {
-            return [
-                'success' => false,
-                'reason' => 'no_available_slots',
-                'message' => 'All matching supervisors have reached their thesis limit'
-            ];
+            $aoiList = $s->areasOfInterest->pluck('id')->map(fn($id) => (int) $id)->toArray();
+            foreach ($aoiList as $aoiId) {
+                if (!in_array($aoiId, $targetAreas, true)) continue;
+                $areaHasSupervisors[$aoiId] = true;
+                $rank = $s->rank_priority;
+                $pools[$aoiId] = $pools[$aoiId] ?? [];
+                $pools[$aoiId][$rank] = $pools[$aoiId][$rank] ?? ['cursor' => 0, 'supervisors' => []];
+                $pools[$aoiId][$rank]['supervisors'][] = [
+                    'id' => $s->id,
+                    'model' => $s,
+                ];
+            }
         }
 
-        // Group by rank priority
-        $supervisorsByRank = $availableSupervisors->groupBy('rank_priority');
+        // Sort ranks and set initial cursors
+        foreach ($pools as $aoiId => &$ranks) {
+            ksort($ranks);
+            foreach ($ranks as $rank => &$bucket) {
+                // Stable order by current assigned count then name for fairness start
+                usort($bucket['supervisors'], function ($a, $b) {
+                    $aLoad = $a['model']->assigned_theses_count;
+                    $bLoad = $b['model']->assigned_theses_count;
+                    if ($aLoad === $bLoad) {
+                        return strcasecmp($a['model']->fullname, $b['model']->fullname);
+                    }
+                    return $aLoad <=> $bLoad;
+                });
+                $bucket['cursor'] = 0;
+            }
+        }
+        unset($ranks, $bucket);
 
-        // Get the highest priority rank that has available supervisors
-        $highestRank = $supervisorsByRank->keys()->min();
-        $highestRankSupervisors = $supervisorsByRank[$highestRank];
-
-        // If multiple supervisors at the same rank, select randomly
-        $selectedSupervisor = $highestRankSupervisors->count() > 1 
-            ? $highestRankSupervisors->random()
-            : $highestRankSupervisors->first();
-
-        $method = $highestRankSupervisors->count() > 1 ? 'random_selection' : 'rank_priority';
-
-        return [
-            'success' => true,
-            'supervisor' => $selectedSupervisor,
-            'method' => $method,
-            'rank_priority' => $highestRank
-        ];
+        return [$pools, $areaHasSupervisors, $availability];
     }
 
     /**
-     * Sort groups by their numeric value extracted from names
+     * Select next supervisor for a given AOI using:
+     * - Highest available rank first
+     * - Strict AOI round-robin (cursor) with low-watermark balancing in rank
+     * - Avoid immediate consecutive same-supervisor within AOI when alternative exists
+     * - Global availability enforcement
+     *
+     * Modifies $pools (cursor) and $availability (decrement) and $aoiRunCounts (increment)
+     */
+    private function selectSupervisor(
+        array &$pools,
+        array &$availability,
+        int $aoiId,
+        array &$lastPickPerAoi,
+        array &$aoiRunCounts
+    ): ?array {
+        if (!isset($pools[$aoiId])) return null;
+
+        $lastId = $lastPickPerAoi[$aoiId] ?? null;
+
+        // Build cross-rank candidate list (excluding last-picked) with rotation ordering
+        $candidates = [];
+        foreach ($pools[$aoiId] as $rank => &$bucket) {
+            $count = count($bucket['supervisors']);
+            if ($count === 0) continue;
+            $start = $bucket['cursor'] % max(1, $count);
+            for ($i = 0; $i < $count; $i++) {
+                $idx = ($start + $i) % $count;
+                $supId = $bucket['supervisors'][$idx]['id'];
+                if ($lastId !== null && $supId === $lastId) continue; // avoid consecutive within AOI when alternative exists
+                if (($availability[$supId] ?? 0) <= 0) continue; // no capacity
+                $run = $aoiRunCounts[$aoiId][$supId] ?? 0;
+                $candidates[] = [
+                    'rank' => $rank,
+                    'idx' => $idx,
+                    'orderInBucket' => $i, // closer to cursor first
+                    'supId' => $supId,
+                    'model' => $bucket['supervisors'][$idx]['model'],
+                    'run' => $run,
+                ];
+            }
+        }
+
+        if (!empty($candidates)) {
+            // Low-watermark across all ranks: prefer lowest per-run AOI count, then higher rank, then rotation order
+            usort($candidates, function ($a, $b) {
+                if ($a['run'] !== $b['run']) return $a['run'] <=> $b['run'];
+                if ($a['rank'] !== $b['rank']) return $a['rank'] <=> $b['rank']; // rank_priority asc (1 best)
+                return $a['orderInBucket'] <=> $b['orderInBucket'];
+            });
+
+            $choice = $candidates[0];
+            // Apply selection
+            $availability[$choice['supId']] = max(0, $availability[$choice['supId']] - 1);
+            $bucketCount = count($pools[$aoiId][$choice['rank']]['supervisors']);
+            $pools[$aoiId][$choice['rank']]['cursor'] = ($choice['idx'] + 1) % max(1, $bucketCount);
+            $aoiRunCounts[$aoiId][$choice['supId']] = ($aoiRunCounts[$aoiId][$choice['supId']] ?? 0) + 1;
+            $lastPickPerAoi[$aoiId] = $choice['supId'];
+
+            return [
+                'supervisor' => $choice['model'],
+                'rank_priority' => $choice['rank'],
+            ];
+        }
+
+        // Fallback: allow last-picked if no alternative exists across ranks
+        if ($lastId !== null) {
+            foreach ($pools[$aoiId] as $rank => &$bucket) {
+                $count = count($bucket['supervisors']);
+                if ($count === 0) continue;
+                $start = $bucket['cursor'] % max(1, $count);
+                for ($i = 0; $i < $count; $i++) {
+                    $idx = ($start + $i) % $count;
+                    $supId = $bucket['supervisors'][$idx]['id'];
+                    if ($supId !== $lastId) continue;
+                    if (($availability[$supId] ?? 0) > 0) {
+                        $availability[$supId] = max(0, $availability[$supId] - 1);
+                        $bucket['cursor'] = ($idx + 1) % $count;
+                        $aoiRunCounts[$aoiId][$supId] = ($aoiRunCounts[$aoiId][$supId] ?? 0) + 1;
+                        $lastPickPerAoi[$aoiId] = $supId;
+                        return [
+                            'supervisor' => $bucket['supervisors'][$idx]['model'],
+                            'rank_priority' => $rank,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Sort groups by numeric suffix for deterministic processing.
      */
     private function sortGroupsByNumber(Collection $groups): Collection
     {
         return $groups->sortBy(function ($group) {
-            // Extract number from group name (e.g., "Group 1" -> 1)
-            if (preg_match('/(\d+)/', $group->name, $matches)) {
-                return (int) $matches[1];
-            }
-            return 9999; // Put groups without numbers at the end
+            if (preg_match('/(\d+)/', $group->name, $m)) return (int) $m[1];
+            return 9999;
         });
-    }
-
-    /**
-     * Build a map of supervisor availability for preview mode
-     */
-    private function buildSupervisorAvailabilityMap(): array
-    {
-        $supervisors = Supervisor::where('is_active', true)->get();
-        $availability = [];
-        
-        foreach ($supervisors as $supervisor) {
-            $availability[$supervisor->id] = $supervisor->available_slots;
-        }
-        
-        return $availability;
-    }
-
-    /**
-     * Get assignment statistics for all groups
-     */
-    public function getAssignmentStatistics(): array
-    {
-        $totalGroups = Group::count();
-        $assignedGroups = Group::assigned()->count();
-        $manualAssignments = Group::manuallyAssigned()->count();
-        $lotteryAssignments = Group::assigned()->where('is_manual_assignment', false)->count();
-        
-        $supervisorStats = Supervisor::where('is_active', true)
-            ->get()
-            ->map(function ($supervisor) {
-                return [
-                    'id' => $supervisor->id,
-                    'name' => $supervisor->fullname,
-                    'designation' => $supervisor->designation,
-                    'thesis_limit' => $supervisor->thesis_limit,
-                    'assigned_count' => $supervisor->assigned_theses_count,
-                    'available_slots' => $supervisor->available_slots,
-                    'utilization_rate' => $supervisor->thesis_limit > 0 
-                        ? round(($supervisor->assigned_theses_count / $supervisor->thesis_limit) * 100, 1)
-                        : 0
-                ];
-            });
-
-        return [
-            'total_groups' => $totalGroups,
-            'assigned_groups' => $assignedGroups,
-            'unassigned_groups' => $totalGroups - $assignedGroups,
-            'manual_assignments' => $manualAssignments,
-            'lottery_assignments' => $lotteryAssignments,
-            'assignment_rate' => $totalGroups > 0 ? round(($assignedGroups / $totalGroups) * 100, 1) : 0,
-            'supervisor_stats' => $supervisorStats
-        ];
-    }
-
-    /**
-     * Validate assignment rules
-     */
-    public function validateAssignment(Group $group, Supervisor $supervisor): array
-    {
-        $errors = [];
-
-        if (!$supervisor->is_active) {
-            $errors[] = 'Supervisor is not active';
-        }
-
-        if ($supervisor->available_slots <= 0) {
-            $errors[] = 'Supervisor has no available thesis slots';
-        }
-
-        if ($group->area_of_interest_id && !$supervisor->hasAreaOfInterest($group->area_of_interest_id)) {
-            $errors[] = 'Supervisor does not have expertise in the required area of interest';
-        }
-
-        if ($group->hasSupervisor()) {
-            $errors[] = 'Group already has a supervisor assigned';
-        }
-
-        return [
-            'valid' => empty($errors),
-            'errors' => $errors
-        ];
     }
 }

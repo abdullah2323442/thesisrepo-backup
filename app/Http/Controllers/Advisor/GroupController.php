@@ -505,6 +505,111 @@ class GroupController extends Controller
     }
 
     /**
+     * Unassign area of interest from all groups in a batch
+     */
+    public function unassignAllAreasOfInterest(Request $request)
+    {
+        $request->validate([
+            'batch' => 'required|integer'
+        ]);
+
+        try {
+            $advisorLocalId = auth()->id();
+            $batch = $request->batch;
+
+            DB::beginTransaction();
+
+            // Get all groups for this batch and advisor
+            $groups = Group::where('batch_number', $batch)
+                          ->where('advisor_id', $advisorLocalId)
+                          ->whereNotNull('area_of_interest_id')
+                          ->get();
+
+            if ($groups->isEmpty()) {
+                throw new \Exception('No groups with assigned areas of interest found for this batch');
+            }
+
+            $updatedCount = 0;
+            foreach ($groups as $group) {
+                $group->update(['area_of_interest_id' => null]);
+                $updatedCount++;
+            }
+
+            DB::commit();
+
+            return redirect()->back()
+                           ->with('success', "Successfully unassigned areas of interest from {$updatedCount} groups in batch {$batch}");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Unassign all areas of interest failed', [
+                'advisor_local_id' => auth()->id(),
+                'batch' => $request->batch,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                           ->with('error', 'Failed to unassign areas of interest: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove all groups and their student assignments for a batch
+     */
+    public function removeAllGroups(Request $request)
+    {
+        $request->validate([
+            'batch' => 'required|integer'
+        ]);
+
+        try {
+            $advisorLocalId = auth()->id();
+            $batch = $request->batch;
+
+            DB::beginTransaction();
+
+            // Get all groups for this batch and advisor
+            $groups = Group::where('batch_number', $batch)
+                          ->where('advisor_id', $advisorLocalId)
+                          ->get();
+
+            if ($groups->isEmpty()) {
+                throw new \Exception('No groups found for this batch');
+            }
+
+            $groupCount = $groups->count();
+            $studentAssignmentCount = 0;
+
+            // Remove all student assignments first
+            foreach ($groups as $group) {
+                $studentAssignmentCount += $group->students()->count();
+                $group->students()->delete(); // Delete all group_students records
+            }
+
+            // Remove all groups
+            Group::where('batch_number', $batch)
+                 ->where('advisor_id', $advisorLocalId)
+                 ->delete();
+
+            DB::commit();
+
+            return redirect()->back()
+                           ->with('success', "Successfully removed {$groupCount} groups and {$studentAssignmentCount} student assignments from batch {$batch}");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Remove all groups failed', [
+                'advisor_local_id' => auth()->id(),
+                'batch' => $request->batch,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                           ->with('error', 'Failed to remove all groups: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Detect column structure in Excel file
      */
     private function detectColumnStructure($rows)

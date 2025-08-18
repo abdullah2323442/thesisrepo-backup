@@ -59,8 +59,11 @@ class SupervisorAssignmentController extends Controller
         // Get supervisors with their current load
         $supervisors = Supervisor::with(['areasOfInterest', 'groups'])
             ->where('is_active', true)
-            ->byRankPriority()
-            ->get();
+            ->get()
+            ->sortBy(function ($supervisor) {
+                // Use normalized, computed rank_priority from the model to avoid string mismatches
+                return sprintf('%02d-%s', $supervisor->rank_priority, mb_strtolower($supervisor->fullname ?? ''));
+            });
 
         // Get areas of interest
         $areasOfInterest = AreaOfInterest::where('is_active', true)->get();
@@ -325,5 +328,47 @@ class SupervisorAssignmentController extends Controller
             'success' => true,
             'preview' => $preview
         ]);
+    }
+
+    /**
+     * Bulk unassign all supervisors from this advisor's groups (optional batch filter)
+     */
+    public function unassignAll(Request $request)
+    {
+        $user = auth()->user();
+
+        // Build query for this advisor's groups with assigned supervisors
+        $query = \App\Models\Group::where('advisor_id', $user->id)
+            ->whereNotNull('supervisor_id');
+
+        // Optional: batch filter
+        if ($request->has('batch') && $request->batch !== '') {
+            $query->where('batch_number', $request->batch);
+        }
+
+        $affected = $query->count();
+
+        if ($affected === 0) {
+            return redirect()->back()->with('success', 'No supervisor assignments to unassign.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $query->update([
+                'supervisor_id' => null,
+                'is_manual_assignment' => false,
+                'assigned_at' => null,
+                'assignment_priority' => null,
+            ]);
+
+            DB::commit();
+
+            $suffix = ($request->has('batch') && $request->batch !== '') ? " in Batch {$request->batch}" : '';
+            return redirect()->back()->with('success', "Unassigned supervisors from {$affected} groups{$suffix}.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Failed to unassign all supervisors: ' . $e->getMessage());
+        }
     }
 }

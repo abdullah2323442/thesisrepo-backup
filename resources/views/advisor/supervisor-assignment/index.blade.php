@@ -36,6 +36,15 @@
                     Run Lottery Assignment
                 </button>
             </form>
+            <form id="unassign-all-form" action="{{ route('advisor.supervisor-assignment.unassign-all') }}" method="POST" class="inline"
+                  onsubmit="return confirm('This will remove supervisor assignments from all matching groups. Continue?')">
+                @csrf
+                <input type="hidden" name="batch" id="unassign-all-batch" value="{{ request('batch') }}">
+                <button type="submit"
+                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Unassign All
+                </button>
+            </form>
         </div>
     </div>
 @endsection
@@ -282,6 +291,7 @@
     <div class="mt-8 bg-white shadow rounded-lg">
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-medium text-gray-900">Supervisor Overview</h3>
+            <p class="text-sm text-gray-600 mt-1">Sorted by ranking: Professor → Associate Professor → Assistant Professor → Lecturer</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -302,10 +312,19 @@
                                 <div class="text-sm font-medium text-gray-900">{{ $supervisor->fullname }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full
-                                    {{ $supervisor->designation === 'Professor' ? 'bg-purple-100 text-purple-800' : 
-                                       ($supervisor->designation === 'Associate Professor' ? 'bg-blue-100 text-blue-800' :
-                                       ($supervisor->designation === 'Assistant Professor' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')) }}">
+                                @php
+                                    $d = mb_strtolower(trim(preg_replace('/\s+/', ' ', $supervisor->designation ?? '')));
+                                    if (str_contains($d, 'associate') && str_contains($d, 'professor')) {
+                                        $badgeClasses = 'bg-red-100 text-red-800';
+                                    } elseif (str_contains($d, 'assistant') && str_contains($d, 'professor')) {
+                                        $badgeClasses = 'bg-green-100 text-green-800';
+                                    } elseif (str_contains($d, 'professor')) {
+                                        $badgeClasses = 'bg-purple-100 text-purple-800';
+                                    } else {
+                                        $badgeClasses = 'bg-gray-100 text-gray-800';
+                                    }
+                                @endphp
+                                <span class="px-2 py-1 text-xs font-medium rounded-full {{ $badgeClasses }}">
                                     {{ $supervisor->designation }}
                                 </span>
                             </td>

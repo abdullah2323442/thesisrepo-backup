@@ -9,6 +9,11 @@ export default {
         './resources/views/**/*.blade.php',
     ],
 
+    safelist: [
+        'bg-violet-100',
+        'text-violet-800',
+    ],
+
     theme: {
         extend: {
             fontFamily: {
