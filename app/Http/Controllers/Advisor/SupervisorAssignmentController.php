@@ -158,11 +158,24 @@ class SupervisorAssignmentController extends Controller
     {
         $user = auth()->user();
         
-        // Get lottery eligible groups for this advisor
-        $eligibleGroupsQuery = Group::lotteryEligible()
-            ->where('advisor_id', $user->id)
-            ->whereHas('students') // Only groups with students
-            ->with(['areaOfInterest']);
+        $mode = $request->get('mode', 'aoi');
+        
+        // Get lottery eligible groups for this advisor based on mode
+        if ($mode === 'ranking') {
+            // Ignore AOI; include all groups with students, not manually assigned and unassigned
+            $eligibleGroupsQuery = Group::query()
+                ->whereNull('supervisor_id')
+                ->where('is_manual_assignment', false)
+                ->where('advisor_id', $user->id)
+                ->whereHas('students') // Only groups with students
+                ->with(['areaOfInterest']);
+        } else {
+            // Default AOI-based eligibility
+            $eligibleGroupsQuery = Group::lotteryEligible()
+                ->where('advisor_id', $user->id)
+                ->whereHas('students') // Only groups with students
+                ->with(['areaOfInterest']);
+        }
             
         // Apply batch filter if provided
         if ($request->has('batch') && $request->batch !== '') {
@@ -177,12 +190,20 @@ class SupervisorAssignmentController extends Controller
             $groupsWithStudents = Group::where('advisor_id', $user->id)->whereHas('students')->count();
             $groupsWithAreas = Group::where('advisor_id', $user->id)->whereHas('students')->whereNotNull('area_of_interest_id')->count();
             
-            $message = "No groups are eligible for lottery assignment. ";
-            $message .= "Debug info - User ID: {$user->id}, ";
-            $message .= "Total groups: {$allGroups}, ";
-            $message .= "Groups with students: {$groupsWithStudents}, ";
-            $message .= "Groups with areas: {$groupsWithAreas}. ";
-            $message .= "Make sure groups have areas of interest assigned and are not manually assigned.";
+            if ($mode === 'ranking') {
+                $message = "No groups are eligible for lottery assignment (Ranking mode). ";
+                $message .= "Debug info - User ID: {$user->id}, ";
+                $message .= "Total groups: {$allGroups}, ";
+                $message .= "Groups with students: {$groupsWithStudents}. ";
+                $message .= "Make sure groups are not manually assigned and have students.";
+            } else {
+                $message = "No groups are eligible for lottery assignment. ";
+                $message .= "Debug info - User ID: {$user->id}, ";
+                $message .= "Total groups: {$allGroups}, ";
+                $message .= "Groups with students: {$groupsWithStudents}, ";
+                $message .= "Groups with areas: {$groupsWithAreas}. ";
+                $message .= "Make sure groups have areas of interest assigned and are not manually assigned.";
+            }
             
             return redirect()->back()->with('error', $message);
         }
@@ -190,7 +211,7 @@ class SupervisorAssignmentController extends Controller
         try {
             DB::beginTransaction();
 
-            $result = $this->assignmentService->runLotteryAssignment($eligibleGroups);
+            $result = $this->assignmentService->runLotteryAssignment($eligibleGroups, $mode);
 
             DB::commit();
 
@@ -292,10 +313,21 @@ class SupervisorAssignmentController extends Controller
     {
         $user = auth()->user();
         
-        $eligibleGroupsQuery = Group::lotteryEligible()
-            ->where('advisor_id', $user->id)
-            ->whereHas('students') // Only groups with students
-            ->with(['areaOfInterest']);
+        $mode = $request->get('mode', 'aoi');
+        
+        if ($mode === 'ranking') {
+            $eligibleGroupsQuery = Group::query()
+                ->whereNull('supervisor_id')
+                ->where('is_manual_assignment', false)
+                ->where('advisor_id', $user->id)
+                ->whereHas('students') // Only groups with students
+                ->with(['areaOfInterest']);
+        } else {
+            $eligibleGroupsQuery = Group::lotteryEligible()
+                ->where('advisor_id', $user->id)
+                ->whereHas('students') // Only groups with students
+                ->with(['areaOfInterest']);
+        }
             
         // Apply batch filter if provided
         if ($request->has('batch') && $request->batch !== '') {
@@ -310,11 +342,19 @@ class SupervisorAssignmentController extends Controller
             $groupsWithStudents = Group::where('advisor_id', $user->id)->whereHas('students')->count();
             $groupsWithAreas = Group::where('advisor_id', $user->id)->whereHas('students')->whereNotNull('area_of_interest_id')->count();
             
-            $message = "No groups are eligible for lottery assignment. ";
-            $message .= "Debug info - User ID: {$user->id}, ";
-            $message .= "Total groups: {$allGroups}, ";
-            $message .= "Groups with students: {$groupsWithStudents}, ";
-            $message .= "Groups with areas: {$groupsWithAreas}.";
+            if ($mode === 'ranking') {
+                $message = "No groups are eligible for lottery assignment (Ranking mode). ";
+                $message .= "Debug info - User ID: {$user->id}, ";
+                $message .= "Total groups: {$allGroups}, ";
+                $message .= "Groups with students: {$groupsWithStudents}. ";
+                $message .= "Make sure groups are not manually assigned and have students.";
+            } else {
+                $message = "No groups are eligible for lottery assignment. ";
+                $message .= "Debug info - User ID: {$user->id}, ";
+                $message .= "Total groups: {$allGroups}, ";
+                $message .= "Groups with students: {$groupsWithStudents}, ";
+                $message .= "Groups with areas: {$groupsWithAreas}.";
+            }
             
             return response()->json([
                 'success' => false,
@@ -322,7 +362,7 @@ class SupervisorAssignmentController extends Controller
             ]);
         }
 
-        $preview = $this->assignmentService->previewLotteryAssignment($eligibleGroups);
+        $preview = $this->assignmentService->previewLotteryAssignment($eligibleGroups, $mode);
 
         return response()->json([
             'success' => true,

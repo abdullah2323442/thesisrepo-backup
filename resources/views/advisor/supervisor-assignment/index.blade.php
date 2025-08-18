@@ -20,6 +20,16 @@
                 @endif
             </select>
         </div>
+
+        <!-- Lottery Mode -->
+        <div class="flex items-center space-x-2">
+            <label for="lottery-mode" class="text-sm font-medium text-gray-700">Lottery Mode:</label>
+            <select id="lottery-mode"
+                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                <option value="aoi" selected>Area of Interest</option>
+                <option value="ranking">Ranking (Ignore AOI)</option>
+            </select>
+        </div>
         
         <!-- Lottery Actions -->
         <div class="flex space-x-2">
@@ -28,9 +38,10 @@
                 Preview Lottery
             </button>
             <form id="lottery-form" action="{{ route('advisor.supervisor-assignment.run-lottery') }}" method="POST" class="inline" 
-                  onsubmit="return confirm('Are you sure you want to run the lottery assignment? This will assign supervisors to all eligible groups.')">
+                  onsubmit="updateLotteryModeHidden(); return confirm('Are you sure you want to run the lottery assignment? This will assign supervisors to all eligible groups.')">
                 @csrf
                 <input type="hidden" name="batch" id="lottery-batch" value="{{ request('batch') }}">
+                <input type="hidden" name="mode" id="lottery-mode-input" value="aoi">
                 <button type="submit" 
                         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     Run Lottery Assignment
@@ -499,8 +510,11 @@
         // Include batch parameter if selected
         const batchSelect = document.getElementById('batch-filter');
         const selectedBatch = batchSelect.value;
-        const url = '{{ route('advisor.supervisor-assignment.preview-lottery') }}' + 
-                   (selectedBatch ? '?batch=' + encodeURIComponent(selectedBatch) : '');
+        const base = '{{ route('advisor.supervisor-assignment.preview-lottery') }}';
+        const modeSelect = document.getElementById('lottery-mode');
+        const selectedMode = modeSelect ? modeSelect.value : 'aoi';
+        let url = base + (selectedBatch ? '?batch=' + encodeURIComponent(selectedBatch) : '');
+        url += (url.includes('?') ? '&' : '?') + 'mode=' + encodeURIComponent(selectedMode);
         
         fetch(url, {
             headers: {
@@ -568,6 +582,20 @@
     
     function hideLotteryPreviewModal() {
         document.getElementById('lotteryPreviewModal').classList.add('hidden');
+    }
+function updateLotteryModeHidden() {
+        const modeSelect = document.getElementById('lottery-mode');
+        const hidden = document.getElementById('lottery-mode-input');
+        if (hidden) {
+            hidden.value = modeSelect ? modeSelect.value : 'aoi';
+        }
+    }
+
+    // Initialize hidden mode input and keep it synced
+    document.addEventListener('DOMContentLoaded', updateLotteryModeHidden);
+    const modeSelectEl = document.getElementById('lottery-mode');
+    if (modeSelectEl) {
+        modeSelectEl.addEventListener('change', updateLotteryModeHidden);
     }
 </script>
 @endpush

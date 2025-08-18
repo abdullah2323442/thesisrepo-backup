@@ -22,9 +22,15 @@ class SupervisorAssignmentService
 {
     /**
      * Run lottery assignment with strict AOI fairness and global capacity.
+     * Mode:
+     * - 'aoi' (default): match by area of interest (existing behavior)
+     * - 'ranking': ignore AOI and distribute globally by ranking in round-robin
      */
-    public function runLotteryAssignment(Collection $groups): array
+    public function runLotteryAssignment(Collection $groups, string $mode = 'aoi'): array
     {
+        if ($mode === 'ranking') {
+            return $this->runRankingAssignment($groups);
+        }
         $results = [
             'assigned' => 0,
             'unassigned' => 0,
@@ -92,9 +98,15 @@ class SupervisorAssignmentService
 
     /**
      * Preview lottery assignment without persistence.
+     * Mode:
+     * - 'aoi' (default): match by area of interest
+     * - 'ranking': ignore AOI and distribute globally by ranking
      */
-    public function previewLotteryAssignment(Collection $groups): array
+    public function previewLotteryAssignment(Collection $groups, string $mode = 'aoi'): array
     {
+        if ($mode === 'ranking') {
+            return $this->previewRankingAssignment($groups);
+        }
         $preview = [
             'assignments' => [],
             'unassigned' => [],
@@ -161,6 +173,234 @@ class SupervisorAssignmentService
                 'designation' => $pick['supervisor']->designation,
                 'rank_priority' => $pick['rank_priority'],
                 'method' => 'aoi_round_robin_low_watermark'
+            ];
+            $preview['stats']['will_be_assigned']++;
+        }
+
+        return $preview;
+    }
+
+    /**
+     * Run global ranking-based lottery ignoring AOI.
+     * Distributes fairly across all active supervisors using round-robin across the globally
+     * sorted list (by rank_priority asc, then current load, then name), avoiding immediate
+     * consecutive picks when alternatives exist.
+     */
+    private function runRankingAssignment(Collection $groups): array
+    {
+        $results = [
+            'assigned' => 0,
+            'unassigned' => 0,
+            'no_matches' => 0,
+            'assignments' => []
+        ];
+
+        $sortedGroups = $this->sortGroupsByNumber($groups);
+
+        // Build global pool and availability
+        $supervisors = Supervisor::where('is_active', true)->get();
+
+        $availability = [];
+        $list = [];
+        foreach ($supervisors as $s) {
+            $availability[$s->id] = $s->available_slots;
+            if ($s->available_slots > 0) {
+                $list[] = [
+                    'id' => $s->id,
+                    'model' => $s,
+                    'rank' => $s->rank_priority,
+                ];
+            }
+        }
+
+        // Sort by rank asc (1 best), then current assigned load, then name
+        usort($list, function ($a, $b) {
+            if ($a['rank'] !== $b['rank']) return $a['rank'] <=> $b['rank'];
+            $aLoad = $a['model']->assigned_theses_count;
+            $bLoad = $b['model']->assigned_theses_count;
+            if ($aLoad !== $bLoad) return $aLoad <=> $bLoad;
+            return strcasecmp($a['model']->fullname, $b['model']->fullname);
+        });
+
+        $count = count($list);
+        if ($count === 0) {
+            // No capacity available anywhere
+            foreach ($sortedGroups as $group) {
+                $results['unassigned']++;
+            }
+            return $results;
+        }
+
+        $cursor = 0;
+        $lastPick = null;
+
+        foreach ($sortedGroups as $group) {
+            // Select next available supervisor by global round-robin
+            $pickIdx = null;
+            $pick = null;
+
+            // First pass: try to avoid consecutive same-supervisor when alternative exists
+            for ($i = 0; $i < $count; $i++) {
+                $idx = ($cursor + $i) % $count;
+                $sup = $list[$idx];
+                $supId = $sup['id'];
+                if (($availability[$supId] ?? 0) <= 0) continue;
+                if ($lastPick !== null && $supId === $lastPick && $count > 1) continue;
+                $pickIdx = $idx;
+                $pick = $sup;
+                break;
+            }
+
+            // Second pass: allow consecutive if no alternative exists
+            if ($pick === null) {
+                for ($i = 0; $i < $count; $i++) {
+                    $idx = ($cursor + $i) % $count;
+                    $sup = $list[$idx];
+                    $supId = $sup['id'];
+                    if (($availability[$supId] ?? 0) > 0) {
+                        $pickIdx = $idx;
+                        $pick = $sup;
+                        break;
+                    }
+                }
+            }
+
+            if ($pick === null) {
+                // No one available globally
+                $results['unassigned']++;
+                continue;
+            }
+
+            // Apply
+            $supModel = $pick['model'];
+            $supId = $pick['id'];
+            $availability[$supId] = max(0, $availability[$supId] - 1);
+            $lastPick = $supId;
+            $cursor = ($pickIdx + 1) % $count;
+
+            // Persist
+            $group->update([
+                'supervisor_id' => $supId,
+                'is_manual_assignment' => false,
+                'assigned_at' => now(),
+                'assignment_priority' => $pick['rank'],
+            ]);
+
+            $results['assigned']++;
+            $results['assignments'][] = [
+                'group' => $group->name,
+                'supervisor' => $supModel->fullname,
+                'designation' => $supModel->designation,
+                'method' => 'global_ranking_round_robin',
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Preview of the global ranking-based lottery without persistence.
+     */
+    private function previewRankingAssignment(Collection $groups): array
+    {
+        $preview = [
+            'assignments' => [],
+            'unassigned' => [],
+            'stats' => [
+                'total_groups' => $groups->count(),
+                'will_be_assigned' => 0,
+                'will_remain_unassigned' => 0,
+                'no_matching_supervisors' => 0
+            ]
+        ];
+
+        $sortedGroups = $this->sortGroupsByNumber($groups);
+
+        // Build global pool and availability
+        $supervisors = Supervisor::where('is_active', true)->get();
+
+        $availability = [];
+        $list = [];
+        foreach ($supervisors as $s) {
+            $availability[$s->id] = $s->available_slots;
+            if ($s->available_slots > 0) {
+                $list[] = [
+                    'id' => $s->id,
+                    'model' => $s,
+                    'rank' => $s->rank_priority,
+                ];
+            }
+        }
+
+        usort($list, function ($a, $b) {
+            if ($a['rank'] !== $b['rank']) return $a['rank'] <=> $b['rank'];
+            $aLoad = $a['model']->assigned_theses_count;
+            $bLoad = $b['model']->assigned_theses_count;
+            if ($aLoad !== $bLoad) return $aLoad <=> $bLoad;
+            return strcasecmp($a['model']->fullname, $b['model']->fullname);
+        });
+
+        $count = count($list);
+        $cursor = 0;
+        $lastPick = null;
+
+        foreach ($sortedGroups as $group) {
+            $pickIdx = null;
+            $pick = null;
+
+            // Avoid consecutive when possible
+            for ($i = 0; $i < max(1, $count); $i++) {
+                if ($count === 0) break;
+                $idx = ($cursor + $i) % $count;
+                $sup = $list[$idx];
+                $supId = $sup['id'];
+                if (($availability[$supId] ?? 0) <= 0) continue;
+                if ($lastPick !== null && $supId === $lastPick && $count > 1) continue;
+                $pickIdx = $idx;
+                $pick = $sup;
+                break;
+            }
+
+            if ($pick === null && $count > 0) {
+                for ($i = 0; $i < $count; $i++) {
+                    $idx = ($cursor + $i) % $count;
+                    $sup = $list[$idx];
+                    $supId = $sup['id'];
+                    if (($availability[$supId] ?? 0) > 0) {
+                        $pickIdx = $idx;
+                        $pick = $sup;
+                        break;
+                    }
+                }
+            }
+
+            if ($pick === null) {
+                $preview['unassigned'][] = [
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'area_of_interest' => optional($group->areaOfInterest)->name,
+                    'reason' => 'no_available_slots',
+                ];
+                $preview['stats']['will_remain_unassigned']++;
+                continue;
+            }
+
+            // Apply simulated pick
+            $supModel = $pick['model'];
+            $supId = $pick['id'];
+            $availability[$supId] = max(0, $availability[$supId] - 1);
+            $lastPick = $supId;
+            $cursor = ($pickIdx + 1) % max(1, $count);
+
+            $preview['assignments'][] = [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'area_of_interest' => optional($group->areaOfInterest)->name,
+                'supervisor_id' => $supId,
+                'supervisor_name' => $supModel->fullname,
+                'designation' => $supModel->designation,
+                'rank_priority' => $pick['rank'],
+                'method' => 'global_ranking_round_robin'
             ];
             $preview['stats']['will_be_assigned']++;
         }
