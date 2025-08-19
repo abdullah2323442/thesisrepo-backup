@@ -91,23 +91,24 @@ for group in sortByNumericSuffix(groups):
 ### AOI-based Lottery
 ```mermaid
 flowchart TD
-  A[Start] --> B[Load eligible groups and active supervisors]
-  B --> C[Build AOI pools grouped by rank; compute availability]
-  C --> D[Sort groups by numeric suffix]
-  D --> E{Next group has AOI?}
-  E -- No --> F[Mark Unassigned (no_area_of_interest)] --> J
-  E -- Yes --> G[Select supervisor:
+  A["Start"] --> B["Load eligible groups and active supervisors"]
+  B --> C["Build AOI pools grouped by rank; compute availability"]
+  C --> D["Sort groups by numeric suffix"]
+  D --> E{"Next group has AOI?"}
+  E -- No --> F["Mark Unassigned (no_area_of_interest)"] --> J
+  E -- Yes --> G["Select supervisor:
 - Build candidates across ranks
 - Skip last-picked for this AOI
 - Skip no-capacity
 - Choose by (lowest per-run count, best rank, closest to cursor)
-- Fallback: allow last-picked if only option]
-  G --> H{Found pick?}
-  H -- No --> I[Mark Unassigned (no_matches or no_capacity)] --> J
-  H -- Yes --> K[Assign supervisor; decrement capacity; advance cursor; track counts]
-  K --> J{More groups?}
+- Fallback: allow last-picked if only option"]
+  G --> H{"Found pick?"}
+  H -- No --> I["Mark Unassigned (no_matches or no_capacity)"] --> J
+  H -- Yes --> K["Assign supervisor; decrement capacity; advance cursor; track counts"]
+  K --> J{"More groups?"}
   J -- Yes --> E
-  J -- No --> L[End]
+  J -- No --> L["End"]
+
 ```
 
 ### Ranking-based Lottery
