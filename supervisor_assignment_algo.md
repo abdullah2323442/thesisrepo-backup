@@ -92,22 +92,17 @@ for group in sortByNumericSuffix(groups):
 ```mermaid
 flowchart TD
   A["Start"] --> B["Load eligible groups and active supervisors"]
-  B --> C["Build AOI pools grouped by rank; compute availability"]
-  C --> D["Sort groups by numeric suffix"]
-  D --> E{"Next group has AOI?"}
-  E -- No --> F["Mark Unassigned (no_area_of_interest)"] --> J
-  E -- Yes --> G["Select supervisor:
-- Build candidates across ranks
-- Skip last-picked for this AOI
-- Skip no-capacity
-- Choose by (lowest per-run count, best rank, closest to cursor)
-- Fallback: allow last-picked if only option"]
-  G --> H{"Found pick?"}
-  H -- No --> I["Mark Unassigned (no_matches or no_capacity)"] --> J
-  H -- Yes --> K["Assign supervisor; decrement capacity; advance cursor; track counts"]
-  K --> J{"More groups?"}
-  J -- Yes --> E
-  J -- No --> L["End"]
+  B --> C["Build global list; sort by rank, load, name"]
+  C --> D["Initialize global cursor and lastPick"]
+  D --> E["Sort groups by numeric suffix"]
+  E --> F["For each group, find next supervisor with capacity; avoid consecutive if possible"]
+  F --> G{"Found pick?"}
+  G -- No --> H["Mark Unassigned (no_available_slots)"] --> J
+  G -- Yes --> I["Assign; decrement capacity; advance cursor; update lastPick"]
+  I --> J{"More groups?"}
+  J -- Yes --> F
+  J -- No --> K["End"]
+
 
 ```
 
