@@ -91,6 +91,28 @@ for group in sortByNumericSuffix(groups):
 ### AOI-based Lottery
 ```mermaid
 flowchart TD
+  A["Start"] --> B["Load groups & supervisors"]
+  B --> C["Build AOI pools by rank & check availability"]
+  C --> D["Sort groups by numeric suffix"]
+  D --> E{"Next group has AOI?"}
+  E -- No --> F["Unassigned (no AOI)"] --> J
+  E -- Yes --> G["Select supervisor"]
+  
+  G --> H{"Supervisor available?"}
+  H -- No --> I["Unassigned (no match / no capacity)"] --> J
+  H -- Yes --> K["Assign supervisor & update capacity"]
+  
+  K --> J{"More groups?"}
+  J -- Yes --> E
+  J -- No --> L["End"]
+
+
+
+```
+
+### Ranking-based Lottery
+```mermaid
+flowchart TD
   A["Start"] --> B["Load eligible groups and active supervisors"]
   B --> C["Build global list; sort by rank, load, name"]
   C --> D["Initialize global cursor and lastPick"]
@@ -103,23 +125,6 @@ flowchart TD
   J -- Yes --> F
   J -- No --> K["End"]
 
-
-```
-
-### Ranking-based Lottery
-```mermaid
-flowchart TD
-  A[Start] --> B[Load eligible groups and active supervisors]
-  B --> C[Build global list; sort by rank, load, name]
-  C --> D[Initialize global cursor, lastPick]
-  D --> E[Sort groups by numeric suffix]
-  E --> F[For each group, find next sup with capacity in round-robin; avoid consecutive if possible]
-  F --> G{Found pick?}
-  G -- No --> H[Mark Unassigned (no_available_slots)] --> J
-  G -- Yes --> I[Assign; dec capacity; advance cursor; update lastPick]
-  I --> J{More groups?}
-  J -- Yes --> F
-  J -- No --> K[End]
 ```
 
 
