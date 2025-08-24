@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Group;
+use App\Models\GroupStudent;
+use App\Models\AreaOfInterest;
+use App\Models\Supervisor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -19,16 +23,94 @@ class DashboardController extends Controller
             // Use external API data
             $userType = 'external';
             $userData = session('external_student_data');
+            $studentId = $userData['Roll'] ?? $userData['roll'] ?? null;
         } else {
             // Use model data (local database)
             $userType = 'model';
             $userData = $user;
+            $studentId = $user->roll ?? $user->student_id ?? null;
         }
+        
+        // Get student's group information
+        $groupInfo = $this->getStudentGroupInfo($studentId);
         
         return view('student.dashboard', [
             'user' => $userData,
-            'userType' => $userType
+            'userType' => $userType,
+            'groupInfo' => $groupInfo
         ]);
+    }
+    
+    /**
+     * Get student's group information including group members, area of interest, and supervisor
+     */
+    private function getStudentGroupInfo($studentId)
+    {
+        if (!$studentId) {
+            return null;
+        }
+        
+        // Find the group student record
+        $groupStudent = GroupStudent::where('student_id', $studentId)->first();
+        
+        if (!$groupStudent) {
+            return [
+                'hasGroup' => false,
+                'message' => 'You are not assigned to any group yet.'
+            ];
+        }
+        
+        // Get the group with all related information
+        $group = Group::with(['students', 'areaOfInterest', 'supervisor', 'advisor'])
+                     ->find($groupStudent->group_id);
+        
+        if (!$group) {
+            return [
+                'hasGroup' => false,
+                'message' => 'Group information not found.'
+            ];
+        }
+        
+        // Get all group members
+        $groupMembers = $group->students->map(function ($student) use ($studentId) {
+            return [
+                'student_id' => $student->student_id,
+                'name' => $student->student_name,
+                'email' => $student->student_email,
+                'is_current_user' => $student->student_id === $studentId
+            ];
+        });
+        
+        return [
+            'hasGroup' => true,
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'batch_number' => $group->batch_number,
+                'max_students' => $group->max_students,
+                'student_count' => $group->students->count(),
+                'created_at' => $group->created_at
+            ],
+            'members' => $groupMembers,
+            'areaOfInterest' => $group->areaOfInterest ? [
+                'id' => $group->areaOfInterest->id,
+                'name' => $group->areaOfInterest->name,
+                'description' => $group->areaOfInterest->description
+            ] : null,
+            'supervisor' => $group->supervisor ? [
+                'id' => $group->supervisor->id,
+                'name' => $group->supervisor->fullname,
+                'email' => $group->supervisor->email,
+                'designation' => $group->supervisor->designation,
+                'department' => $group->supervisor->department,
+                'thesis_limit' => $group->supervisor->thesis_limit
+            ] : null,
+            'advisor' => $group->advisor ? [
+                'id' => $group->advisor->id,
+                'name' => $group->advisor->name,
+                'email' => $group->advisor->email
+            ] : null
+        ];
     }
     
     /**
