@@ -68,7 +68,13 @@
                 <!-- Academic Details -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Academic Information</h4>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
+                            </svg>
+                            Academic Information
+                        </h4>
                         <div class="space-y-3">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Department:</span>
@@ -101,7 +107,13 @@
                 <!-- Contact Information -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h4>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            Contact Information
+                        </h4>
                         <div class="space-y-3">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Email:</span>
@@ -135,7 +147,12 @@
             <!-- Address Information -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
-                    <h4 class="text-lg font-semibold text-gray-900 mb-4">Address Information</h4>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 12l4.243-4.243m-11.314 0L10.586 12l-4.243 4.243M21 12H3"></path>
+                        </svg>
+                        Address Information
+                    </h4>
                     <div class="text-gray-700">
                         <p>{{ $userType === 'model' ? ($user->address ?? 'No address provided') : ($user['Address'] ?? 'No address provided') }}</p>
                     </div>

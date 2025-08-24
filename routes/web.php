@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\SupervisorController;
 use App\Http\Controllers\Admin\BatchController;
 use App\Http\Controllers\Advisor\DashboardController as AdvisorDashboardController;
 use App\Http\Controllers\Advisor\StudentController as AdvisorStudentController;
+use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
+use App\Http\Controllers\Supervisor\GroupController as SupervisorGroupController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -22,11 +24,17 @@ Route::get('/dashboard', function () {
 // Teacher routes
 Route::middleware(['auth', 'teacher'])->group(function () {
     Route::get('/teacher/dashboard', [TeacherDashboardController::class, 'index'])->name('teacher.dashboard');
+
+    // Supervisor panel (for teachers acting as supervisors)
+    Route::get('/supervisor/dashboard', [SupervisorDashboardController::class, 'index'])->name('supervisor.dashboard');
+    Route::get('/supervisor/groups', [SupervisorGroupController::class, 'index'])->name('supervisor.groups.index');
 });
 
 // Student routes
 Route::middleware(['auth', 'student'])->group(function () {
-    Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])->name('student.dashboard');
+    Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])
+        ->middleware('throttle:external_api_student_dashboard')
+        ->name('student.dashboard');
 });
 
 // Admin routes
@@ -44,44 +52,70 @@ Route::middleware(['auth', 'admin'])->group(function () {
     
     // Supervisor Management
     Route::get('/admin/supervisors', [SupervisorController::class, 'index'])->name('admin.supervisors.index');
-    Route::post('/admin/supervisors/sync', [SupervisorController::class, 'syncFromApi'])->name('admin.supervisors.sync');
+    Route::post('/admin/supervisors/sync', [SupervisorController::class, 'syncFromApi'])
+        ->middleware('throttle:external_api_admin_supervisors_sync')
+        ->name('admin.supervisors.sync');
     Route::get('/admin/supervisors/{supervisor}/edit', [SupervisorController::class, 'edit'])->name('admin.supervisors.edit');
     Route::put('/admin/supervisors/{supervisor}', [SupervisorController::class, 'update'])->name('admin.supervisors.update');
     Route::post('/admin/supervisors/bulk-limits', [SupervisorController::class, 'bulkUpdateLimits'])->name('admin.supervisors.bulk-limits');
     Route::post('/admin/supervisors/{supervisor}/toggle', [SupervisorController::class, 'toggleStatus'])->name('admin.supervisors.toggle');
-    Route::post('/admin/supervisors/{supervisor}/refresh', [SupervisorController::class, 'refreshFromApi'])->name('admin.supervisors.refresh');
+    Route::post('/admin/supervisors/{supervisor}/refresh', [SupervisorController::class, 'refreshFromApi'])
+        ->middleware('throttle:external_api_admin_supervisors_refresh')
+        ->name('admin.supervisors.refresh');
     
     // Batch Management
     Route::get('/admin/batches', [BatchController::class, 'index'])->name('admin.batches.index');
-    Route::post('/admin/batches/sync', [BatchController::class, 'syncFromApi'])->name('admin.batches.sync');
+    Route::post('/admin/batches/sync', [BatchController::class, 'syncFromApi'])
+        ->middleware('throttle:external_api_admin_batches_sync')
+        ->name('admin.batches.sync');
     Route::post('/admin/batches/{batch}/toggle', [BatchController::class, 'toggleStatus'])->name('admin.batches.toggle');
     Route::post('/admin/batches/bulk-action', [BatchController::class, 'bulkAction'])->name('admin.batches.bulk-action');
     Route::get('/admin/batches/{batch}/edit', [BatchController::class, 'edit'])->name('admin.batches.edit');
     Route::put('/admin/batches/{batch}', [BatchController::class, 'update'])->name('admin.batches.update');
     Route::delete('/admin/batches/{batch}', [BatchController::class, 'destroy'])->name('admin.batches.destroy');
-    Route::get('/admin/batches/compare', [BatchController::class, 'compareWithApi'])->name('admin.batches.compare');
+    Route::get('/admin/batches/compare', [BatchController::class, 'compareWithApi'])
+        ->middleware('throttle:external_api_admin_batches_compare')
+        ->name('admin.batches.compare');
     Route::post('/admin/batches/activate-all', [BatchController::class, 'activateAll'])->name('admin.batches.activate-all');
     Route::post('/admin/batches/deactivate-all', [BatchController::class, 'deactivateAll'])->name('admin.batches.deactivate-all');
 });
 
 // Advisor routes
 Route::middleware(['auth', 'advisor'])->group(function () {
-    Route::get('/advisor/dashboard', [AdvisorDashboardController::class, 'index'])->name('advisor.dashboard');
-    Route::get('/advisor/students', [AdvisorStudentController::class, 'index'])->name('advisor.students.index');
-    Route::get('/advisor/students/{student}', [AdvisorStudentController::class, 'show'])->name('advisor.students.show');
-    Route::post('/advisor/students/refresh', [AdvisorStudentController::class, 'refreshData'])->name('advisor.students.refresh');
+    Route::get('/advisor/dashboard', [AdvisorDashboardController::class, 'index'])
+        ->middleware('throttle:external_api_advisor_dashboard')
+        ->name('advisor.dashboard');
+    Route::get('/advisor/students', [AdvisorStudentController::class, 'index'])
+        ->middleware('throttle:external_api_advisor_students')
+        ->name('advisor.students.index');
+    Route::get('/advisor/students/{student}', [AdvisorStudentController::class, 'show'])
+        ->middleware('throttle:external_api_advisor_students_show')
+        ->name('advisor.students.show');
+    Route::post('/advisor/students/refresh', [AdvisorStudentController::class, 'refreshData'])
+        ->middleware('throttle:external_api_advisor_students_refresh')
+        ->name('advisor.students.refresh');
     
     // Group Management routes
-    Route::get('/advisor/groups', [\App\Http\Controllers\Advisor\GroupController::class, 'index'])->name('advisor.groups.index');
-    Route::post('/advisor/groups/create', [\App\Http\Controllers\Advisor\GroupController::class, 'createGroups'])->name('advisor.groups.create');
+    Route::get('/advisor/groups', [\App\Http\Controllers\Advisor\GroupController::class, 'index'])
+        ->middleware('throttle:external_api_advisor_groups')
+        ->name('advisor.groups.index');
+    Route::post('/advisor/groups/create', [\App\Http\Controllers\Advisor\GroupController::class, 'createGroups'])
+        ->middleware('throttle:external_api_advisor_groups')
+        ->name('advisor.groups.create');
     Route::post('/advisor/groups/add', [\App\Http\Controllers\Advisor\GroupController::class, 'addGroup'])->name('advisor.groups.add');
-    Route::post('/advisor/groups/assign-student', [\App\Http\Controllers\Advisor\GroupController::class, 'assignStudent'])->name('advisor.groups.assign-student');
+    Route::post('/advisor/groups/assign-student', [\App\Http\Controllers\Advisor\GroupController::class, 'assignStudent'])
+        ->middleware('throttle:external_api_advisor_groups')
+        ->name('advisor.groups.assign-student');
     Route::post('/advisor/groups/assign-area-of-interest', [\App\Http\Controllers\Advisor\GroupController::class, 'assignAreaOfInterest'])->name('advisor.groups.assign-area-of-interest');
     Route::post('/advisor/groups/unassign-all-areas-of-interest', [\App\Http\Controllers\Advisor\GroupController::class, 'unassignAllAreasOfInterest'])->name('advisor.groups.unassign-all-areas-of-interest');
     Route::post('/advisor/groups/remove-all-groups', [\App\Http\Controllers\Advisor\GroupController::class, 'removeAllGroups'])->name('advisor.groups.remove-all-groups');
     Route::post('/advisor/groups/remove-student', [\App\Http\Controllers\Advisor\GroupController::class, 'removeStudent'])->name('advisor.groups.remove-student');
-    Route::post('/advisor/groups/upload-excel', [\App\Http\Controllers\Advisor\GroupController::class, 'uploadExcel'])->name('advisor.groups.upload-excel');
-    Route::get('/advisor/groups/download-template', [\App\Http\Controllers\Advisor\GroupController::class, 'downloadTemplate'])->name('advisor.groups.download-template');
+    Route::post('/advisor/groups/upload-excel', [\App\Http\Controllers\Advisor\GroupController::class, 'uploadExcel'])
+        ->middleware('throttle:external_api_advisor_groups')
+        ->name('advisor.groups.upload-excel');
+    Route::get('/advisor/groups/download-template', [\App\Http\Controllers\Advisor\GroupController::class, 'downloadTemplate'])
+        ->middleware('throttle:external_api_advisor_groups')
+        ->name('advisor.groups.download-template');
     
     // Supervisor Assignment routes
     Route::get('/advisor/supervisor-assignment', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'index'])->name('advisor.supervisor-assignment.index');
@@ -89,7 +123,9 @@ Route::middleware(['auth', 'advisor'])->group(function () {
     Route::post('/advisor/supervisor-assignment/unassign', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'unassign'])->name('advisor.supervisor-assignment.unassign');
     Route::post('/advisor/supervisor-assignment/unassign-all', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'unassignAll'])->name('advisor.supervisor-assignment.unassign-all');
     Route::post('/advisor/supervisor-assignment/run-lottery', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'runLottery'])->name('advisor.supervisor-assignment.run-lottery');
-    Route::get('/advisor/supervisor-assignment/available-supervisors', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'getAvailableSupervisors'])->name('advisor.supervisor-assignment.available-supervisors');
+    Route::get('/advisor/supervisor-assignment/available-supervisors', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'getAvailableSupervisors'])
+        ->middleware('throttle:external_api_advisor_available_supervisors')
+        ->name('advisor.supervisor-assignment.available-supervisors');
     Route::get('/advisor/supervisor-assignment/preview-lottery', [\App\Http\Controllers\Advisor\SupervisorAssignmentController::class, 'previewLottery'])->name('advisor.supervisor-assignment.preview-lottery');
 });
 

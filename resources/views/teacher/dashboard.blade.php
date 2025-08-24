@@ -39,7 +39,13 @@
                 <!-- Contact Information -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Contact Information</h4>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                            Contact Information
+                        </h4>
                         <div class="space-y-2">
                             <p class="text-sm">
                                 <span class="font-medium">Phone:</span> 
@@ -60,7 +66,12 @@
                 <!-- Department Information -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Department Information</h4>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V8a2 2 0 012-2h10a2 2 0 012 2v13M9 21V8m4 13V8m4 13V8"></path>
+                            </svg>
+                            Department Information
+                        </h4>
                         <div class="space-y-2">
                             <p class="text-sm">
                                 <span class="font-medium">Department:</span> 
@@ -101,7 +112,12 @@
                 <!-- Role-based Quick Actions -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h4>
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg class="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            Quick Actions
+                        </h4>
                         <div class="space-y-2">
                             @php
                                 $hasAdminRole = in_array('1', $typeIds);
@@ -116,9 +132,9 @@
                             @endif
                             
                             @if($hasTeacherRole)
-                                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors">
-                                    Manage Classes
-                                </button>
+                                <a href="{{ route('supervisor.dashboard') }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors text-center">
+                                    Supervisor Panel
+                                </a>
                             @endif
                             
                             @if($hasTeacherRole)
