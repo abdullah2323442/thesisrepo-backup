@@ -78,6 +78,17 @@ Route::middleware(['auth', 'admin'])->group(function () {
         ->name('admin.batches.compare');
     Route::post('/admin/batches/activate-all', [BatchController::class, 'activateAll'])->name('admin.batches.activate-all');
     Route::post('/admin/batches/deactivate-all', [BatchController::class, 'deactivateAll'])->name('admin.batches.deactivate-all');
+    
+    // Performance Monitoring
+    Route::get('/admin/performance', [\App\Http\Controllers\Admin\PerformanceController::class, 'index'])->name('admin.performance.index');
+    Route::get('/admin/performance/metrics', [\App\Http\Controllers\Admin\PerformanceController::class, 'metrics'])->name('admin.performance.metrics');
+    Route::get('/admin/performance/health', [\App\Http\Controllers\Admin\PerformanceController::class, 'health'])->name('admin.performance.health');
+    Route::get('/admin/performance/database', [\App\Http\Controllers\Admin\PerformanceController::class, 'database'])->name('admin.performance.database');
+    Route::get('/admin/performance/api', [\App\Http\Controllers\Admin\PerformanceController::class, 'api'])->name('admin.performance.api');
+    Route::get('/admin/performance/security', [\App\Http\Controllers\Admin\PerformanceController::class, 'security'])->name('admin.performance.security');
+    Route::post('/admin/performance/clear-cache', [\App\Http\Controllers\Admin\PerformanceController::class, 'clearCache'])->name('admin.performance.clear-cache');
+    Route::get('/admin/performance/export', [\App\Http\Controllers\Admin\PerformanceController::class, 'export'])->name('admin.performance.export');
+    Route::get('/admin/performance/test', [\App\Http\Controllers\Admin\PerformanceController::class, 'test'])->name('admin.performance.test');
 });
 
 // Advisor routes

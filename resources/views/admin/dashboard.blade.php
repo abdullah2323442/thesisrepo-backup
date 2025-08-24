@@ -74,40 +74,5 @@ Welcome back, {{ $user->name }}
                         </div>
                     </div>
                 </div>
-
-                <!-- Recent Activity -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Recent Users -->
-                    <div class="bg-white rounded-lg shadow">
-                        <div class="p-6 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Recent Users</h3>
-                        </div>
-                        <div class="p-6">
-                            <p class="text-gray-500">Recent user registrations will be displayed here.</p>
-                        </div>
-                    </div>
-
-                    <!-- System Status -->
-                    <div class="bg-white rounded-lg shadow">
-                        <div class="p-6 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">System Status</h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Database</span>
-                                    <span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">Online</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">API Services</span>
-                                    <span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">Active</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">Storage</span>
-                                    <span class="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full">75% Used</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                
 @endsection
