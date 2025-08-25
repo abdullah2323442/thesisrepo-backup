@@ -39,17 +39,17 @@
                     </a>
 
                     <!-- My Group -->
-                    <a href="{{ route('student.dashboard') }}#group-section"
+                    <!-- <a href="{{ route('student.dashboard') }}#group-section"
                         class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
                         My Group
-                    </a>
+                    </a> -->
 
                     <!-- Area of Interest -->
-                    <a href="{{ route('student.dashboard') }}#area-section"
+                    <!-- <a href="{{ route('student.dashboard') }}#area-section"
                         class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -57,9 +57,9 @@
                             </path>
                         </svg>
                         Area of Interest
-                    </a>
+                    </a> -->
 
-                    <!-- Supervisor -->
+                    <!-- Supervisor
                     <a href="{{ route('student.dashboard') }}#supervisor-section"
                         class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,9 +67,9 @@
                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                         </svg>
                         Supervisor
-                    </a>
+                    </a> -->
 
-                    <!-- Profile -->
+                    <!-- Profile
                     <a href="{{ route('profile.edit') }}"
                         class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors {{ request()->routeIs('profile.*') ? 'bg-blue-100 text-blue-700' : '' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@
                                 d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                         Profile
-                    </a>
+                    </a> -->
                 </div>
             </nav>
 
