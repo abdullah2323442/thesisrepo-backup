@@ -21,14 +21,17 @@
             </select>
         </div>
 
-        <!-- Lottery Mode -->
-        <div class="flex items-center space-x-2">
-            <label for="lottery-mode" class="text-sm font-medium text-gray-700">Lottery Mode:</label>
-            <select id="lottery-mode"
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                <option value="aoi" selected>Area of Interest</option>
-                <option value="ranking">Ranking (Ignore AOI)</option>
-            </select>
+        <!-- Lottery Mode Checkboxes -->
+        <div class="flex items-center space-x-4">
+            <span class="text-sm font-medium text-gray-700">Assignment Criteria:</span>
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" id="use-aoi" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                <span class="text-sm text-gray-700">Area of Interest</span>
+            </label>
+            <label class="flex items-center space-x-2">
+                <input type="checkbox" id="use-ranking" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <span class="text-sm text-gray-700">Ranking Priority</span>
+            </label>
         </div>
         
         <!-- Lottery Actions -->
@@ -38,10 +41,11 @@
                 Preview Lottery
             </button>
             <form id="lottery-form" action="{{ route('advisor.supervisor-assignment.run-lottery') }}" method="POST" class="inline" 
-                  onsubmit="updateLotteryModeHidden(); return confirm('Are you sure you want to run the lottery assignment? This will assign supervisors to all eligible groups.')">
+                  onsubmit="updateLotteryParams(); return confirm('Are you sure you want to run the lottery assignment? This will assign supervisors to all eligible groups.')">
                 @csrf
                 <input type="hidden" name="batch" id="lottery-batch" value="{{ request('batch') }}">
-                <input type="hidden" name="mode" id="lottery-mode-input" value="aoi">
+                <input type="hidden" name="use_aoi" id="lottery-use-aoi" value="1">
+                <input type="hidden" name="use_ranking" id="lottery-use-ranking" value="0">
                 <button type="submit" 
                         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     Run Lottery Assignment
@@ -164,14 +168,51 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div>
-                <h3 class="text-sm font-medium text-blue-800 mb-1">Assignment Rules</h3>
-                <ul class="text-sm text-blue-700 space-y-1">
-                    <li>• <strong>Interest Matching:</strong> Supervisors are only assigned to groups with matching areas of interest</li>
-                    <li>• <strong>Rank Priority:</strong> Professor > Associate Professor > Assistant Professor > Lecturer</li>
-                    <li>• <strong>Manual Override:</strong> Manually assigned groups are excluded from lottery</li>
-                    <li>• <strong>Random Selection:</strong> When multiple supervisors of same rank are available, one is selected randomly</li>
-                    <li>• <strong>Capacity Limits:</strong> Supervisors cannot exceed their thesis limits</li>
-                </ul>
+                <h3 class="text-sm font-medium text-blue-800 mb-2">Intelligent Assignment System</h3>
+                
+                <div class="space-y-3">
+                    <!-- Area of Interest Only Mode -->
+                    <div class="bg-white bg-opacity-60 rounded p-2">
+                        <h4 class="text-xs font-semibold text-blue-800 mb-1">📍 Area of Interest Only (1 checkbox)</h4>
+                        <ul class="text-xs text-blue-700 space-y-0.5 ml-3">
+                            <li>• <strong>Pure Randomization:</strong> Completely random selection from matching supervisors</li>
+                            <li>• <strong>Smart Rotation:</strong> Never assigns same supervisor twice in a row to same group</li>
+                            <li>• <strong>Different Every Time:</strong> Each lottery run produces different results</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Ranking Priority Only Mode -->
+                    <div class="bg-white bg-opacity-60 rounded p-2">
+                        <h4 class="text-xs font-semibold text-blue-800 mb-1">🎯 Ranking Priority Only (1 checkbox)</h4>
+                        <ul class="text-xs text-blue-700 space-y-0.5 ml-3">
+                            <li>• <strong>Perfect Round-Robin:</strong> No supervisor gets 2 groups before everyone gets 1</li>
+                            <li>• <strong>Rank Order:</strong> Professor → Associate → Assistant → Lecturer</li>
+                            <li>• <strong>Fair Distribution:</strong> Equal load across all supervisors</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Combined Mode -->
+                    <div class="bg-white bg-opacity-60 rounded p-2">
+                        <h4 class="text-xs font-semibold text-blue-800 mb-1">⚡ Both Selected (2 checkboxes)</h4>
+                        <ul class="text-xs text-blue-700 space-y-0.5 ml-3">
+                            <li>• <strong>Area-Specific Fairness:</strong> Within each area, no one gets 2 before everyone gets 1</li>
+                            <li>• <strong>Intelligent Load Balancing:</strong> Prevents senior professors from getting all groups</li>
+                            <li>• <strong>Rank as Tiebreaker:</strong> Seniority only matters when assignment counts are equal</li>
+                            <li>• <strong>Example:</strong> If 3 ML experts exist, all get 1 group before anyone gets 2nd</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- General Rules -->
+                    <div class="border-t border-blue-200 pt-2">
+                        <h4 class="text-xs font-semibold text-blue-800 mb-1">📋 General Rules</h4>
+                        <ul class="text-xs text-blue-700 space-y-0.5 ml-3">
+                            <li>• <strong>Capacity Limits:</strong> Supervisors cannot exceed their thesis limits</li>
+                            <li>• <strong>Manual Override:</strong> Manually assigned groups are excluded from lottery</li>
+                            <li>• <strong>Multiple Areas:</strong> Groups can have primary and fallback areas of interest</li>
+                            <li>• <strong>Matched Area Tracking:</strong> System shows which area led to supervisor match</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -213,16 +254,37 @@
                                         </div>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($group->areaOfInterest)
-                                        <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                            {{ $group->areaOfInterest->name }}
-                                        </span>
-                                    @else
-                                        <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-                                            Not Set
-                                        </span>
-                                    @endif
+                                <td class="px-6 py-4">
+                                    <div class="space-y-1">
+                                        <!-- Show all assigned areas -->
+                                        <div>
+                                            @if($group->areasOfInterest->count() > 0)
+                                                @foreach($group->areasOfInterest as $area)
+                                                    <span class="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full mr-1 mb-1">
+                                                        {{ $area->name }}
+                                                    </span>
+                                                @endforeach
+                                            @elseif($group->areaOfInterest)
+                                                <span class="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                                                    {{ $group->areaOfInterest->name }}
+                                                </span>
+                                            @else
+                                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                                                    Not Set
+                                                </span>
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Show matched/finalized area if supervisor is assigned -->
+                                        @if($group->supervisor && $group->matchedAreaOfInterest)
+                                            <div class="text-xs">
+                                                <span class="text-green-600 font-medium">✓ Matched:</span>
+                                                <span class="inline-block px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                                                    {{ $group->matchedAreaOfInterest->name }}
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @if($group->supervisor)
@@ -583,19 +645,36 @@
     function hideLotteryPreviewModal() {
         document.getElementById('lotteryPreviewModal').classList.add('hidden');
     }
-function updateLotteryModeHidden() {
-        const modeSelect = document.getElementById('lottery-mode');
-        const hidden = document.getElementById('lottery-mode-input');
-        if (hidden) {
-            hidden.value = modeSelect ? modeSelect.value : 'aoi';
+function updateLotteryParams() {
+        const useAoi = document.getElementById('use-aoi').checked;
+        const useRanking = document.getElementById('use-ranking').checked;
+        
+        document.getElementById('lottery-use-aoi').value = useAoi ? '1' : '0';
+        document.getElementById('lottery-use-ranking').value = useRanking ? '1' : '0';
+        
+        // Validate at least one option is selected
+        if (!useAoi && !useRanking) {
+            alert('Please select at least one assignment criteria (Area of Interest or Ranking Priority)');
+            return false;
         }
+        
+        return true;
     }
 
-    // Initialize hidden mode input and keep it synced
-    document.addEventListener('DOMContentLoaded', updateLotteryModeHidden);
-    const modeSelectEl = document.getElementById('lottery-mode');
-    if (modeSelectEl) {
-        modeSelectEl.addEventListener('change', updateLotteryModeHidden);
+    // Update preview function to use checkboxes
+    function getLotteryMode() {
+        const useAoi = document.getElementById('use-aoi').checked;
+        const useRanking = document.getElementById('use-ranking').checked;
+        
+        if (useAoi && useRanking) {
+            return 'both';
+        } else if (useAoi) {
+            return 'aoi';
+        } else if (useRanking) {
+            return 'ranking';
+        } else {
+            return 'none';
+        }
     }
 </script>
 @endpush

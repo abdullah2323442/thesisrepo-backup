@@ -221,9 +221,17 @@
                                             @endforelse
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-6 py-4">
                                         <div class="text-sm text-gray-900">
-                                            @if($group->areaOfInterest)
+                                            @if($group->areasOfInterest->count() > 0)
+                                                <div class="flex flex-wrap gap-1">
+                                                    @foreach($group->areasOfInterest as $area)
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            {{ $area->name }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @elseif($group->areaOfInterest)
                                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                     {{ $group->areaOfInterest->name }}
                                                 </span>
@@ -231,9 +239,9 @@
                                                 <span class="text-gray-400 italic">Not assigned</span>
                                             @endif
                                         </div>
-                                        <button onclick="showAreaOfInterestModal({{ $group->id }}, '{{ $group->name }}', {{ $group->area_of_interest_id ?? 'null' }})" 
+                                        <button onclick="showAreaOfInterestModal({{ $group->id }}, '{{ $group->name }}', {{ json_encode($group->getAreaOfInterestIds()) }})" 
                                                 class="text-blue-600 hover:text-blue-800 text-xs mt-1">
-                                            {{ $group->areaOfInterest ? 'Change' : 'Assign' }}
+                                            {{ ($group->areasOfInterest->count() > 0 || $group->areaOfInterest) ? 'Change' : 'Assign' }}
                                         </button>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -350,24 +358,32 @@
 </div>
 
 <!-- Assign Area of Interest Modal -->
-<div id="area-of-interest-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Area of Interest to <span id="aoi-modal-group-name"></span></h3>
+<div id="area-of-interest-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md my-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Areas of Interest to <span id="aoi-modal-group-name"></span></h3>
         
         <form method="POST" action="{{ route('advisor.groups.assign-area-of-interest') }}">
             @csrf
             <input type="hidden" name="group_id" id="aoi-modal-group-id">
             
             <div class="mb-4">
-                <label for="area_of_interest_id" class="block text-sm font-medium text-gray-700 mb-2">Select Area of Interest</label>
-                <select name="area_of_interest_id" id="area_of_interest_id" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">No area of interest</option>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Select Areas of Interest (Multiple Selection Allowed)</label>
+                <div class="border border-gray-300 rounded-md p-3 max-h-60 overflow-y-auto">
                     @foreach($areasOfInterest as $area)
-                        <option value="{{ $area->id }}">{{ $area->name }}</option>
+                        <div class="flex items-center mb-2">
+                            <input type="checkbox" 
+                                   name="area_of_interest_ids[]" 
+                                   value="{{ $area->id }}" 
+                                   id="area_{{ $area->id }}"
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="area_{{ $area->id }}" class="ml-2 block text-sm text-gray-900">
+                                {{ $area->name }}
+                            </label>
+                        </div>
                     @endforeach
-                </select>
-                <p class="text-xs text-gray-500 mt-1">
-                    Select an area of interest for this group's thesis project
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    Select one or more areas of interest for this group's thesis project. Leave all unchecked to remove all areas.
                 </p>
             </div>
             
@@ -376,7 +392,7 @@
                     Cancel
                 </button>
                 <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                    Assign
+                    Save Areas
                 </button>
             </div>
         </form>
@@ -417,13 +433,25 @@ function hideAssignModal() {
     document.getElementById('assign-modal').classList.remove('flex');
 }
 
-function showAreaOfInterestModal(groupId, groupName, currentAreaOfInterestId) {
+function showAreaOfInterestModal(groupId, groupName, currentAreaIds) {
     document.getElementById('aoi-modal-group-id').value = groupId;
     document.getElementById('aoi-modal-group-name').textContent = groupName;
     
-    // Set the current area of interest if one is assigned
-    const select = document.getElementById('area_of_interest_id');
-    select.value = currentAreaOfInterestId || '';
+    // Clear all checkboxes first
+    const checkboxes = document.querySelectorAll('input[name="area_of_interest_ids[]"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Check the boxes for currently assigned areas
+    if (currentAreaIds && Array.isArray(currentAreaIds)) {
+        currentAreaIds.forEach(areaId => {
+            const checkbox = document.getElementById('area_' + areaId);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+    }
     
     document.getElementById('area-of-interest-modal').classList.remove('hidden');
     document.getElementById('area-of-interest-modal').classList.add('flex');

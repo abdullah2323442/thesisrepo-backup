@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Group extends Model
@@ -14,6 +15,7 @@ class Group extends Model
         'advisor_id',
         'max_students',
         'area_of_interest_id',
+        'matched_area_of_interest_id',
         'supervisor_id',
         'is_manual_assignment',
         'assignment_priority',
@@ -48,11 +50,21 @@ class Group extends Model
     }
 
     /**
-     * Get the area of interest for this group
+     * Get the area of interest for this group (legacy - single area)
+     * @deprecated Use areasOfInterest() for multiple areas support
      */
     public function areaOfInterest(): BelongsTo
     {
         return $this->belongsTo(AreaOfInterest::class, 'area_of_interest_id');
+    }
+
+    /**
+     * Get the areas of interest for this group (many-to-many relationship)
+     */
+    public function areasOfInterest(): BelongsToMany
+    {
+        return $this->belongsToMany(AreaOfInterest::class, 'group_area_of_interest')
+                    ->withTimestamps();
     }
 
     /**
@@ -61,6 +73,14 @@ class Group extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id');
+    }
+
+    /**
+     * Get the matched/finalized area of interest (the one that led to supervisor assignment)
+     */
+    public function matchedAreaOfInterest(): BelongsTo
+    {
+        return $this->belongsTo(AreaOfInterest::class, 'matched_area_of_interest_id');
     }
 
     /**
@@ -111,7 +131,46 @@ class Group extends Model
      */
     public function isEligibleForAssignment(): bool
     {
-        return !$this->hasSupervisor() && !is_null($this->area_of_interest_id);
+        // Check if group has at least one area of interest (either legacy or new)
+        $hasAreas = $this->areasOfInterest()->exists() || !is_null($this->area_of_interest_id);
+        return !$this->hasSupervisor() && $hasAreas;
+    }
+
+    /**
+     * Check if group has a specific area of interest
+     */
+    public function hasAreaOfInterest(int $areaId): bool
+    {
+        return $this->areasOfInterest()->where('area_of_interests.id', $areaId)->exists();
+    }
+
+    /**
+     * Get all area of interest IDs for this group
+     */
+    public function getAreaOfInterestIds(): array
+    {
+        $ids = $this->areasOfInterest()->pluck('area_of_interests.id')->toArray();
+        
+        // Include legacy single area if exists and not already in array
+        if ($this->area_of_interest_id && !in_array($this->area_of_interest_id, $ids)) {
+            $ids[] = $this->area_of_interest_id;
+        }
+        
+        return $ids;
+    }
+
+    /**
+     * Sync areas of interest for this group
+     */
+    public function syncAreasOfInterest(array $areaIds): void
+    {
+        $this->areasOfInterest()->sync($areaIds);
+        
+        // Clear the legacy single area field if using new system
+        if (!empty($areaIds)) {
+            $this->area_of_interest_id = null;
+            $this->save();
+        }
     }
 
     /**

@@ -68,7 +68,7 @@ class GroupController extends Controller
                 // Get existing groups for this batch and advisor (using local ID for database)
                 $groups = Group::where('batch_number', $selectedBatch)
                               ->where('advisor_id', $advisorLocalId)
-                              ->with(['students', 'areaOfInterest'])
+                              ->with(['students', 'areaOfInterest', 'areasOfInterest'])
                               ->get()
                               ->sortBy(function ($group) {
                                   // Extract number from group name for sorting
@@ -424,13 +424,14 @@ class GroupController extends Controller
     }
 
     /**
-     * Assign area of interest to group
+     * Assign areas of interest to group (supports multiple areas)
      */
     public function assignAreaOfInterest(Request $request)
     {
         $request->validate([
             'group_id' => 'required|exists:groups,id',
-            'area_of_interest_id' => 'nullable|exists:area_of_interests,id'
+            'area_of_interest_ids' => 'nullable|array',
+            'area_of_interest_ids.*' => 'exists:area_of_interests,id'
         ]);
 
         try {
@@ -444,16 +445,26 @@ class GroupController extends Controller
 
             DB::beginTransaction();
 
-            // Update the group's area of interest
-            $group->update([
-                'area_of_interest_id' => $request->area_of_interest_id
-            ]);
+            // Get the area IDs from request (handle both single and multiple)
+            $areaIds = [];
+            if ($request->has('area_of_interest_ids')) {
+                $areaIds = $request->area_of_interest_ids;
+            } elseif ($request->has('area_of_interest_id')) {
+                // Support legacy single area assignment
+                if ($request->area_of_interest_id) {
+                    $areaIds = [$request->area_of_interest_id];
+                }
+            }
+
+            // Sync the areas of interest (this will add/remove as needed)
+            $group->syncAreasOfInterest($areaIds);
 
             DB::commit();
 
-            $message = $request->area_of_interest_id 
-                ? 'Area of interest assigned to group successfully'
-                : 'Area of interest removed from group successfully';
+            $count = count($areaIds);
+            $message = $count > 0 
+                ? ($count == 1 ? 'Area of interest assigned to group successfully' : "{$count} areas of interest assigned to group successfully")
+                : 'All areas of interest removed from group successfully';
 
             return redirect()->back()->with('success', $message);
 
@@ -461,12 +472,12 @@ class GroupController extends Controller
             DB::rollBack();
             Log::error('Area of interest assignment failed', [
                 'group_id' => $request->group_id,
-                'area_of_interest_id' => $request->area_of_interest_id,
+                'area_of_interest_ids' => $request->area_of_interest_ids ?? null,
                 'error' => $e->getMessage()
             ]);
 
             return redirect()->back()
-                           ->with('error', 'Failed to assign area of interest: ' . $e->getMessage());
+                           ->with('error', 'Failed to assign areas of interest: ' . $e->getMessage());
         }
     }
 
@@ -735,30 +746,10 @@ class GroupController extends Controller
                 })
                 ->keyBy('roll'); // Use roll as the key
 
-            // First pass: collect all unique group names from Excel
-            $uniqueGroupNames = [];
-            foreach ($rows as $row) {
-                if (!empty($row[$columnMapping['groupCol']])) {
-                    $groupName = trim($row[$columnMapping['groupCol']]);
-                    $normalizedName = $this->normalizeGroupName($groupName);
-                    $uniqueGroupNames[$normalizedName] = true;
-                }
-            }
-
-            // Auto-create groups if they don't exist
-            $createdGroups = $this->autoCreateGroups($batch, $advisorLocalId, array_keys($uniqueGroupNames));
-            
-            // Get all groups (existing + newly created)
-            $groups = Group::where('batch_number', $batch)
-                          ->where('advisor_id', $advisorLocalId)
-                          ->get()
-                          ->keyBy('name');
-
-            // Validate and prepare assignments
-            $assignments = [];
-            $groupCounts = [];
+            // Collect students by their Excel-defined groups (for grouping purposes only)
+            $excelGroupings = [];
             $errors = [];
-
+            
             foreach ($rows as $index => $row) {
                 $rowNumber = $index + ($columnMapping['hasHeader'] ? 2 : 1);
                 
@@ -774,38 +765,21 @@ class GroupController extends Controller
                     continue; // Skip empty rows
                 }
 
-                // Normalize group name
-                $normalizedGroupName = $this->normalizeGroupName($groupName);
-
                 // Validate student exists
                 if (!$validStudents->has($studentId)) {
                     $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found or not assigned to you";
                     continue;
                 }
 
-                // Validate group exists (should exist now after auto-creation)
-                if (!$groups->has($normalizedGroupName)) {
-                    $errors[] = "Row {$rowNumber}: Group '{$normalizedGroupName}' could not be created";
-                    continue;
+                // Group students by their Excel group names (just for grouping, not for actual assignment)
+                if (!isset($excelGroupings[$groupName])) {
+                    $excelGroupings[$groupName] = [];
                 }
-
-                // Count students per group
-                if (!isset($groupCounts[$normalizedGroupName])) {
-                    $groupCounts[$normalizedGroupName] = 0;
-                }
-                $groupCounts[$normalizedGroupName]++;
-
-                // Check group capacity
-                if ($groupCounts[$normalizedGroupName] > 3) {
-                    $errors[] = "Row {$rowNumber}: Group '{$normalizedGroupName}' would exceed maximum capacity of 3 students";
-                    continue;
-                }
-
-                $assignments[] = [
-                    'group_id' => $groups[$normalizedGroupName]->id,
+                
+                $excelGroupings[$groupName][] = [
                     'student_id' => $studentId,
                     'student_name' => $validStudents[$studentId]['name'],
-                    'student_email' => null // No email field in API response
+                    'student_email' => null
                 ];
             }
 
@@ -814,36 +788,103 @@ class GroupController extends Controller
                 throw new \Exception($errorMessage);
             }
 
-            if (empty($assignments)) {
-                throw new \Exception('No valid assignments found in the Excel file. Please check the format and ensure Student IDs and Group Names are correct.');
+            if (empty($excelGroupings)) {
+                throw new \Exception('No valid student groupings found in the Excel file. Please check the format and ensure Student IDs and Group Names are correct.');
             }
 
-            // Log successful processing info
-            Log::info('Excel upload processing', [
-                'advisor_local_id' => auth()->id(),
-                'batch' => $batch,
-                'total_assignments' => count($assignments),
-                'groups_affected' => array_keys($groupCounts)
-            ]);
+            // Check that no group exceeds 3 students
+            foreach ($excelGroupings as $groupName => $students) {
+                if (count($students) > 3) {
+                    throw new \Exception("Group '{$groupName}' in Excel has " . count($students) . " students, which exceeds the maximum of 3");
+                }
+            }
 
-            // Clear existing assignments for this batch and advisor (using local ID)
+            // Get existing groups for this batch and advisor
+            $existingGroups = Group::where('batch_number', $batch)
+                                  ->where('advisor_id', $advisorLocalId)
+                                  ->orderBy('name')
+                                  ->get();
+
+            // Calculate how many groups we need
+            $totalGroupsNeeded = count($excelGroupings);
+            $existingGroupCount = $existingGroups->count();
+            
+            // Create additional groups if needed
+            $createdGroups = [];
+            if ($existingGroupCount < $totalGroupsNeeded) {
+                for ($i = $existingGroupCount + 1; $i <= $totalGroupsNeeded; $i++) {
+                    $group = Group::create([
+                        'name' => "Group {$i}",
+                        'batch_number' => $batch,
+                        'advisor_id' => $advisorLocalId,
+                        'max_students' => 3
+                    ]);
+                    $createdGroups[] = $group->name;
+                }
+            }
+
+            // Re-fetch all groups after creation
+            $allGroups = Group::where('batch_number', $batch)
+                             ->where('advisor_id', $advisorLocalId)
+                             ->orderBy('name')
+                             ->get();
+
+            // Take only the number of groups we need
+            $groupsToUse = $allGroups->take($totalGroupsNeeded);
+
+            // Create an array of group IDs and shuffle them for random assignment
+            $availableGroupIds = $groupsToUse->pluck('id')->toArray();
+            shuffle($availableGroupIds); // Randomize group assignment
+
+            // Clear existing assignments for this batch and advisor
             GroupStudent::whereHas('group', function ($query) use ($batch, $advisorLocalId) {
                 $query->where('batch_number', $batch)
                       ->where('advisor_id', $advisorLocalId);
             })->delete();
+
+            // Assign each Excel grouping to a random group
+            $assignments = [];
+            $groupIndex = 0;
+            $groupAssignmentMap = []; // Track which Excel group got which actual group
+            
+            foreach ($excelGroupings as $excelGroupName => $students) {
+                $assignedGroupId = $availableGroupIds[$groupIndex];
+                $assignedGroup = $groupsToUse->firstWhere('id', $assignedGroupId);
+                $groupAssignmentMap[$excelGroupName] = $assignedGroup->name;
+                
+                foreach ($students as $student) {
+                    $assignments[] = [
+                        'group_id' => $assignedGroupId,
+                        'student_id' => $student['student_id'],
+                        'student_name' => $student['student_name'],
+                        'student_email' => $student['student_email']
+                    ];
+                }
+                
+                $groupIndex++;
+            }
 
             // Create new assignments
             foreach ($assignments as $assignment) {
                 GroupStudent::create($assignment);
             }
 
+            // Log the random assignment mapping
+            Log::info('Random group assignment completed', [
+                'advisor_local_id' => $advisorLocalId,
+                'batch' => $batch,
+                'total_assignments' => count($assignments),
+                'group_mapping' => $groupAssignmentMap,
+                'randomized' => true
+            ]);
+
             DB::commit();
 
-            $successMessage = 'Excel file uploaded and students assigned successfully';
+            $successMessage = 'Excel file uploaded successfully. Groups have been randomly assigned for fairness.';
             if (!empty($createdGroups)) {
-                $successMessage .= '. Created new groups: ' . implode(', ', $createdGroups);
+                $successMessage .= ' Created new groups: ' . implode(', ', $createdGroups) . '.';
             }
-            $successMessage .= '. Total assignments: ' . count($assignments);
+            $successMessage .= ' Total students assigned: ' . count($assignments);
 
             return redirect()->route('advisor.groups.index', ['batch' => $batch])
                            ->with('success', $successMessage);

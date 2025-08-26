@@ -27,7 +27,7 @@ class SupervisorAssignmentController extends Controller
         $user = auth()->user();
         
         // Get groups for this advisor with optional batch filtering
-        $groupsQuery = Group::with(['areaOfInterest', 'supervisor', 'students'])
+        $groupsQuery = Group::with(['areaOfInterest', 'areasOfInterest', 'matchedAreaOfInterest', 'supervisor', 'students'])
             ->where('advisor_id', $user->id)
             ->whereHas('students'); // Only show groups that have students
             
@@ -139,9 +139,16 @@ class SupervisorAssignmentController extends Controller
                      ->firstOrFail();
 
         $supervisorName = $group->supervisor ? $group->supervisor->fullname : 'Unknown';
+        $supervisorId = $group->supervisor_id;
+
+        // Record unassignment in history
+        if ($supervisorId) {
+            \App\Models\AssignmentHistory::markUnassigned($group->id, $supervisorId);
+        }
 
         $group->update([
             'supervisor_id' => null,
+            'matched_area_of_interest_id' => null,
             'is_manual_assignment' => false,
             'assigned_at' => null,
             'assignment_priority' => null,
@@ -158,23 +165,34 @@ class SupervisorAssignmentController extends Controller
     {
         $user = auth()->user();
         
-        $mode = $request->get('mode', 'aoi');
+        // Get assignment criteria from request
+        $useAreaOfInterest = $request->get('use_aoi', false);
+        $useRanking = $request->get('use_ranking', false);
+        
+        // Determine mode based on checkboxes
+        $mode = 'none';
+        if ($useAreaOfInterest && $useRanking) {
+            $mode = 'both'; // Prioritize both AOI and ranking
+        } elseif ($useAreaOfInterest) {
+            $mode = 'aoi'; // Only AOI matching
+        } elseif ($useRanking) {
+            $mode = 'ranking'; // Only ranking priority
+        }
         
         // Get lottery eligible groups for this advisor based on mode
-        if ($mode === 'ranking') {
-            // Ignore AOI; include all groups with students, not manually assigned and unassigned
-            $eligibleGroupsQuery = Group::query()
-                ->whereNull('supervisor_id')
-                ->where('is_manual_assignment', false)
-                ->where('advisor_id', $user->id)
-                ->whereHas('students') // Only groups with students
-                ->with(['areaOfInterest']);
-        } else {
-            // Default AOI-based eligibility
-            $eligibleGroupsQuery = Group::lotteryEligible()
-                ->where('advisor_id', $user->id)
-                ->whereHas('students') // Only groups with students
-                ->with(['areaOfInterest']);
+        $eligibleGroupsQuery = Group::query()
+            ->whereNull('supervisor_id')
+            ->where('is_manual_assignment', false)
+            ->where('advisor_id', $user->id)
+            ->whereHas('students') // Only groups with students
+            ->with(['areaOfInterest', 'areasOfInterest']);
+        
+        // For AOI-only mode, require groups to have areas of interest
+        if ($mode === 'aoi') {
+            $eligibleGroupsQuery->where(function($q) {
+                $q->whereNotNull('area_of_interest_id')
+                  ->orWhereHas('areasOfInterest');
+            });
         }
             
         // Apply batch filter if provided
@@ -397,6 +415,7 @@ class SupervisorAssignmentController extends Controller
 
             $query->update([
                 'supervisor_id' => null,
+                'matched_area_of_interest_id' => null,
                 'is_manual_assignment' => false,
                 'assigned_at' => null,
                 'assignment_priority' => null,
