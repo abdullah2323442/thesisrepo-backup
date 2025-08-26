@@ -180,22 +180,23 @@ flowchart TD
 ### Combined Lottery (AOI + ULTRA-FAIR RR)
 ```mermaid
 flowchart TD
-  A[Start] --> B[Build AOI pools (no random), availability]
-  B --> C[Sort groups by numeric suffix]
-  C --> D[For each group AOI in order]
-  D --> E[Gather available supervisors for AOI]
-  E --> F{Any?}
-  F -- No --> G[Try next AOI or mark unassigned] --> M
-  F -- Yes --> H[Compute areaMin from globalCounts for this AOI]
-  H --> I[Filter to eligible: count == areaMin]
-  I --> J[Avoid consecutive if possible]
-  J --> K[Sort by rank, then name]
-  K --> L[Pick first with capacity; assign & update counts]
-  L --> M{Assigned?}
+  A[Start] --> B["Build AOI pools (no random), availability"]
+  B --> C["Sort groups by numeric suffix"]
+  C --> D["For each group AOI in order"]
+  D --> E["Gather available supervisors for AOI"]
+  E --> F{"Any?"}
+  F -- No --> G["Try next AOI or mark unassigned"] --> M
+  F -- Yes --> H["Compute areaMin from globalCounts for this AOI"]
+  H --> I["Filter to eligible: count == areaMin"]
+  I --> J["Avoid consecutive if possible"]
+  J --> K["Sort by rank, then name"]
+  K --> L["Pick first with capacity; assign & update counts"]
+  L --> M{"Assigned?"}
   M -- No --> D
-  M -- Yes --> N{More groups?}
+  M -- Yes --> N{"More groups?"}
   N -- Yes --> D
   N -- No --> O[End]
+
 ```
 
 
