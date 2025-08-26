@@ -1,268 +1,295 @@
 # Supervisor Assignment Algorithm (Production)
 
-Last Updated: 2025-08-18
+Last Updated: 2025-08-26
 
-This document describes the actual production algorithm implemented for automatically assigning supervisors to thesis groups. It now supports two lottery modes without removing any existing functionality:
+This document describes the production algorithm for automatically assigning supervisors to thesis groups. The system supports three lottery modes and enforces capacity, fairness, and transparency:
 
-- AOI-based Lottery (default): Assigns by matching Area Of Interest (AOI), fairly distributing within each AOI and prioritizing higher-ranking supervisors.
-- Ranking-based Lottery (new): Ignores AOI and fairly distributes globally across all active supervisors by ranking.
+- AOI-based Lottery (Area of Interest Only)
+- Ranking-based Lottery (Ranking Priority Only)
+- Combined Lottery (AOI + Ranking)
 
-Both modes enforce supervisor capacity and avoid immediate consecutive assignments to the same supervisor when alternatives exist.
+All modes:
+- Respect supervisor capacity limits
+- Avoid immediate consecutive assignments when alternatives exist
+- Process groups in deterministic sorted order by group number suffix (Group 1, 2, 3…)
+- Provide persistence and preview (dry-run) variants
 
 
-## 1) Super Simplified Overview and Pseudocode
+## 1) High-Level Overview and Pseudocode
 
 ### Modes
-- aoi: Area-of-Interest-aware round-robin by rank, per AOI pools
-- ranking: Global round-robin by rank, AOI ignored
+- aoi: Area-of-Interest-aware random selection (true randomness) with smart rotation
+- ranking: Global round-robin by rank priority
+- both: AOI + rank with ULTRA-FAIR area-specific round-robin and rank as tiebreaker
 
-### AOI-based Lottery (simple steps)
-1. Collect active supervisors with available slots and build AOI pools grouped by rank.
-2. Sort supervisors inside each rank bucket by current load, then name.
-3. Sort groups deterministically by group number suffix (Group 1, 2, 3...).
-4. For each eligible group with an AOI:
-   - Build cross-rank candidates for the AOI, skipping the last-picked supervisor (for that AOI) and those without capacity.
-   - Pick the candidate with the lowest per-run AOI count, then highest rank (lowest rank number), then closest to the bucket cursor.
-   - Decrement capacity, advance that bucket's cursor, track last pick and per-run counts.
-   - Persist supervisor_id and assignment_priority (= rank).
-5. Groups with no AOI or no matching capacity remain unassigned.
+---
 
-### AOI-based Lottery (minimal pseudocode)
+### AOI-based Lottery (Area of Interest Only)
+
+Behavior
+- Match by Area of Interest
+- Select randomly from all available matching supervisors across ranks
+- Exclude the last supervisor assigned to that group (if alternatives exist) to avoid repetition
+- Different results on every run by design
+
+Minimal Pseudocode
 ```
-pools, areaHasSup, avail = buildPoolsByAOI(activeSupWithSlots)
-lastPickPerAOI = {}
-aoiRunCounts = {}
+pools, areaHasSup, avail = buildAOIPoolsWithRandomization(allAOIFrom(groups))
+assignmentCounts = {}
+
 for group in sortByNumericSuffix(groups):
-  if group.aoi is null:
-    markUnassigned()
-    continue
-  candidates = []
-  for rank in pools[aoi]:
-    for sup in bucketFromCursor(pools[aoi][rank]):
-      if sup == lastPickPerAOI[aoi] or avail[sup] == 0: continue
-      candidates.add({sup, rank, order, run=aoiRunCounts[aoi][sup]})
-  if candidates not empty:
-    choice = min(candidates, key=(run, rank, order))
-  else:
-    choice = tryLastPickedIfHasCapacity()
-  if choice is null:
-    markUnassigned(noMatches = !areaHasSup[aoi])
-    continue
-  assign(group, choice.sup)
-  avail[choice.sup]--
-  advanceCursor(pools[aoi][choice.rank], choice.idx)
-  aoiRunCounts[aoi][choice.sup]++
-  lastPickPerAOI[aoi] = choice.sup
+  areaIds = group.areaIds()
+  if areaIds is empty: markUnassigned(no_area_of_interest); continue
+
+  assigned = false
+  for aoi in areaIds:        # primary first, then fallbacks
+    candidates = allAvailableCandidatesRandomized(pools[aoi], avail)
+    candidates = excludeLastSupervisorForGroupIfPossible(candidates, group)
+    if candidates is empty: continue
+
+    pick = randomChoice(candidates)
+    assign(group, pick.supervisor, aoi, rank=pick.rank)
+    avail[pick.id]--
+    assignmentCounts[pick.id] = assignmentCounts.get(pick.id, 0) + 1
+    recordHistory(group.id, pick.id, aoi, method='lottery_aoi')
+    assigned = true
+    break
+
+  if not assigned:
+    markUnassigned(reason = areaHasSupForAny(areaIds)? 'no_available_slots':'no_matches')
 ```
 
-### Ranking-based Lottery (simple steps)
-1. Collect all active supervisors with available slots into a single global list.
-2. Sort the list by rank (ascending), then current load, then name.
-3. Keep a global round-robin cursor; avoid immediate consecutive picks if alternatives exist.
-4. Iterate groups (sorted by group number suffix) and pick the next supervisor with available capacity.
-5. Decrement capacity, advance cursor, persist assignment_priority (= rank). If none available, mark unassigned.
+---
 
-### Ranking-based Lottery (minimal pseudocode)
+### Ranking-based Lottery (Ranking Priority Only)
+
+Behavior
+- Ignore AOI
+- Proper round-robin by rank: nobody receives a 2nd group until everyone received 1
+- Deterministic outcome given the same inputs
+
+Minimal Pseudocode
 ```
-list = sortBy(rank, load, name)(activeSupWithSlots)
+list = buildGlobalSupervisorListSortedBy(rank asc, name asc) with available_slots>0
+currentRound = 0
 cursor = 0
-lastPick = null
+
 for group in sortByNumericSuffix(groups):
-  pick = null
-  for i in 0..len(list)-1:
-    idx = (cursor + i) % len(list)
-    if avail[list[idx]] > 0 and (list[idx] != lastPick or len(list) == 1):
-      pick = idx; break
-  if pick is null:
-    # allow consecutive if that’s all we have
-    for i in 0..len(list)-1:
-      idx = (cursor + i) % len(list)
-      if avail[list[idx]] > 0: pick = idx; break
-  if pick is null: markUnassigned(); continue
-  assign(group, list[pick])
-  avail[list[pick]]--
-  lastPick = list[pick]
-  cursor = (pick + 1) % len(list)
+  assigned = false
+  attempts = 0
+  while not assigned and attempts < len(list):
+    s = list[cursor]
+    if s.assigned_count <= currentRound and s.assigned_count < s.available_slots:
+      assign(group, s)
+      s.assigned_count++
+      assigned = true
+    cursor = (cursor+1) % len(list)
+    if cursor==0: currentRound++
+    attempts++
+  if not assigned: markUnassigned('no_available_slots')
+```
+
+---
+
+### Combined Lottery (AOI + Ranking)
+
+Behavior
+- Work within the group’s AOI(s)
+- ULTRA-FAIR within each AOI: no supervisor in that AOI gets 2 before everyone in that AOI gets 1
+- Rank priority used only as a tiebreaker when assignment counts are equal
+- Avoid consecutive assignments to the same supervisor when alternatives exist
+
+Minimal Pseudocode
+```
+# Build non-random AOI pools (stable ordering)
+pools, areaHasSup, avail = buildAOIPoolsWithoutRandomization(allAOI)
+
+# Global counters but fairness is evaluated per AOI
+globalCounts = {}              # total assignments per supervisor this run
+lastAssignedPerArea = {}       # avoid consecutive within an AOI
+
+for group in sortByNumericSuffix(groups):
+  assigned = false
+  for aoi in group.areaIds():
+    areaSupervisors = allAvailableSupervisorsForAOI(pools[aoi], avail)
+    if areaSupervisors is empty: continue
+
+    # Area-specific fairness: find minimum count within this AOI
+    areaMin = min(globalCounts.get(s.id,0) for s in areaSupervisors)
+
+    # Eligible have the minimum count only
+    eligible = [s for s in areaSupervisors if globalCounts.get(s.id,0) == areaMin]
+
+    # Avoid consecutive if possible
+    lastId = lastAssignedPerArea.get(aoi)
+    nonConsecutive = [s for s in eligible if s.id != lastId]
+    candidates = nonConsecutive if nonConsecutive else eligible
+
+    # Tie-breaker: rank asc, then name asc
+    candidates.sort(key=lambda s: (s.rank_priority, s.name))
+
+    pick = firstWithCapacity(candidates, avail)
+    if pick is None: continue
+
+    assign(group, pick, aoi, rank=pick.rank_priority)
+    avail[pick.id] -= 1
+    globalCounts[pick.id] = globalCounts.get(pick.id,0)+1
+    lastAssignedPerArea[aoi] = pick.id
+    assigned = true
+    break
+
+  if not assigned:
+    markUnassigned(reason = areaHasSupForAny(group.areaIds())? 'no_available_slots':'no_matches')
 ```
 
 
 ## 2) Flowcharts
 
-### AOI-based Lottery
+### AOI-based Lottery (Randomized)
 ```mermaid
 flowchart TD
-  A["Start"] --> B["Load groups & supervisors"]
-  B --> C["Build AOI pools by rank & check availability"]
-  C --> D["Sort groups by numeric suffix"]
-  D --> E{"Next group has AOI?"}
-  E -- No --> F["Unassigned (no AOI)"] --> J
-  E -- Yes --> G["Select supervisor"]
-  
-  G --> H{"Supervisor available?"}
-  H -- No --> I["Unassigned (no match / no capacity)"] --> J
-  H -- Yes --> K["Assign supervisor & update capacity"]
-  
-  K --> J{"More groups?"}
+  A[Start] --> B[Load groups & supervisors]
+  B --> C[Collect AOIs and build pools with randomization]
+  C --> D[Sort groups by numeric suffix]
+  D --> E{Group has AOIs?}
+  E -- No --> F[Unassigned: no_area_of_interest] --> J
+  E -- Yes --> G[Select random supervisor across ranks; exclude last if possible]
+  G --> H{Candidate has capacity?}
+  H -- No --> I[Try next AOI or mark unassigned] --> J
+  H -- Yes --> K[Assign & record history]
+  K --> J{More groups?}
   J -- Yes --> E
-  J -- No --> L["End"]
-
-
-
+  J -- No --> L[End]
 ```
 
-### Ranking-based Lottery
+### Ranking-based Lottery (Round-Robin)
 ```mermaid
 flowchart TD
-  A["Start"] --> B["Load eligible groups and active supervisors"]
-  B --> C["Build global list; sort by rank, load, name"]
-  C --> D["Initialize global cursor and lastPick"]
-  D --> E["Sort groups by numeric suffix"]
-  E --> F["For each group, find next supervisor with capacity; avoid consecutive if possible"]
-  F --> G{"Found pick?"}
-  G -- No --> H["Mark Unassigned (no_available_slots)"] --> J
-  G -- Yes --> I["Assign; decrement capacity; advance cursor; update lastPick"]
-  I --> J{"More groups?"}
-  J -- Yes --> F
-  J -- No --> K["End"]
+  A[Start] --> B[Build global supervisor list sorted by rank, name]
+  B --> C[Initialize cursor and round]
+  C --> D[Sort groups by numeric suffix]
+  D --> E[For each group, pick next RR candidate with capacity]
+  E --> F{Found candidate?}
+  F -- No --> G[Unassigned: no_available_slots] --> I
+  F -- Yes --> H[Assign, increment counts, advance cursor/round]
+  H --> I{More groups?}
+  I -- Yes --> E
+  I -- No --> J[End]
+```
 
+### Combined Lottery (AOI + ULTRA-FAIR RR)
+```mermaid
+flowchart TD
+  A[Start] --> B[Build AOI pools (no random), availability]
+  B --> C[Sort groups by numeric suffix]
+  C --> D[For each group AOI in order]
+  D --> E[Gather available supervisors for AOI]
+  E --> F{Any?}
+  F -- No --> G[Try next AOI or mark unassigned] --> M
+  F -- Yes --> H[Compute areaMin from globalCounts for this AOI]
+  H --> I[Filter to eligible: count == areaMin]
+  I --> J[Avoid consecutive if possible]
+  J --> K[Sort by rank, then name]
+  K --> L[Pick first with capacity; assign & update counts]
+  L --> M{Assigned?}
+  M -- No --> D
+  M -- Yes --> N{More groups?}
+  N -- Yes --> D
+  N -- No --> O[End]
 ```
 
 
-## 3) Professional Detailed Specification
+## 3) Detailed Specification (Implementation Mapping)
 
-### 3.1 Scope and Modes
-- AOI-based Lottery (default): Matches groups to supervisors sharing the group’s Area of Interest.
-  - Fair per-AOI distribution using round-robin cursors and low-watermark balancing.
-  - Prioritizes higher academic rank (lower numeric rank_priority value means higher rank).
-- Ranking-based Lottery (new): Ignores AOI; assigns globally by rank with round-robin fairness.
-  - Ensures distribution reaches even the lowest-ranked supervisors when capacity exists.
+### 3.1 Service Entry Points
+- Service: `App\Services\SupervisorAssignmentService`
+  - `runLotteryAssignment(Collection $groups, string $mode = 'aoi')`
+    - `mode='aoi'` → AOI-based algorithm with true randomization
+    - `mode='ranking'` → global ranking round-robin
+    - `mode='both'` → AOI + rank with area-specific ultra-fair round-robin
+  - `previewLotteryAssignment(Collection $groups, string $mode = 'aoi')`
+    - Simulates assignments without persistence
 
-Mode selection in requests/UI:
-- mode=aoi (default)
-- mode=ranking
-
-### 3.2 Inputs and Outputs
-- Inputs (per run):
-  - groups: collection of lottery-eligible groups for an advisor
-    - AOI mode: Group::lotteryEligible() (no supervisor, not manual, has AOI, has students)
-    - Ranking mode: whereNull(supervisor_id), is_manual_assignment=false, has students; AOI may be null
-  - supervisors: all active supervisors and their areas/capacities
-- Outputs:
-  - Persistent run: updates group.supervisor_id, assigned_at, is_manual_assignment=false, assignment_priority=selected rank
-  - Preview: non-persistent plan with assignments/unassigned lists and summary stats
-  - Method tags:
-    - AOI mode: method = "aoi_round_robin_low_watermark"
-    - Ranking mode: method = "global_ranking_round_robin"
+### 3.2 Core Methods
+- AOI Mode
+  - `runAOIAssignment(...)`
+  - `buildAOIPoolsWithRandomization(...)`
+  - `selectRandomSupervisor(...)` (excludes the last assigned supervisor to the same group if alternatives exist)
+- Ranking Mode
+  - `runRankingAssignment(...)` (proper round-robin implementation)
+- Combined Mode
+  - `runCombinedAssignment(...)`
+  - `buildAOIPoolsWithoutRandomization(...)`
+  - `selectSupervisorWithIntelligentRoundRobin(...)` (ABSOLUTE fairness within area; rank as tiebreaker)
 
 ### 3.3 Data Structures
-- availability: map[supervisorId] -> remaining slots (computed as thesis_limit - assigned_theses_count)
-- AOI pools: pools[aoiId][rank] = {
-    cursor: int,
-    supervisors: [ { id, model }, ... ]  // sorted by current load, then name
-  }
-- AOI state: lastPickPerAOI[aoiId] = supervisorId; aoiRunCounts[aoiId][supervisorId] = count used this run
-- Global ranking list (ranking mode): list of { id, model, rank } sorted by (rank asc, load asc, name asc)
+- `availability`: map[supervisorId] → remaining slots
+- `pools[aoiId][rank] = { supervisors: [{id, model}, ...], cursor? }`
+- `globalAssignmentCounts[supervisorId]` (combined mode fairness tracking)
+- `lastAssignedPerArea[aoiId]` (avoid consecutive picks per AOI)
 
 ### 3.4 Ordering and Determinism
-- Groups are processed in a deterministic order by extracting the first numeric suffix from the group name (e.g., "Group 7"). If absent, those groups fall to the end.
-- Within AOI rank buckets, supervisors are initially ordered by current assigned load, then name, for a stable and fair start.
+- Groups are processed by numeric suffix extracted from the group name; missing suffix groups sort last.
+- AOI mode includes randomness (non-deterministic). Ranking and Combined modes are deterministic given the same input state.
 
-### 3.5 AOI-based Selection Details
-- Candidate construction across all ranks in the AOI:
-  - Skip last-picked supervisor within the same AOI if there’s any alternative to prevent consecutive picks.
-  - Skip supervisors without remaining capacity.
-  - Track per-run AOI usage counts (aoiRunCounts) to balance usage in this run.
-- Candidate prioritization:
-  - 1) Minimum aoiRunCounts[aoi][sup]
-  - 2) Best rank (rank_priority ascending: 1 best)
-  - 3) Closest to the bucket’s cursor (rotation fairness)
-- Post-pick updates:
-  - Decrement availability
-  - Advance the chosen bucket’s cursor to just after the chosen supervisor
-  - Update aoiRunCounts and lastPickPerAOI
-- Fallback:
-  - If no alternatives exist across ranks but the last-picked supervisor still has capacity, allow consecutive selection.
+### 3.5 Capacity and Concurrency
+- Capacity checked per pick using `available_slots` (computed as `thesis_limit - assigned_theses_count`).
+- Persistent runs are wrapped in DB transactions at the controller layer to avoid oversubscription under concurrency.
 
-### 3.6 Ranking-based Selection Details
-- Build a single global list of all active supervisors with available capacity, sorted by:
-  - rank_priority asc (1 best)
-  - assigned load asc
-  - fullname asc (case-insensitive)
-- Maintain one global cursor and lastPick variable.
-- For each group:
-  - Round-robin search from cursor to find a supervisor with capacity. Avoid choosing the same supervisor as lastPick if there is any alternative.
-  - If no alternative exists but some capacity exists, allow choosing lastPick again.
-  - Update availability, lastPick, and advance the cursor to after the chosen supervisor.
+### 3.6 Edge Cases
+- Group without AOI in AOI/Combined modes → `no_area_of_interest`/`no_matches` as applicable
+- AOI has supervisors but all at capacity → `no_available_slots`
+- Only a single supervisor available in AOI → consecutive allowed as there is no alternative
+- Multi-AOI groups: try in defined order (primary first, then fallbacks)
 
-### 3.7 Capacity and Concurrency
-- Capacity is enforced per pick by consulting the availability map.
-- The controller wraps the persistent run in a DB transaction. Rows are updated atomically to avoid concurrent oversubscription.
-
-### 3.8 Edge Cases and Handling
-- Group without AOI (AOI mode): marked unassigned with reason no_area_of_interest.
-- AOI has no matching supervisors: marked unassigned with reason no_matches.
-- All supervisors at capacity (either mode): unassigned with reason no_available_slots.
-- Single supervisor available: algorithm may assign consecutively if no other alternative exists.
-
-### 3.9 Complexity Considerations
-- Let G be the number of eligible groups and S the number of active supervisors with capacity.
-- Ranking mode: worst-case per group scan can touch up to O(S) in round-robin search (typically far less); total O(G*S) worst-case.
-- AOI mode: per group, we scan the AOI’s rank buckets. If R is total supervisors matching that AOI with capacity, selection is O(R), typically small. Building pools is O(S log S) due to sorting inside buckets.
-- In practice, both modes are efficient for typical department sizes and scale linearly in G with small constants.
-
-### 3.10 Implementation Notes (Code Mapping)
-- Service: App\Services\SupervisorAssignmentService
-  - runLotteryAssignment(Collection $groups, string $mode = 'aoi')
-    - mode === 'aoi' → AOI algorithm
-    - mode === 'ranking' → global ranking algorithm
-  - previewLotteryAssignment(Collection $groups, string $mode = 'aoi')
-    - Same logic as run, but simulated without persistence
-  - Key helpers:
-    - buildAOIPools(Collection $areaIds)
-    - selectSupervisor(...) for AOI picking
-    - runRankingAssignment(...), previewRankingAssignment(...)
-- Controller: App\Http\Controllers\Advisor\SupervisorAssignmentController
-  - runLottery(Request): passes mode, wraps in transaction
-  - previewLottery(Request): passes mode, returns JSON
-- UI: Advisor page provides a "Lottery Mode" selector and supports preview/run for both modes.
-
-### 3.11 Result Annotations
-- assignment_priority is set to the numeric rank_priority of the selected supervisor.
-- method annotation on results/previews indicates which algorithm ran:
-  - "aoi_round_robin_low_watermark"
-  - "global_ranking_round_robin"
-
-### 3.12 Testing Guidance
-- Unit tests:
-  - AOI pools contain only supervisors matching that AOI and with availability
-  - AOI selection avoids immediate consecutive picks when alternatives exist
-  - Global ranking selection reaches lower-ranked supervisors when higher ranks have limited capacity
-  - Capacity is never exceeded
-- Integration tests:
-  - Preview vs Run produce consistent plans when no external changes occur during the transaction
-  - Batch filtering limits affected groups as expected
-- Edge tests:
-  - No AOI on some groups (AOI mode) → unassigned with correct reasons
-  - Only one supervisor available → allowed consecutive picks
+### 3.7 Result Fields (Persistence)
+- `groups.supervisor_id` set to assigned supervisor
+- `groups.matched_area_of_interest_id` set in AOI/Combined to the matched AOI id
+- `groups.is_manual_assignment = false`, `groups.assigned_at = now()`
+- `groups.assignment_priority = rank_priority of supervisor`
+- Assignment history recorded for AOI assignments (`AssignmentHistory::recordAssignment(...)`)
 
 
-## 4) API-Level Behavior Summary
+## 4) Testing Guidance (What is Covered)
 
-- Preview (GET /advisor/supervisor-assignment/preview-lottery):
-  - Query params: batch (optional), mode in {aoi, ranking}
-  - Returns planned assignments, unassigned list, and stats
-- Run (POST /advisor/supervisor-assignment/run-lottery):
-  - Form fields: batch (optional), mode in {aoi, ranking}
-  - Persists assignments as per selected mode
+Unit/Feature tests should validate:
+- AOI Mode
+  - Randomization produces different patterns over multiple runs
+  - Last assigned supervisor exclusion works when alternatives exist
+  - Multi-AOI fallback selection is respected
+- Ranking Mode
+  - Proper round-robin: nobody gets a 2nd assignment before everyone gets 1
+  - Rank order is respected when tie-breaking
+- Combined Mode
+  - Area-specific fairness: within an AOI, all get 1 before anyone gets 2
+  - Seniority used only as tiebreaker when counts are equal
+  - Avoid consecutive assignments to the same AOI supervisor when alternatives exist
+- Capacity
+  - No supervisor exceeds their capacity across all modes
+- Preview vs Run
+  - Preview does not persist changes but produces structurally valid plans
+
+Reference implementation tests:
+- `tests/Feature/Advisor/IntelligentSupervisorAssignmentTest.php`
 
 
-## 5) Glossary
-- AOI: Area Of Interest associated with a group and a supervisor’s expertise areas
-- Rank priority: Numeric value indicating academic rank; lower numbers mean higher rank
-- Cursor: Rotating index used to ensure round-robin fairness within a rank bucket (AOI mode) or globally (ranking mode)
-- Low-watermark balancing: Prefer supervisors with the least picks in the current run within the AOI to spread assignments evenly
+## 5) API-Level Behavior Summary
 
+- Preview (GET): `/advisor/supervisor-assignment/preview-lottery`
+  - Query: `batch` (optional), `mode in {aoi, ranking, both}`
+  - Returns: planned assignments, unassigned list, and stats
+- Run (POST): `/advisor/supervisor-assignment/run-lottery`
+  - Form: `batch` (optional), `mode in {aoi, ranking, both}`
+  - Persists assignments based on mode
+
+
+## 6) Glossary
+- AOI: Area Of Interest
+- Rank priority: Numeric value; lower means higher academic rank
+- Round-robin: Distribution ensuring equal allocation before repetition
+- Ultra-fair (area-specific): No supervisor gets a 2nd assignment within an AOI until everyone in that AOI gets 1
+- Smart rotation: Avoid consecutive assignments to the same supervisor when alternatives exist
 
 ---
 
-Historical note: Earlier design docs referenced a generic Hungarian algorithm and multi-factor scoring. The current production implementation is a deterministic, capacity-aware lottery using ranked round-robin selection tailored to the thesis assignment domain. This document reflects the implemented behavior.
+Historical note: Earlier design docs referenced a generic Hungarian algorithm and multi-factor scoring. The current production implementation is a capacity-aware lottery using ranked round-robin selection tailored to the thesis assignment domain. This document reflects the implemented behavior including the new ultra-fair combined mode.
