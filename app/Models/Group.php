@@ -19,7 +19,10 @@ class Group extends Model
         'supervisor_id',
         'is_manual_assignment',
         'assignment_priority',
-        'assigned_at'
+        'assigned_at',
+        'created_by_type',
+        'created_by_admin_id',
+        'advisor_auto_detected'
     ];
 
     protected $casts = [
@@ -30,7 +33,9 @@ class Group extends Model
         'area_of_interest_id' => 'integer',
         'is_manual_assignment' => 'boolean',
         'assignment_priority' => 'integer',
-        'assigned_at' => 'datetime'
+        'assigned_at' => 'datetime',
+        'created_by_admin_id' => 'integer',
+        'advisor_auto_detected' => 'boolean'
     ];
 
     /**
@@ -81,6 +86,14 @@ class Group extends Model
     public function matchedAreaOfInterest(): BelongsTo
     {
         return $this->belongsTo(AreaOfInterest::class, 'matched_area_of_interest_id');
+    }
+
+    /**
+     * Get the admin who created this group (if created by admin)
+     */
+    public function createdByAdmin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_admin_id');
     }
 
     /**
@@ -223,5 +236,65 @@ class Group extends Model
         // For SQLite compatibility, we'll do the sorting in PHP instead
         // This scope is kept for potential future use but sorting is handled in the controller
         return $query->orderBy('name');
+    }
+
+    /**
+     * Scope to get groups created by admin
+     */
+    public function scopeCreatedByAdmin($query)
+    {
+        return $query->where('created_by_type', 'admin');
+    }
+
+    /**
+     * Scope to get groups created by advisor
+     */
+    public function scopeCreatedByAdvisor($query)
+    {
+        return $query->where('created_by_type', 'advisor');
+    }
+
+    /**
+     * Check if group was created by admin
+     */
+    public function isCreatedByAdmin(): bool
+    {
+        return $this->created_by_type === 'admin';
+    }
+
+    /**
+     * Check if advisor was auto-detected from student API
+     */
+    public function isAdvisorAutoDetected(): bool
+    {
+        return $this->advisor_auto_detected === true;
+    }
+
+    /**
+     * Get the creation source text
+     */
+    public function getCreationSourceAttribute(): string
+    {
+        if ($this->created_by_type === 'admin') {
+            $adminName = $this->createdByAdmin ? $this->createdByAdmin->name : 'Unknown Admin';
+            return "Created by Admin: {$adminName}";
+        }
+        return 'Created by Advisor';
+    }
+
+    /**
+     * Get advisor assignment status text
+     */
+    public function getAdvisorStatusAttribute(): string
+    {
+        if (!$this->advisor_id) {
+            return 'No advisor assigned';
+        }
+        
+        if ($this->advisor_auto_detected) {
+            return 'Advisor auto-detected from student';
+        }
+        
+        return 'Advisor manually assigned';
     }
 }

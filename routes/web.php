@@ -79,6 +79,15 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/batches/activate-all', [BatchController::class, 'activateAll'])->name('admin.batches.activate-all');
     Route::post('/admin/batches/deactivate-all', [BatchController::class, 'deactivateAll'])->name('admin.batches.deactivate-all');
     
+    // Group Management
+    Route::get('/admin/groups', [\App\Http\Controllers\Admin\GroupManagementController::class, 'index'])->name('admin.groups.index');
+    Route::post('/admin/groups/assign-student', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignStudent'])->name('admin.groups.assign-student');
+    Route::post('/admin/groups/remove-student', [\App\Http\Controllers\Admin\GroupManagementController::class, 'removeStudent'])->name('admin.groups.remove-student');
+    Route::post('/admin/groups/assign-area-of-interest', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignAreaOfInterest'])->name('admin.groups.assign-area-of-interest');
+    Route::post('/admin/groups/assign-supervisor', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignSupervisor'])->name('admin.groups.assign-supervisor');
+    Route::post('/admin/groups/unassign-supervisor', [\App\Http\Controllers\Admin\GroupManagementController::class, 'unassignSupervisor'])->name('admin.groups.unassign-supervisor');
+    Route::get('/admin/groups/available-supervisors', [\App\Http\Controllers\Admin\GroupManagementController::class, 'getAvailableSupervisors'])->name('admin.groups.available-supervisors');
+Route::post('/admin/groups/create', [\App\Http\Controllers\Admin\GroupManagementController::class, 'createGroup'])->name('admin.groups.create');
     // Performance Monitoring
     Route::get('/admin/performance', [\App\Http\Controllers\Admin\PerformanceController::class, 'index'])->name('admin.performance.index');
     Route::get('/admin/performance/metrics', [\App\Http\Controllers\Admin\PerformanceController::class, 'metrics'])->name('admin.performance.metrics');
@@ -147,3 +156,6 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+    // Group deletion routes
+    Route::delete('/admin/groups/{group}', [\App\Http\Controllers\Admin\GroupManagementController::class, 'deleteGroup'])->name('admin.groups.delete');
+    Route::post('/admin/groups/bulk-delete', [\App\Http\Controllers\Admin\GroupManagementController::class, 'bulkDeleteGroups'])->name('admin.groups.bulk-delete');

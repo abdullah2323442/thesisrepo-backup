@@ -1,0 +1,48 @@
+Files deleted on 2025-08-27 17:39:50:
+
+Test Scripts:
+- check_current_advisor.php
+- create_missing_advisors.php
+- createGroup_method.php
+- debug_admin_groups.php
+- debug_advisor_detection.php
+- enhance_advisor_detection.php
+- final_advisor_test.php
+- fix_admin_group.php
+- fix_admin_view_js.php
+- fix_advisor_api_id.php
+- fix_advisor_detection_syntax.php
+- fix_delete_button.php
+- fix_delete_method.php
+- fix_js_syntax.php
+- fix_routes.php
+- fix_sqlite_regexp.php
+- test_admin_groups_route.php
+- test_admin_groups.php
+- test_advisor_autodetection.php
+- test_advisor_groups.php
+- test_advisor_view.php
+- test_complete_delete.php
+- test_delete_route.php
+- test_group_deletion.php
+- test_route.php
+
+Temporary Files:
+- add_delete_routes.txt
+- temp_methods.txt
+- advisor_groups_view_fix.blade.php
+
+Duplicate View Files:
+- resources/views/admin/groups/enhanced_create_form.blade.php
+- resources/views/admin/groups/index_fixed.blade.php
+- resources/views/admin/groups/index_updated.blade.php
+- resources/views/admin/groups/index_with_delete.blade.php
+- resources/views/advisor/groups/index_fixed.blade.php
+- resources/views/advisor/groups/test.blade.php
+
+Duplicate Controller Files:
+- app/Http/Controllers/Admin/GroupManagementController_with_delete.php
+- app/Http/Controllers/Advisor/GroupController_backup.php
+- app/Http/Controllers/Advisor/GroupController_complete.php
+- app/Http/Controllers/Advisor/GroupController_updated.php
+

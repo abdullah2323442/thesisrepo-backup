@@ -59,7 +59,11 @@
             <div class="flex justify-between items-center mb-4">
                 <div>
                     <h2 class="text-lg font-semibold text-gray-900">Batch {{ $selectedBatch }} Groups</h2>
-                    <p class="text-sm text-gray-600">Total Students: {{ count($students) }} | Groups: {{ count($groups) }}</p>
+                    <p class="text-sm text-gray-600">Total Students: {{ count($students) }} | Your Groups: {{ count($groups) }}
+                        @if(isset($adminCreatedGroups) && count($adminCreatedGroups) > 0)
+                            | Admin Groups: {{ count($adminCreatedGroups) }}
+                        @endif
+                    </p>
                 </div>
                 
                 <div class="flex space-x-3">
@@ -99,8 +103,8 @@
                             <input type="hidden" name="batch" value="{{ $selectedBatch }}">
                             <button type="submit" 
                                     class="bg-red-800 text-white px-4 py-2 rounded-md hover:bg-red-900 transition-colors"
-                                    onclick="return confirm('This will permanently delete ALL groups and student assignments in this batch. This action cannot be undone. Are you sure?')">
-                                Remove All Groups
+                                    onclick="return confirm('This will permanently delete ALL your groups and student assignments in this batch. This action cannot be undone. Are you sure?')">
+                                Remove All Your Groups
                             </button>
                         </form>
                     @endif
@@ -176,10 +180,11 @@
         </div>
 
         @if(count($groups) > 0)
-            <!-- Groups Table -->
+            <!-- Your Groups Table -->
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Groups Overview</h3>
+                    <h3 class="text-lg font-medium text-gray-900">Your Groups</h3>
+                    <p class="text-sm text-gray-600">Groups you created and manage</p>
                 </div>
                 
                 <div class="overflow-x-auto">
@@ -272,23 +277,230 @@
                     </table>
                 </div>
             </div>
+        @endif
 
-            <!-- Unassigned Students -->
-            @if(count($unassignedStudents) > 0)
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Unassigned Students ({{ count($unassignedStudents) }})</h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        @foreach($unassignedStudents as $student)
-                            <div class="bg-gray-50 p-4 rounded-lg">
-                                <div class="text-sm font-medium text-gray-900">{{ $student['name'] }}</div>
-                                <div class="text-xs text-gray-500">Roll: {{ $student['roll'] }}</div>
-                                <div class="text-xs text-gray-500">Advisor: {{ $student['advisor'] }}</div>
+        <!-- Admin-Created Groups for This Advisor -->
+        @if(isset($adminCreatedGroups) && count($adminCreatedGroups) > 0)
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                                <i class="fas fa-user-shield text-purple-600 mr-2"></i>
+                                Additional Groups Added by Admin
+                            </h3>
+                            <p class="text-sm text-gray-600">Groups created by administrators and assigned to you - enhanced capacity (up to 4 students)</p>
+                        </div>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                            {{ count($adminCreatedGroups) }} Admin Groups
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="space-y-4">
+                        @foreach($adminCreatedGroups as $group)
+                            <div class="border border-purple-200 rounded-lg p-4 bg-purple-25">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-3 mb-2">
+                                            <h4 class="text-lg font-semibold text-gray-900">{{ $group->name }}</h4>
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                <i class="fas fa-user-shield mr-1"></i>Admin Created
+                                            </span>
+                                            @if($group->isAdvisorAutoDetected())
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    <i class="fas fa-magic mr-1"></i>Auto-detected
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                            <div>
+                                                <span class="font-medium text-gray-700">Students:</span>
+                                                <span class="text-gray-900">{{ $group->students->count() }}/{{ $group->max_students }}</span>
+                                                @if($group->students->count() > 0)
+                                                    <div class="mt-1 text-xs text-gray-600">
+                                                        @foreach($group->students as $student)
+                                                            {{ $student->student_name }}@if(!$loop->last), @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <div>
+                                                <span class="font-medium text-gray-700">Area of Interest:</span>
+                                                <span class="text-gray-900">
+                                                    @if($group->areasOfInterest->count() > 0)
+                                                        @foreach($group->areasOfInterest as $area)
+                                                            {{ $area->name }}@if(!$loop->last), @endif
+                                                        @endforeach
+                                                    @elseif($group->areaOfInterest)
+                                                        {{ $group->areaOfInterest->name }}
+                                                    @else
+                                                        <span class="text-gray-500 italic">Not assigned</span>
+                                                    @endif
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span class="font-medium text-gray-700">Supervisor:</span>
+                                                <span class="text-gray-900">
+                                                    @if($group->supervisor)
+                                                        {{ $group->supervisor->fullname }}
+                                                    @else
+                                                        <span class="text-gray-500 italic">Not assigned</span>
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 text-xs text-gray-500">
+                                            Created by {{ $group->createdByAdmin ? $group->createdByAdmin->name : 'Unknown Admin' }} • {{ $group->created_at->diffForHumans() }}
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            @if($group->supervisor && ($group->areasOfInterest->count() > 0 || $group->areaOfInterest) && $group->students->count() > 0)
+                                                bg-green-100 text-green-800
+                                            @elseif($group->students->count() > 0 && ($group->areasOfInterest->count() > 0 || $group->areaOfInterest))
+                                                bg-yellow-100 text-yellow-800
+                                            @elseif($group->students->count() > 0)
+                                                bg-blue-100 text-blue-800
+                                            @else
+                                                bg-gray-100 text-gray-800
+                                            @endif">
+                                            @if($group->supervisor && ($group->areasOfInterest->count() > 0 || $group->areaOfInterest) && $group->students->count() > 0)
+                                                <i class="fas fa-check-circle mr-1"></i>Complete
+                                            @elseif($group->students->count() > 0 && ($group->areasOfInterest->count() > 0 || $group->areaOfInterest))
+                                                <i class="fas fa-clock mr-1"></i>Pending Supervisor
+                                            @elseif($group->students->count() > 0)
+                                                <i class="fas fa-users mr-1"></i>Has Students
+                                            @else
+                                                <i class="fas fa-circle mr-1"></i>Empty
+                                            @endif
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         @endforeach
                     </div>
+                    <div class="mt-6 p-4 bg-purple-50 rounded-lg">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-purple-600 mt-0.5"></i>
+                            </div>
+                            <div class="text-sm text-purple-700">
+                                <p class="font-medium mb-1">About Admin-Created Groups:</p>
+                                <ul class="space-y-1 text-xs">
+                                    <li>• Created by administrators and assigned to you automatically</li>
+                                    <li>• Enhanced capacity: Can hold up to 4 students (vs. 3 for your groups)</li>
+                                    <li>• Read-only: Only administrators can modify these groups</li>
+                                    <li>• Fully integrated: Participate in supervisor assignment and thesis management</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            @endif
+            </div>
+        @endif
+
+        <!-- Read-only Groups from Other Advisors -->
+        @if(isset($readonlyGroups) && count($readonlyGroups) > 0)
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-yellow-50">
+                    <h3 class="text-lg font-medium text-gray-900">Other Groups in This Batch (Read-only)</h3>
+                    <p class="text-sm text-gray-600">Groups managed by other advisors - you can view but not edit</p>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Advisor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area of Interest</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($readonlyGroups as $group)
+                                <tr class="bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-700">{{ $group->name }}</div>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Read-only
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-700">
+                                            {{ $group->advisor ? $group->advisor->name : 'Admin assigned' }}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="space-y-1">
+                                            @forelse($group->students as $student)
+                                                <div class="bg-gray-100 px-3 py-2 rounded">
+                                                    <div class="text-sm font-medium text-gray-700">{{ $student->student_name }}</div>
+                                                    <div class="text-xs text-gray-500">Roll: {{ $student->student_id }}</div>
+                                                </div>
+                                            @empty
+                                                <div class="text-sm text-gray-500 italic">No students assigned</div>
+                                            @endforelse
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-700">
+                                            @if($group->areasOfInterest->count() > 0)
+                                                <div class="flex flex-wrap gap-1">
+                                                    @foreach($group->areasOfInterest as $area)
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                            {{ $area->name }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @elseif($group->areaOfInterest)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                    {{ $group->areaOfInterest->name }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400 italic">Not assigned</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-700">
+                                            {{ $group->students->count() }}/{{ $group->max_students }}
+                                            @if($group->isFull())
+                                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    Full
+                                                </span>
+                                            @else
+                                                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    {{ $group->available_slots }} slots
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
+        @if(count($unassignedStudents) > 0)
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Unassigned Students ({{ count($unassignedStudents) }})</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($unassignedStudents as $student)
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="text-sm font-medium text-gray-900">{{ $student['name'] }}</div>
+                            <div class="text-xs text-gray-500">Roll: {{ $student['roll'] }}</div>
+                            <div class="text-xs text-gray-500">Advisor: {{ $student['advisor'] }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         @endif
     @endif
 </div>
