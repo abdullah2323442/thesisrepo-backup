@@ -211,17 +211,25 @@ Welcome back, {{ $userType === 'model' ? ($user->name ?? 'Student') : ($user['Na
                 </h3>
             </div>
             <div class="p-6">
-                @if($groupInfo && $groupInfo['hasGroup'] && $groupInfo['areaOfInterest'])
+                @if($groupInfo && $groupInfo['hasGroup'] && $groupInfo['matchedAreaOfInterest'])
                     <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                         <div class="flex items-center mb-2">
                             <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <h4 class="text-lg font-semibold text-green-800">{{ $groupInfo['areaOfInterest']['name'] }}</h4>
+                            <h4 class="text-lg font-semibold text-green-800">{{ $groupInfo['matchedAreaOfInterest']['name'] }}</h4>
                         </div>
-                        @if($groupInfo['areaOfInterest']['description'])
-                            <p class="text-sm text-green-700">{{ $groupInfo['areaOfInterest']['description'] }}</p>
+                        @if($groupInfo['matchedAreaOfInterest']['description'])
+                            <p class="text-sm text-green-700">{{ $groupInfo['matchedAreaOfInterest']['description'] }}</p>
                         @endif
+                        <div class="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-sm text-blue-700">
+                                <svg class="w-4 h-4 text-blue-600 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                This is your assigned thesis area based on supervisor matching.
+                            </p>
+                        </div>
                     </div>
                 @else
                     <div class="text-center py-8">
