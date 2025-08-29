@@ -306,7 +306,8 @@
                                             </span>
                                         @endif
                                     @else
-                                        @if($group->areaOfInterest)
+                                        @php $hasAnyAoi = ($group->areasOfInterest->count() > 0) || $group->areaOfInterest; @endphp
+                                        @if($hasAnyAoi)
                                             <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                                                 Eligible
                                             </span>
@@ -332,8 +333,12 @@
                                             </form>
                                         @else
                                             <!-- Manual Assign Button -->
-                                            @if($group->areaOfInterest)
-                                                <button onclick="showManualAssignModal({{ $group->id }}, '{{ $group->name }}', {{ $group->area_of_interest_id }})" 
+                                            @php 
+                                                $hasAnyAoi = ($group->areasOfInterest->count() > 0) || $group->areaOfInterest;
+                                                $manualAreaId = $group->area_of_interest_id ?: optional($group->areasOfInterest->first())->id;
+                                            @endphp
+                                            @if($hasAnyAoi)
+                                                <button onclick='showManualAssignModal({{ $group->id }}, "{{ $group->name }}", {!! json_encode($group->getAreaOfInterestIds()) !!})'
                                                         class="text-green-600 hover:text-green-900">
                                                     Assign Manually
                                                 </button>
@@ -503,13 +508,22 @@
         window.location.href = url.toString();
     }
 
-    function showManualAssignModal(groupId, groupName, areaOfInterestId) {
+    function showManualAssignModal(groupId, groupName, areaIds) {
         document.getElementById('assign_group_id').value = groupId;
         document.getElementById('assign_group_name').textContent = groupName;
-        
-        // Load available supervisors for this area of interest
-        console.log('Loading supervisors for area of interest:', areaOfInterestId);
-        fetch(`{{ route('advisor.supervisor-assignment.available-supervisors') }}?area_of_interest_id=${areaOfInterestId}`, {
+
+        const ids = Array.isArray(areaIds) ? areaIds : (areaIds ? [areaIds] : []);
+        const select = document.getElementById('assign_supervisor_id');
+        select.innerHTML = '<option value="">Loading...</option>';
+
+        if (ids.length === 0) {
+            select.innerHTML = '<option value="">No areas set for this group</option>';
+            document.getElementById('manualAssignModal').classList.remove('hidden');
+            return;
+        }
+
+        const q = ids.map(id => `area_of_interest_ids[]=${encodeURIComponent(id)}`).join('&');
+        fetch(`{{ route('advisor.supervisor-assignment.available-supervisors') }}?${q}`, {
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Accept': 'application/json',
@@ -523,25 +537,20 @@
                 return response.json();
             })
             .then(data => {
-                console.log('Received data:', data);
-                const select = document.getElementById('assign_supervisor_id');
                 select.innerHTML = '<option value="">Select Supervisor</option>';
-                
                 if (data.error) {
-                    console.error('Server error:', data);
                     select.innerHTML = '<option value="">Error loading supervisors</option>';
                     alert('Failed to load supervisors: ' + data.message + (data.details ? '\nDetails: ' + JSON.stringify(data.details) : ''));
                     return;
                 }
-                
-                if (data.length === 0) {
-                    select.innerHTML = '<option value="">No available supervisors for this area</option>';
-                    console.warn('No supervisors found for area of interest:', areaOfInterestId);
+                if (!Array.isArray(data) || data.length === 0) {
+                    select.innerHTML = '<option value="">No available supervisors for selected areas</option>';
                     return;
                 }
-                
-                console.log('Loading', data.length, 'supervisors');
+                const seen = new Set();
                 data.forEach(supervisor => {
+                    if (seen.has(supervisor.id)) return;
+                    seen.add(supervisor.id);
                     const option = document.createElement('option');
                     option.value = supervisor.id;
                     option.textContent = `${supervisor.fullname} (${supervisor.designation}) - ${supervisor.available_slots} slots available`;
@@ -549,12 +558,11 @@
                 });
             })
             .catch(error => {
-                console.error('Network or parsing error:', error);
                 const select = document.getElementById('assign_supervisor_id');
                 select.innerHTML = '<option value="">Failed to load supervisors</option>';
                 alert('Failed to load available supervisors. Network error: ' + error.message);
             });
-        
+
         document.getElementById('manualAssignModal').classList.remove('hidden');
     }
     

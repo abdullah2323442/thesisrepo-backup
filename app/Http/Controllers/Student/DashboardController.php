@@ -61,7 +61,7 @@ class DashboardController extends Controller
         }
         
         // Get the group with all related information
-        $group = Group::with(['students', 'areaOfInterest', 'supervisor', 'advisor'])
+        $group = Group::with(['students', 'matchedAreaOfInterest', 'supervisor', 'advisor'])
                      ->find($groupStudent->group_id);
         
         if (!$group) {
@@ -81,6 +81,8 @@ class DashboardController extends Controller
             ];
         });
         
+        $area = $group->matchedAreaOfInterest;
+
         return [
             'hasGroup' => true,
             'group' => [
@@ -92,10 +94,10 @@ class DashboardController extends Controller
                 'created_at' => $group->created_at
             ],
             'members' => $groupMembers,
-            'areaOfInterest' => $group->areaOfInterest ? [
-                'id' => $group->areaOfInterest->id,
-                'name' => $group->areaOfInterest->name,
-                'description' => $group->areaOfInterest->description
+            'areaOfInterest' => $area ? [
+                'id' => $area->id,
+                'name' => $area->name,
+                'description' => $area->description
             ] : null,
             'supervisor' => $group->supervisor ? [
                 'id' => $group->supervisor->id,

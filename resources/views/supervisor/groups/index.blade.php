@@ -27,7 +27,7 @@
                         </div>
 
                         <div class="p-4">
-                            <p class="text-sm text-gray-700 mb-2">Area of Interest: <span class="font-medium">{{ optional($group->areaOfInterest)->name ?? 'Not set' }}</span></p>
+                            <p class="text-sm text-gray-700 mb-2">Area of Interest: <span class="font-medium">{{ optional($group->matchedAreaOfInterest)->name ?? 'Not set' }}</span></p>
                             @if($group->students->isEmpty())
                                 <p class="text-gray-500">No students in this group.</p>
                             @else
@@ -37,7 +37,6 @@
                                             <tr class="text-left text-gray-600">
                                                 <th class="py-2 pr-4">#</th>
                                                 <th class="py-2 pr-4">Student Name</th>
-                                                <th class="py-2 pr-4">Email</th>
                                             </tr>
                                         </thead>
                                         <tbody class="text-gray-800">
@@ -45,7 +44,6 @@
                                                 <tr class="border-t">
                                                     <td class="py-2 pr-4">{{ $index + 1 }}</td>
                                                     <td class="py-2 pr-4">{{ $student->student_name }}</td>
-                                                    <td class="py-2 pr-4">{{ $student->student_email }}</td>
                                                 </tr>
                                             @endforeach
                                         </tbody>

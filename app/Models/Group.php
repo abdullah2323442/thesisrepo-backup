@@ -178,12 +178,11 @@ class Group extends Model
     public function syncAreasOfInterest(array $areaIds): void
     {
         $this->areasOfInterest()->sync($areaIds);
-        
-        // Clear the legacy single area field if using new system
-        if (!empty($areaIds)) {
-            $this->area_of_interest_id = null;
-            $this->save();
-        }
+        // Always clear legacy single area to avoid stale display
+        $this->area_of_interest_id = null;
+        // Also clear matched AOI so it will be recomputed on next assignment
+        $this->matched_area_of_interest_id = null;
+        $this->save();
     }
 
     /**

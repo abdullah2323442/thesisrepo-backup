@@ -107,17 +107,26 @@ class SupervisorAssignmentController extends Controller
                 ->with('error', "Supervisor {$supervisor->fullname} has no available thesis slots.");
         }
 
-        // Check if supervisor has matching area of interest
-        if ($group->area_of_interest_id && !$supervisor->hasAreaOfInterest($group->area_of_interest_id)) {
+        // Determine group's AOIs (legacy + pivot)
+        $groupAreaIds = $group->getAreaOfInterestIds();
+        if (empty($groupAreaIds)) {
+            return redirect()->back()->with('error', 'Please set at least one Area of Interest for this group first.');
+        }
+        // Check supervisor matches any of the group's AOIs
+        $matchedAreaId = $supervisor->areasOfInterest()
+            ->whereIn('area_of_interests.id', $groupAreaIds)
+            ->value('area_of_interests.id');
+        if (!$matchedAreaId) {
             return redirect()->back()
-                ->with('error', "Supervisor {$supervisor->fullname} does not have expertise in the selected area of interest.");
+                ->with('error', "Supervisor {$supervisor->fullname} does not match this group's area(s) of interest.");
         }
 
-        // Assign supervisor manually
+        // Assign supervisor and record matched AOI
         $group->update([
             'supervisor_id' => $supervisor->id,
             'is_manual_assignment' => true,
             'assigned_at' => now(),
+            'matched_area_of_interest_id' => $matchedAreaId,
         ]);
 
         return redirect()->back()
@@ -260,12 +269,15 @@ class SupervisorAssignmentController extends Controller
                 'user_id' => auth()->id()
             ]);
 
-            $request->validate([
-                'area_of_interest_id' => 'required|exists:area_of_interests,id',
-            ]);
-
-            $areaOfInterestId = $request->area_of_interest_id;
-
+            // Accept single or multiple AOIs
+            $ids = $request->input('area_of_interest_ids', []);
+            if (!is_array($ids) || count($ids) === 0) {
+                $single = $request->input('area_of_interest_id');
+                if ($single) { $ids = [$single]; }
+            }
+            if (empty($ids)) {
+                return response()->json([]);
+            }
             // First get all active supervisors
             $allActiveSupervisors = Supervisor::where('is_active', true)->get();
             \Log::info('Found active supervisors', ['count' => $allActiveSupervisors->count()]);
@@ -276,12 +288,11 @@ class SupervisorAssignmentController extends Controller
             });
             \Log::info('Supervisors with available slots', ['count' => $supervisorsWithSlots->count()]);
 
-            // Filter by area of interest
-            $matchingSupervisors = $supervisorsWithSlots->filter(function ($supervisor) use ($areaOfInterestId) {
-                $hasArea = $supervisor->areasOfInterest()
-                    ->where('area_of_interests.id', $areaOfInterestId)
+            // Filter by any of the requested areas
+            $matchingSupervisors = $supervisorsWithSlots->filter(function ($supervisor) use ($ids) {
+                return $supervisor->areasOfInterest()
+                    ->whereIn('area_of_interests.id', $ids)
                     ->exists();
-                return $hasArea;
             });
             \Log::info('Supervisors matching area of interest', ['count' => $matchingSupervisors->count()]);
 
