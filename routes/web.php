@@ -11,6 +11,7 @@ use App\Http\Controllers\Advisor\DashboardController as AdvisorDashboardControll
 use App\Http\Controllers\Advisor\StudentController as AdvisorStudentController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
 use App\Http\Controllers\Supervisor\GroupController as SupervisorGroupController;
+use App\Http\Controllers\Supervisor\MeetingController as SupervisorMeetingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -28,6 +29,12 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     // Supervisor panel (for teachers acting as supervisors)
     Route::get('/supervisor/dashboard', [SupervisorDashboardController::class, 'index'])->name('supervisor.dashboard');
     Route::get('/supervisor/groups', [SupervisorGroupController::class, 'index'])->name('supervisor.groups.index');
+    Route::get('/supervisor/meetings', [SupervisorMeetingController::class, 'index'])->name('supervisor.meetings.index');
+    Route::post('/supervisor/meetings', [SupervisorMeetingController::class, 'store'])->name('supervisor.meetings.store');
+    Route::get('/supervisor/meetings/students', [SupervisorMeetingController::class, 'students'])->name('supervisor.meetings.students');
+    Route::get('/supervisor/meetings/{meeting}', [SupervisorMeetingController::class, 'show'])->name('supervisor.meetings.show');
+    Route::get('/supervisor/meetings/{meeting}/edit', [SupervisorMeetingController::class, 'edit'])->name('supervisor.meetings.edit');
+    Route::put('/supervisor/meetings/{meeting}', [SupervisorMeetingController::class, 'update'])->name('supervisor.meetings.update');
 });
 
 // Student routes

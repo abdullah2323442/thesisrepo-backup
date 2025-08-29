@@ -55,6 +55,14 @@ class Group extends Model
     }
 
     /**
+     * Get meetings for this group
+     */
+    public function meetings(): HasMany
+    {
+        return $this->hasMany(Meeting::class);
+    }
+
+    /**
      * Get the area of interest for this group (legacy - single area)
      * @deprecated Use areasOfInterest() for multiple areas support
      */
