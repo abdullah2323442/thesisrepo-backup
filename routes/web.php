@@ -42,6 +42,10 @@ Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/student/dashboard', [StudentDashboardController::class, 'index'])
         ->middleware('throttle:external_api_student_dashboard')
         ->name('student.dashboard');
+    Route::get('/student/meetings', [StudentDashboardController::class, 'meetings'])
+        ->name('student.meetings.index');
+    Route::get('/student/meetings/pdf', [StudentDashboardController::class, 'downloadMeetingsPdf'])
+        ->name('student.meetings.pdf');
 });
 
 // Admin routes

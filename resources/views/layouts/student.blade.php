@@ -38,6 +38,16 @@
                         Dashboard
                     </a>
 
+                    <!-- Meetings -->
+                    <a href="{{ route('student.meetings.index') }}"
+                        class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors {{ request()->routeIs('student.meetings.*') ? 'bg-blue-100 text-blue-700' : '' }}">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h8m-8 0H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2"></path>
+                        </svg>
+                        Meetings
+                    </a>
+
                     <!-- My Group -->
                     <!-- <a href="{{ route('student.dashboard') }}#group-section"
                         class="flex items-center px-4 py-2 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
