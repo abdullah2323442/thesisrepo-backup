@@ -60,7 +60,11 @@ class DashboardController extends Controller
             ];
         }
         
+<<<<<<< HEAD
         // Get the group with all related information
+=======
+        // Get the group with all related information (including both single and multiple areas of interest)
+>>>>>>> 691fdac274c78f20c7fe4daf777f12047be929db
         $group = Group::with(['students', 'matchedAreaOfInterest', 'supervisor', 'advisor'])
                      ->find($groupStudent->group_id);
         
@@ -94,11 +98,15 @@ class DashboardController extends Controller
                 'created_at' => $group->created_at
             ],
             'members' => $groupMembers,
+<<<<<<< HEAD
             'areaOfInterest' => $area ? [
                 'id' => $area->id,
                 'name' => $area->name,
                 'description' => $area->description
             ] : null,
+=======
+            'matchedAreaOfInterest' => $this->getGroupMatchedAreaOfInterest($group),
+>>>>>>> 691fdac274c78f20c7fe4daf777f12047be929db
             'supervisor' => $group->supervisor ? [
                 'id' => $group->supervisor->id,
                 'name' => $group->supervisor->fullname,
@@ -113,6 +121,23 @@ class DashboardController extends Controller
                 'email' => $group->advisor->email
             ] : null
         ];
+    }
+    
+    /**
+     * Get all areas of interest for a group (supports both legacy single and new multiple areas)
+     */
+    private function getGroupMatchedAreaOfInterest($group)
+    {
+        // Only return the matched area of interest (the one used for supervisor assignment)
+        if ($group->matchedAreaOfInterest) {
+            return [
+                'id' => $group->matchedAreaOfInterest->id,
+                'name' => $group->matchedAreaOfInterest->name,
+                'description' => $group->matchedAreaOfInterest->description ?? null
+            ];
+        }
+        
+        return null;
     }
     
     /**
