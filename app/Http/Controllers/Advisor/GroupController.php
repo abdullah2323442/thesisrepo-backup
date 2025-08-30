@@ -654,4 +654,384 @@ class GroupController extends Controller
                            ->with('error', 'Failed to remove all groups: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Detect column structure in Excel file
+     */
+    private function detectColumnStructure($rows)
+    {
+        if (empty($rows)) {
+            return ['hasHeader' => false, 'studentCol' => 0, 'groupCol' => 1];
+        }
+        
+        $firstRow = $rows[0];
+        $hasHeader = false;
+        $studentCol = 0;
+        $groupCol = 1;
+        
+        // Check if first row contains headers
+        if (isset($firstRow[0]) && isset($firstRow[1])) {
+            $cell1 = strtolower(trim($firstRow[0]));
+            $cell2 = strtolower(trim($firstRow[1]));
+            
+            // Common header patterns
+            $studentHeaders = ['student_id', 'student id', 'roll', 'roll no', 'roll number', 'id', 'student'];
+            $groupHeaders = ['group_name', 'group name', 'group', 'group_no', 'group no', 'group number'];
+            
+            if (in_array($cell1, $studentHeaders) || in_array($cell2, $groupHeaders)) {
+                $hasHeader = true;
+            }
+            
+            // If second column looks like group header, columns might be swapped
+            if (in_array($cell1, $groupHeaders) && in_array($cell2, $studentHeaders)) {
+                $studentCol = 1;
+                $groupCol = 0;
+                $hasHeader = true;
+            }
+        }
+        
+        return [
+            'hasHeader' => $hasHeader,
+            'studentCol' => $studentCol,
+            'groupCol' => $groupCol
+        ];
+    }
+
+    /**
+     * Normalize group name from Excel
+     */
+    private function normalizeGroupName($groupName)
+    {
+        $groupName = trim($groupName);
+        
+        // Extract number from group name (e.g., "Group 1", "1", "Group1" -> "Group 1")
+        if (preg_match('/(\d+)/', $groupName, $matches)) {
+            return "Group " . $matches[1];
+        }
+        
+        return $groupName;
+    }
+
+    /**
+     * Auto-create groups based on Excel data
+     */
+    private function autoCreateGroups($batch, $advisorLocalId, $groupNames)
+    {
+        $createdGroups = [];
+        
+        foreach ($groupNames as $groupName) {
+            $normalizedName = $this->normalizeGroupName($groupName);
+            
+            // Check if group already exists
+            $existingGroup = Group::where('batch_number', $batch)
+                                 ->where('advisor_id', $advisorLocalId)
+                                 ->where('name', $normalizedName)
+                                 ->first();
+            
+            if (!$existingGroup) {
+                $group = Group::create([
+                    'name' => $normalizedName,
+                    'batch_number' => $batch,
+                    'advisor_id' => $advisorLocalId,
+                    'max_students' => 3,
+                    'created_by_type' => 'advisor'
+                ]);
+                $createdGroups[] = $normalizedName;
+            }
+        }
+        
+        return $createdGroups;
+    }
+
+    /**
+     * Get next available group number
+     */
+    private function getNextGroupNumber($batch, $advisorLocalId)
+    {
+        $existingGroups = Group::where('batch_number', $batch)
+                              ->where('advisor_id', $advisorLocalId)
+                              ->get();
+        
+        $maxNumber = 0;
+        foreach ($existingGroups as $group) {
+            if (preg_match('/Group (\d+)/', $group->name, $matches)) {
+                $number = (int) $matches[1];
+                if ($number > $maxNumber) {
+                    $maxNumber = $number;
+                }
+            }
+        }
+        
+        return $maxNumber + 1;
+    }
+
+    /**
+     * Upload Excel file for bulk assignment
+     */
+    public function uploadExcel(Request $request)
+    {
+        $request->validate([
+            'batch' => 'required|integer',
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
+        ]);
+
+        try {
+            $advisorApiId = $this->getAdvisorApiId();
+            $advisorLocalId = auth()->id();
+            $batch = $request->batch;
+            $file = $request->file('excel_file');
+
+            DB::beginTransaction();
+
+            // Read Excel file using Laravel Excel
+            $rows = Excel::toArray(new GroupAssignmentImport, $file)[0]; // Get first sheet
+
+            // Auto-detect column structure and skip header if exists
+            $columnMapping = $this->detectColumnStructure($rows);
+            if ($columnMapping['hasHeader']) {
+                array_shift($rows);
+            }
+
+            // Get students for validation (using API ID)
+            $studentsResult = $this->studentApiService->getStudentsByBatch($batch);
+            if (!$studentsResult['success']) {
+                throw new \Exception('Failed to fetch students for validation');
+            }
+
+            $validStudents = collect($studentsResult['students'])
+                ->filter(function ($student) use ($advisorApiId) {
+                    return isset($student['advisor_id']) && $student['advisor_id'] == $advisorApiId;
+                })
+                ->keyBy('roll'); // Use roll as the key
+
+            // Collect students by their Excel-defined groups (for grouping purposes only)
+            $excelGroupings = [];
+            $errors = [];
+
+            foreach ($rows as $index => $row) {
+                $rowNumber = $index + ($columnMapping['hasHeader'] ? 2 : 1);
+                
+                // Check if row has enough columns
+                if (!isset($row[$columnMapping['studentCol']]) || !isset($row[$columnMapping['groupCol']])) {
+                    continue; // Skip incomplete rows
+                }
+                
+                $studentId = trim($row[$columnMapping['studentCol']]);
+                $groupName = trim($row[$columnMapping['groupCol']]);
+                
+                if (empty($studentId) || empty($groupName)) {
+                    continue; // Skip empty rows
+                }
+                
+                // Validate student exists
+                if (!$validStudents->has($studentId)) {
+                    $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found or not assigned to you";
+                    continue;
+                }
+                
+                // Group students by their Excel group names (just for grouping, not for actual assignment)
+                if (!isset($excelGroupings[$groupName])) {
+                    $excelGroupings[$groupName] = [];
+                }
+                
+                $excelGroupings[$groupName][] = [
+                    'student_id' => $studentId,
+                    'student_name' => $validStudents[$studentId]['name'],
+                    'student_email' => null
+                ];
+            }
+
+            if (!empty($errors)) {
+                $errorMessage = "Excel validation failed with " . count($errors) . " error(s):\n" . implode("\n", $errors);
+                throw new \Exception($errorMessage);
+            }
+
+            if (empty($excelGroupings)) {
+                throw new \Exception('No valid student groupings found in the Excel file. Please check the format and ensure Student IDs and Group Names are correct.');
+            }
+
+            // Check that no group exceeds 3 students
+            foreach ($excelGroupings as $groupName => $students) {
+                if (count($students) > 3) {
+                    throw new \Exception("Group '{$groupName}' in Excel has " . count($students) . " students, which exceeds the maximum of 3");
+                }
+            }
+
+            // Get existing groups for this batch and advisor
+            $existingGroups = Group::where('batch_number', $batch)
+                                  ->where('advisor_id', $advisorLocalId)
+                                  ->where(function($query) {
+                                      $query->where('created_by_type', 'advisor')
+                                            ->orWhereNull('created_by_type');
+                                  })
+                                  ->orderBy('name')
+                                  ->get();
+
+            // Calculate how many groups we need
+            $totalGroupsNeeded = count($excelGroupings);
+            $existingGroupCount = $existingGroups->count();
+
+            // Create additional groups if needed
+            $createdGroups = [];
+            if ($existingGroupCount < $totalGroupsNeeded) {
+                for ($i = $existingGroupCount + 1; $i <= $totalGroupsNeeded; $i++) {
+                    $group = Group::create([
+                        'name' => "Group {$i}",
+                        'batch_number' => $batch,
+                        'advisor_id' => $advisorLocalId,
+                        'max_students' => 3,
+                        'created_by_type' => 'advisor'
+                    ]);
+                    $createdGroups[] = $group->name;
+                }
+            }
+
+            // Re-fetch all groups after creation
+            $allGroups = Group::where('batch_number', $batch)
+                             ->where('advisor_id', $advisorLocalId)
+                             ->where(function($query) {
+                                 $query->where('created_by_type', 'advisor')
+                                       ->orWhereNull('created_by_type');
+                             })
+                             ->orderBy('name')
+                             ->get();
+
+            // Take only the number of groups we need
+            $groupsToUse = $allGroups->take($totalGroupsNeeded);
+
+            // Create an array of group IDs and shuffle them for random assignment
+            $availableGroupIds = $groupsToUse->pluck('id')->toArray();
+            shuffle($availableGroupIds); // Randomize group assignment
+
+            // Clear existing assignments for this batch and advisor
+            GroupStudent::whereHas('group', function ($query) use ($batch, $advisorLocalId) {
+                $query->where('batch_number', $batch)
+                      ->where('advisor_id', $advisorLocalId)
+                      ->where(function($q) {
+                          $q->where('created_by_type', 'advisor')
+                            ->orWhereNull('created_by_type');
+                      });
+            })->delete();
+
+            // Assign each Excel grouping to a random group
+            $assignments = [];
+            $groupIndex = 0;
+            $groupAssignmentMap = []; // Track which Excel group got which actual group
+
+            foreach ($excelGroupings as $excelGroupName => $students) {
+                $assignedGroupId = $availableGroupIds[$groupIndex];
+                $assignedGroup = $groupsToUse->firstWhere('id', $assignedGroupId);
+                $groupAssignmentMap[$excelGroupName] = $assignedGroup->name;
+                
+                foreach ($students as $student) {
+                    $assignments[] = [
+                        'group_id' => $assignedGroupId,
+                        'student_id' => $student['student_id'],
+                        'student_name' => $student['student_name'],
+                        'student_email' => $student['student_email']
+                    ];
+                }
+                
+                $groupIndex++;
+            }
+
+            // Create new assignments
+            foreach ($assignments as $assignment) {
+                GroupStudent::create($assignment);
+            }
+
+            // Log the random assignment mapping
+            Log::info('Random group assignment completed', [
+                'advisor_local_id' => $advisorLocalId,
+                'batch' => $batch,
+                'total_assignments' => count($assignments),
+                'group_mapping' => $groupAssignmentMap,
+                'randomized' => true
+            ]);
+
+            DB::commit();
+
+            $successMessage = 'Excel file uploaded successfully. Groups have been randomly assigned for fairness.';
+            if (!empty($createdGroups)) {
+                $successMessage .= ' Created new groups: ' . implode(', ', $createdGroups) . '.';
+            }
+            $successMessage .= ' Total students assigned: ' . count($assignments);
+
+            return redirect()->route('advisor.groups.index', ['batch' => $batch])
+                           ->with('success', $successMessage);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Excel upload failed', [
+                'advisor_local_id' => auth()->id(),
+                'batch' => $request->batch,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                           ->with('error', 'Failed to upload Excel file: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download Excel template
+     */
+    public function downloadTemplate(Request $request)
+    {
+        $batch = $request->get('batch');
+        
+        if (!$batch) {
+            return redirect()->back()->with('error', 'Batch is required');
+        }
+
+        try {
+            $advisorApiId = $this->getAdvisorApiId();
+            $advisorLocalId = auth()->id();
+
+            // Get students for this batch (using API ID)
+            $studentsResult = $this->studentApiService->getStudentsByBatch($batch);
+            if (!$studentsResult['success']) {
+                return redirect()->back()->with('error', 'Failed to fetch students');
+            }
+
+            $students = collect($studentsResult['students'])
+                ->filter(function ($student) use ($advisorApiId) {
+                    return isset($student['advisor_id']) && $student['advisor_id'] == $advisorApiId;
+                });
+
+            // Get groups (using local ID)
+            $groups = Group::where('batch_number', $batch)
+                          ->where('advisor_id', $advisorLocalId)
+                          ->where(function($query) {
+                              $query->where('created_by_type', 'advisor')
+                                    ->orWhereNull('created_by_type');
+                          })
+                          ->get();
+
+            // Create template data
+            $templateData = [
+                ['Student_ID', 'Group_Name', 'Student_Name'] // Header
+            ];
+
+            foreach ($students as $student) {
+                $templateData[] = [
+                    $student['roll'], // Use roll as student ID
+                    '', // Empty group name for user to fill
+                    $student['name'] // Use name field
+                ];
+            }
+
+            // Add available groups as reference
+            $templateData[] = []; // Empty row
+            $templateData[] = ['Available Groups:'];
+            foreach ($groups as $group) {
+                $templateData[] = ['', $group->name];
+            }
+
+            return Excel::download(new GroupTemplateExport($templateData), "group_assignment_template_batch_{$batch}.xlsx");
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to generate template: ' . $e->getMessage());
+        }
+    }
 }
