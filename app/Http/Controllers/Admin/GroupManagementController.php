@@ -648,4 +648,132 @@ class GroupManagementController extends Controller
 
         return null;
     }
+
+    /**
+     * Bulk delete multiple groups
+     */
+    public function bulkDeleteGroups(Request $request)
+    {
+        $request->validate([
+            'group_ids' => 'required|array',
+            'group_ids.*' => 'exists:groups,id'
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $groupIds = $request->group_ids;
+            $groups = Group::whereIn('id', $groupIds)->get();
+            
+            // Collect information about groups to be deleted
+            $groupsWithStudents = [];
+            $groupsToDelete = [];
+            $batchNumbers = [];
+            
+            foreach ($groups as $group) {
+                $studentCount = $group->students()->count();
+                if ($studentCount > 0) {
+                    $groupsWithStudents[] = "'{$group->name}' ({$studentCount} students)";
+                } else {
+                    $groupsToDelete[] = $group;
+                    $batchNumbers[$group->batch_number] = true;
+                }
+            }
+            
+            // If any group has students, abort the operation
+            if (!empty($groupsWithStudents)) {
+                throw new \Exception("Cannot delete the following groups because they have students assigned: " . 
+                    implode(', ', $groupsWithStudents) . 
+                    ". Please remove all students from these groups first.");
+            }
+            
+            // Delete all groups that don't have students
+            $deletedCount = 0;
+            $deletedGroupNames = [];
+            
+            foreach ($groupsToDelete as $group) {
+                $deletedGroupNames[] = $group->name;
+                $group->delete();
+                $deletedCount++;
+            }
+            
+            // Rearrange group numbers for each affected batch
+            foreach (array_keys($batchNumbers) as $batchNumber) {
+                $this->rearrangeAllGroupNumbers($batchNumber);
+            }
+            
+            DB::commit();
+            
+            Log::info('Admin bulk deleted groups', [
+                'deleted_count' => $deletedCount,
+                'deleted_groups' => $deletedGroupNames,
+                'deleted_by' => auth()->user()->name,
+                'affected_batches' => array_keys($batchNumbers)
+            ]);
+            
+            $message = "Successfully deleted {$deletedCount} group(s)";
+            if (!empty($deletedGroupNames)) {
+                $message .= ": " . implode(', ', $deletedGroupNames);
+            }
+            $message .= ". Group numbers have been rearranged.";
+            
+            return redirect()->back()
+                ->with('success', $message);
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Bulk group deletion failed', [
+                'group_ids' => $request->group_ids,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'Failed to delete groups: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Rearrange all group numbers in a batch to maintain sequential order
+     */
+    private function rearrangeAllGroupNumbers(int $batchNumber): void
+    {
+        try {
+            // Get all numbered groups in the batch
+            $numberedGroups = Group::where('batch_number', $batchNumber)
+                ->where('name', 'LIKE', 'Group %')
+                ->get()
+                ->filter(function ($group) {
+                    return preg_match('/Group (\d+)/', $group->name, $matches);
+                })
+                ->sortBy(function ($group) {
+                    preg_match('/Group (\d+)/', $group->name, $matches);
+                    return (int) $matches[1];
+                })
+                ->values();
+
+            // Renumber them sequentially starting from 1
+            foreach ($numberedGroups as $index => $group) {
+                $newNumber = $index + 1;
+                $newName = "Group {$newNumber}";
+                
+                if ($group->name !== $newName) {
+                    $oldName = $group->name;
+                    $group->update(['name' => $newName]);
+                    
+                    Log::info('Group renumbered during bulk operation', [
+                        'old_name' => $oldName,
+                        'new_name' => $newName,
+                        'batch_number' => $batchNumber
+                    ]);
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to rearrange group numbers after bulk deletion', [
+                'batch_number' => $batchNumber,
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw exception here as the main deletion was successful
+        }
+    }
 }
