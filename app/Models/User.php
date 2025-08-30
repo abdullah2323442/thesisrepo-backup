@@ -53,7 +53,7 @@ class User extends Authenticatable
      * Generate or retrieve secure password for API users
      * Only generates new password if user doesn't exist
      */
-    private static function getOrCreateSecurePassword(string $userType, string $identifier): string
+    private static function getOrCreateSecurePassword(string $userType, string $identifier, ?int $apiId = null): string
     {
         // Check if user already exists
         $existingUser = null;
@@ -61,9 +61,18 @@ class User extends Authenticatable
         if ($userType === 'student') {
             $existingUser = self::where('roll', $identifier)->first();
         } else {
-            $existingUser = self::where('username', $identifier)
-                              ->where('login_type', 'teacher')
-                              ->first();
+            // For teachers, try to find by api_id first (for list API), then by username (for login API)
+            if ($apiId) {
+                $existingUser = self::where('api_id', $apiId)
+                                  ->where('login_type', 'teacher')
+                                  ->first();
+            }
+            
+            if (!$existingUser) {
+                $existingUser = self::where('username', $identifier)
+                                  ->where('login_type', 'teacher')
+                                  ->first();
+            }
         }
 
         // If user exists, return existing password (don't regenerate)
@@ -110,7 +119,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Create or update teacher from API response
+     * Create or update teacher from API response (Login API format)
      */
     public static function createOrUpdateTeacherFromApi(array $apiData): self
     {
@@ -134,6 +143,36 @@ class User extends Authenticatable
                 'login_type' => 'teacher',
                 'status' => $apiData['Status'] ?? 'Active',
                 'password' => self::getOrCreateSecurePassword('teacher', $identifier),
+            ]
+        );
+    }
+
+    /**
+     * Create or update teacher from Teacher List API response
+     */
+    public static function createOrUpdateTeacherFromListApi(array $apiData): self
+    {
+        // Teacher list API provides: id, fullname, gender, email, designation, department
+        $identifier = $apiData['fullname'] ?? 'teacher_' . $apiData['id'];
+        $typeIds = ['2']; // Default to Teacher role
+
+        return self::updateOrCreate(
+            ['api_id' => $apiData['id'], 'login_type' => 'teacher'],
+            [
+                'api_id' => $apiData['id'],
+                'user_info_id' => $apiData['id'],
+                'department_id' => 1, // Default to CSE department
+                'type_id' => json_encode($typeIds),
+                'username' => $identifier,
+                'name' => $apiData['fullname'] ?? '',
+                'phone' => '',
+                'designation' => $apiData['designation'] ?? '',
+                'email' => $apiData['email'] ?? '',
+                'address' => '',
+                'salt' => 0,
+                'login_type' => 'teacher',
+                'status' => 'Active',
+                'password' => self::getOrCreateSecurePassword('teacher', $identifier, $apiData['id']),
             ]
         );
     }

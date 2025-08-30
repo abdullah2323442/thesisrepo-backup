@@ -10,17 +10,21 @@ use App\Models\Supervisor;
 use App\Models\Batch;
 use App\Models\User;
 use App\Services\StudentApiService;
+use App\Services\SupervisorApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class GroupManagementController extends Controller
 {
     protected StudentApiService $studentApiService;
+    protected SupervisorApiService $supervisorApiService;
 
-    public function __construct(StudentApiService $studentApiService)
+    public function __construct(StudentApiService $studentApiService, SupervisorApiService $supervisorApiService)
     {
         $this->studentApiService = $studentApiService;
+        $this->supervisorApiService = $supervisorApiService;
     }
 
     /**
@@ -385,7 +389,8 @@ class GroupManagementController extends Controller
                         'student_advisor_api_id' => $student['advisor_id']
                     ]);
                 } else {
-                    Log::warning('Advisor auto-detection failed - advisor not found in local database', [
+                    // Try to fetch and create the advisor from API
+                    Log::info('Advisor not found locally, attempting to fetch from API', [
                         'group_id' => $group->id,
                         'group_name' => $group->name,
                         'student_roll' => $student['roll'],
@@ -393,9 +398,35 @@ class GroupManagementController extends Controller
                         'student_advisor_name' => $student['advisor'] ?? 'Unknown'
                     ]);
                     
-                    throw new \Exception("Advisor auto-detection failed. The student's advisor (" . 
-                        ($student['advisor'] ?? 'Unknown') . 
-                        ") is not found in the system. Please contact administrator to add this advisor.");
+                    $advisorUser = $this->fetchAndCreateAdvisorFromApi($student['advisor_id'], $student['advisor'] ?? 'Unknown');
+                    
+                    if ($advisorUser) {
+                        $group->update([
+                            'advisor_id' => $advisorUser->id,
+                            'advisor_auto_detected' => true
+                        ]);
+                        
+                        Log::info('Advisor successfully created from API and auto-detected', [
+                            'group_id' => $group->id,
+                            'group_name' => $group->name,
+                            'advisor_id' => $advisorUser->id,
+                            'advisor_name' => $advisorUser->name,
+                            'student_roll' => $student['roll'],
+                            'student_advisor_api_id' => $student['advisor_id']
+                        ]);
+                    } else {
+                        Log::warning('Advisor auto-detection failed - advisor not found in API', [
+                            'group_id' => $group->id,
+                            'group_name' => $group->name,
+                            'student_roll' => $student['roll'],
+                            'student_advisor_api_id' => $student['advisor_id'],
+                            'student_advisor_name' => $student['advisor'] ?? 'Unknown'
+                        ]);
+                        
+                        throw new \Exception("Advisor auto-detection failed. The student's advisor (" . 
+                            ($student['advisor'] ?? 'Unknown') . 
+                            ") could not be found or created from the API. Please contact administrator to manually add this advisor.");
+                    }
                 }
             }
 
@@ -647,6 +678,131 @@ class GroupManagementController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Fetch advisor from API and create as User
+     */
+    private function fetchAndCreateAdvisorFromApi(int $advisorApiId, string $advisorName): ?User
+    {
+        try {
+            // Fetch teachers from API
+            $baseUrl = config('external_api.base_url');
+            $teacherListEndpoint = config('external_api.endpoints.teacher_list');
+            $departmentId = config('external_api.department_id');
+            $timeout = config('external_api.timeout');
+
+            $apiUrl = $baseUrl . $teacherListEndpoint;
+            
+            Log::info('Attempting to fetch advisor from teacher API', [
+                'advisor_api_id' => $advisorApiId,
+                'advisor_name' => $advisorName,
+                'api_url' => $apiUrl,
+                'department_id' => $departmentId
+            ]);
+
+            $response = Http::timeout($timeout)->get($apiUrl, [
+                'deptId' => $departmentId
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('Teacher API request failed during advisor auto-detection', [
+                    'status' => $response->status(),
+                    'response_body' => $response->body(),
+                    'advisor_api_id' => $advisorApiId,
+                    'advisor_name' => $advisorName
+                ]);
+                return null;
+            }
+
+            $data = $response->json();
+
+            if (!isset($data['Data']) || !is_array($data['Data'])) {
+                Log::error('Invalid teacher API response format during advisor auto-detection', [
+                    'advisor_api_id' => $advisorApiId,
+                    'advisor_name' => $advisorName,
+                    'response_structure' => array_keys($data ?? []),
+                    'full_response' => $data
+                ]);
+                return null;
+            }
+
+            Log::info('Teacher API response received', [
+                'advisor_api_id' => $advisorApiId,
+                'advisor_name' => $advisorName,
+                'total_teachers_in_api' => count($data['Data']),
+                'sample_teacher_ids' => collect($data['Data'])->take(5)->pluck('id')->toArray(),
+                'sample_teacher_names' => collect($data['Data'])->take(5)->pluck('fullname')->toArray()
+            ]);
+
+            // Find the advisor in the API response - try different possible field names
+            $advisorData = collect($data['Data'])->firstWhere('id', $advisorApiId);
+            
+            if (!$advisorData) {
+                // Try alternative search methods
+                $advisorDataByName = collect($data['Data'])->first(function ($teacher) use ($advisorName) {
+                    return isset($teacher['fullname']) && 
+                           (stripos($teacher['fullname'], $advisorName) !== false || 
+                            stripos($advisorName, $teacher['fullname']) !== false);
+                });
+
+                if ($advisorDataByName) {
+                    Log::info('Advisor found by name match instead of ID', [
+                        'advisor_api_id' => $advisorApiId,
+                        'advisor_name' => $advisorName,
+                        'found_teacher_id' => $advisorDataByName['id'] ?? 'unknown',
+                        'found_teacher_name' => $advisorDataByName['fullname'] ?? 'unknown'
+                    ]);
+                    $advisorData = $advisorDataByName;
+                } else {
+                    // Log detailed information for debugging
+                    $allTeacherInfo = collect($data['Data'])->map(function ($teacher) {
+                        return [
+                            'id' => $teacher['id'] ?? 'missing',
+                            'fullname' => $teacher['fullname'] ?? 'missing',
+                            'name' => $teacher['name'] ?? 'missing'
+                        ];
+                    })->toArray();
+
+                    Log::warning('Advisor not found in teacher API response', [
+                        'advisor_api_id' => $advisorApiId,
+                        'advisor_name' => $advisorName,
+                        'total_teachers_in_api' => count($data['Data']),
+                        'all_teachers' => $allTeacherInfo,
+                        'searched_by_id' => $advisorApiId,
+                        'searched_by_name' => $advisorName
+                    ]);
+                    return null;
+                }
+            }
+
+            Log::info('Advisor found in API, creating user', [
+                'advisor_api_id' => $advisorApiId,
+                'advisor_name' => $advisorName,
+                'found_advisor_data' => $advisorData
+            ]);
+
+            // Create the advisor as a User using the teacher list API format
+            $advisorUser = User::createOrUpdateTeacherFromListApi($advisorData);
+
+            Log::info('Advisor successfully created from API', [
+                'advisor_api_id' => $advisorApiId,
+                'advisor_name' => $advisorName,
+                'created_user_id' => $advisorUser->id,
+                'created_user_name' => $advisorUser->name
+            ]);
+
+            return $advisorUser;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch and create advisor from API', [
+                'advisor_api_id' => $advisorApiId,
+                'advisor_name' => $advisorName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
     }
 
     /**
