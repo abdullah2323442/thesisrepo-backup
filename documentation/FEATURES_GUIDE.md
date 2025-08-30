@@ -349,41 +349,58 @@ Last Updated: January 2025
 
 ## Supervisor Assignment Algorithm
 
+> **📘 For complete algorithm documentation with flowcharts, see [SUPERVISOR_ASSIGNMENT_ALGORITHM.md](SUPERVISOR_ASSIGNMENT_ALGORITHM.md)**
+
+### Overview
+
+The Supervisor Assignment Algorithm is a sophisticated system that automatically assigns thesis supervisors to student groups based on various criteria including Area of Interest (AOI), academic rank, and capacity constraints.
+
 ### Three Assignment Modes
 
 #### 1. AOI-Based Lottery
-- Matches by Area of Interest
-- Random selection within matching supervisors
-- Avoids consecutive assignments
-- True randomization each run
+- **Purpose**: Match supervisors based on research expertise
+- **Selection**: Random from matching supervisors
+- **Rotation**: Excludes last assigned if alternatives exist
+- **Result**: Different on each run (true randomization)
 
 #### 2. Ranking-Based Lottery
-- Ignores area of interest
-- Round-robin by academic rank
-- Nobody gets 2nd group until all have 1
-- Deterministic results
+- **Purpose**: Distribute by academic seniority
+- **Selection**: Round-robin by rank (Professor → Associate → Assistant → Lecturer)
+- **Fairness**: Nobody gets 2nd group until all have 1
+- **Result**: Deterministic (same input = same output)
 
 #### 3. Combined Mode
-- Matches by area first
-- Ultra-fair within each area
-- Rank as tiebreaker only
-- Area-specific round-robin
+- **Purpose**: Balance expertise with fairness
+- **Selection**: AOI match first, rank as tiebreaker
+- **Ultra-Fair**: Area-specific round-robin
+- **Smart**: Avoids consecutive assignments within AOI
 
-### Algorithm Features
+### Key Features
 
-- **Capacity Management**: Never exceeds supervisor limits
-- **Fair Distribution**: Equal allocation before repetition
-- **Smart Rotation**: Avoids consecutive assignments
-- **Preview Mode**: Test assignments without saving
-- **Audit Trail**: Complete assignment history
+- **Capacity Management**: Never exceeds supervisor thesis limits
+- **Fair Distribution**: Ensures equitable allocation
+- **Smart Rotation**: Avoids consecutive assignments when possible
+- **Preview Mode**: Test assignments without saving to database
+- **Audit Trail**: Complete assignment history tracking
+- **Transaction Safety**: All operations wrapped in database transactions
 
 ### Assignment Workflow
 
-1. Select eligible groups (unassigned, with areas)
-2. Choose assignment mode
-3. Preview assignments (optional)
-4. Run lottery assignment
-5. Review results and statistics
+1. **Select Groups**: Choose eligible unassigned groups with areas
+2. **Choose Mode**: Select AOI, Ranking, or Combined mode
+3. **Preview** (Optional): Test assignment without persistence
+4. **Run Assignment**: Execute the lottery algorithm
+5. **Review Results**: Check statistics and unassigned groups
+
+### Visual Flowcharts
+
+The complete algorithm documentation includes detailed flowcharts for:
+- Main assignment process flow
+- AOI-based assignment logic
+- Ranking-based round-robin flow
+- Combined mode decision tree
+
+**[View Complete Algorithm Documentation →](SUPERVISOR_ASSIGNMENT_ALGORITHM.md)**
 
 ---
 

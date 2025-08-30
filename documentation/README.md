@@ -17,6 +17,7 @@ Welcome to the Thesis Management System documentation. This folder contains comp
 
 | Document | Description | Audience |
 |----------|-------------|----------|
+| **[SUPERVISOR_ASSIGNMENT_ALGORITHM.md](SUPERVISOR_ASSIGNMENT_ALGORITHM.md)** | Complete algorithm documentation with flowcharts | Developers, Technical Staff |
 | **[PERFORMANCE_MONITORING_GUIDE.md](PERFORMANCE_MONITORING_GUIDE.md)** | System monitoring and optimization guide | System Admins |
 | **[QODO_PERMANENT_SETUP.md](QODO_PERMANENT_SETUP.md)** | AI assistant configuration for development | Developers |
 
