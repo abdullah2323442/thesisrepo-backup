@@ -152,7 +152,7 @@ class AuthenticatedSessionController extends Controller
             'raw_type_id' => $data['TypeId'] ?? null,
         ]);
 
-        return redirect('/teacher/dashboard');
+        return redirect('/');
     }
 
     /**
@@ -251,7 +251,7 @@ class AuthenticatedSessionController extends Controller
                 'login_type' => $loginType
             ]);
 
-            return redirect('/student/dashboard');
+            return redirect('/');
         }
 
         if ($loginType === 'student') {
