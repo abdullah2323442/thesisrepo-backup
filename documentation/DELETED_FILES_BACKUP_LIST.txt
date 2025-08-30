@@ -46,3 +46,38 @@ Duplicate Controller Files:
 - app/Http/Controllers/Advisor/GroupController_complete.php
 - app/Http/Controllers/Advisor/GroupController_updated.php
 
+---
+
+Documentation files consolidated on 2025-01-30:
+
+Consolidated Documentation Files (removed after merging into core guides):
+- ADMIN_GROUP_CREATION_SOLUTION.md → FEATURES_GUIDE.md
+- ADVISOR_DETECTION_FIX_SUMMARY.md → IMPLEMENTATION_ARCHIVE.md
+- ADVISOR_VIEW_FIX_INSTRUCTIONS.md → IMPLEMENTATION_ARCHIVE.md
+- API_RATE_LIMITING_SUMMARY.md → DEVELOPER_GUIDE.md
+- API_TEST_FIX_SUMMARY.md → IMPLEMENTATION_ARCHIVE.md
+- DELETE_ISSUE_RESOLUTION.md → IMPLEMENTATION_ARCHIVE.md
+- GROUP_DELETE_FEATURE_SUMMARY.md → FEATURES_GUIDE.md
+- IMPLEMENTATION_SUMMARY.md → DEVELOPER_GUIDE.md
+- LOGOUT_FUNCTIONALITY_SUMMARY.md → FEATURES_GUIDE.md
+- MULTIPLE_AREAS_OF_INTEREST_FEATURE.md → FEATURES_GUIDE.md
+- RANDOM_GROUP_ASSIGNMENT_FEATURE.md → FEATURES_GUIDE.md
+- STUDENT_DASHBOARD_FEATURES.md → FEATURES_GUIDE.md
+- supervisor_assignment_algo.md → DEVELOPER_GUIDE.md
+- secure.md → DEVELOPER_GUIDE.md
+- SENIOR_DEVELOPER_REVIEW.md → DEVELOPER_GUIDE.md
+- COMPREHENSIVE_TEST_SUMMARY.md → TESTING_GUIDE.md
+- COMPREHENSIVE_TESTING_DOCUMENTATION.md → TESTING_GUIDE.md
+- FINAL_TEST_REPORT.md → TESTING_GUIDE.md
+- TEST_STATUS_REPORT.md → TESTING_GUIDE.md
+- UAT_Supervisor_Assignment_Tests.md → TESTING_GUIDE.md
+- EXCEL_UPLOAD_GUIDE.md → FEATURES_GUIDE.md
+- DOCUMENTATION_INDEX.md → README.md
+- REDUNDANT_FILES_ANALYSIS.md → IMPLEMENTATION_ARCHIVE.md
+- PROJECT_CLEANUP_SUMMARY.md → IMPLEMENTATION_ARCHIVE.md
+- DOCUMENTATION_FILES_TO_DELETE.txt → (reference file, removed)
+
+Total files removed: 25 documentation files
+Total files after consolidation: 9 files (6 core + 3 supporting)
+
+Note: All content has been preserved in the consolidated files. No information was lost.
