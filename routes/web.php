@@ -71,6 +71,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::put('/admin/supervisors/{supervisor}', [SupervisorController::class, 'update'])->name('admin.supervisors.update');
     Route::post('/admin/supervisors/bulk-limits', [SupervisorController::class, 'bulkUpdateLimits'])->name('admin.supervisors.bulk-limits');
     Route::post('/admin/supervisors/{supervisor}/toggle', [SupervisorController::class, 'toggleStatus'])->name('admin.supervisors.toggle');
+    Route::post('/admin/supervisors/{supervisor}/toggle-area', [SupervisorController::class, 'toggleAreaOfInterest'])->name('admin.supervisors.toggle-area');
     Route::post('/admin/supervisors/{supervisor}/refresh', [SupervisorController::class, 'refreshFromApi'])
         ->middleware('throttle:external_api_admin_supervisors_refresh')
         ->name('admin.supervisors.refresh');

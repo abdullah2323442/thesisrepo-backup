@@ -162,9 +162,9 @@
     </div>
 
     <!-- Supervisors Table -->
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">All Supervisors</h3>
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+        <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+            <h3 class="text-sm font-semibold text-gray-900">Supervisors ({{ $supervisors->total() }})</h3>
         </div>
 
         @if($supervisors->count() > 0)
@@ -172,67 +172,94 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thesis Limit</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Areas of Interest</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Limit</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Areas</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Area</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($supervisors as $supervisor)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ $supervisor->fullname }}</div>
-                                    <div class="text-sm text-gray-500">{{ $supervisor->gender }}</div>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8">
+                                            <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                <span class="text-xs font-medium text-indigo-800">
+                                                    {{ substr($supervisor->fullname, 0, 2) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-gray-900">{{ $supervisor->fullname }}</div>
+                                            <div class="text-xs text-gray-500">{{ $supervisor->designation }}</div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-3">
                                     <div class="text-sm text-gray-900">{{ $supervisor->email }}</div>
+                                    <div class="text-xs text-gray-500">{{ $supervisor->gender }}</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $supervisor->designation }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                        {{ $supervisor->thesis_limit }} slots
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $supervisor->thesis_limit }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-3">
                                     <div class="flex flex-wrap gap-1">
                                         @forelse($supervisor->areasOfInterest as $area)
-                                            <span class="px-2 py-1 text-xs bg-gray-100 text-gray-800 rounded">
+                                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
                                                 {{ $area->name }}
                                             </span>
                                         @empty
-                                            <span class="text-xs text-gray-500">None assigned</span>
+                                            <span class="text-xs text-gray-400 italic">None</span>
                                         @endforelse
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $supervisor->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                        {{ $supervisor->is_active ? 'Active' : 'Inactive' }}
-                                    </span>
+                                <td class="px-4 py-3">
+                                    <div class="relative">
+                                        <select onchange="toggleArea({{ $supervisor->id }}, this.value)" 
+                                                class="block w-full text-xs border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                            <option value="">Select area...</option>
+                                            @foreach($areasOfInterest as $area)
+                                                @php
+                                                    $isAssigned = $supervisor->areasOfInterest->contains('id', $area->id);
+                                                @endphp
+                                                <option value="{{ $area->id }}" {{ $isAssigned ? 'selected' : '' }}>
+                                                    {{ $isAssigned ? '✓ ' : '+ ' }}{{ $area->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2">
+                                <td class="px-4 py-3">
+                                    <form action="{{ route('admin.supervisors.toggle', $supervisor) }}" 
+                                          method="POST" class="inline">
+                                        @csrf
+                                        <input type="hidden" name="page" value="{{ request()->get('page', 1) }}">
+                                        <button type="submit" 
+                                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-colors {{ $supervisor->is_active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200' }}"
+                                                title="Click to {{ $supervisor->is_active ? 'deactivate' : 'activate' }}">
+                                            <span class="w-2 h-2 rounded-full mr-1 {{ $supervisor->is_active ? 'bg-green-400' : 'bg-red-400' }}"></span>
+                                            {{ $supervisor->is_active ? 'Active' : 'Inactive' }}
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center space-x-2">
                                         <a href="{{ route('admin.supervisors.edit', $supervisor) }}" 
-                                           class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                        
-                                        <form action="{{ route('admin.supervisors.toggle', $supervisor) }}" 
-                                              method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" 
-                                                    class="text-{{ $supervisor->is_active ? 'red' : 'green' }}-600 hover:text-{{ $supervisor->is_active ? 'red' : 'green' }}-900">
-                                                {{ $supervisor->is_active ? 'Deactivate' : 'Activate' }}
-                                            </button>
-                                        </form>
-                                        
+                                           class="text-indigo-600 hover:text-indigo-900 text-xs font-medium">
+                                            Edit
+                                        </a>
                                         <form action="{{ route('admin.supervisors.refresh', $supervisor) }}" 
                                               method="POST" class="inline">
                                             @csrf
-                                            <button type="submit" class="text-blue-600 hover:text-blue-900">
+                                            <input type="hidden" name="page" value="{{ request()->get('page', 1) }}">
+                                            <button type="submit" 
+                                                    class="text-blue-600 hover:text-blue-900 text-xs font-medium">
                                                 Refresh
                                             </button>
                                         </form>
@@ -245,29 +272,36 @@
             </div>
 
             <!-- Pagination -->
-            <div class="px-6 py-4 border-t border-gray-200">
+            <div class="px-4 py-3 border-t border-gray-200 bg-gray-50">
                 {{ $supervisors->links() }}
             </div>
         @else
-            <div class="px-6 py-12 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">No supervisors found</h3>
-                <p class="mt-1 text-sm text-gray-500">Sync from API to get supervisor data.</p>
-                <div class="mt-6">
-                    <form action="{{ route('admin.supervisors.sync') }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                            Sync from API
-                        </button>
-                    </form>
+            <div class="px-4 py-8 text-center">
+                <div class="mx-auto h-12 w-12 text-gray-400 mb-4">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
                 </div>
+                <h3 class="text-sm font-medium text-gray-900 mb-1">No supervisors found</h3>
+                <p class="text-xs text-gray-500 mb-4">Sync from API to get supervisor data.</p>
+                <form action="{{ route('admin.supervisors.sync') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" 
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                        Sync from API
+                    </button>
+                </form>
             </div>
         @endif
     </div>
+
+    <!-- Hidden form for area assignment -->
+    <form id="areaToggleForm" action="" method="POST" style="display: none;">
+        @csrf
+        <input type="hidden" name="area_id" id="areaToggleAreaId">
+        <input type="hidden" name="page" value="{{ request()->get('page', 1) }}">
+    </form>
 @endsection
 
 @push('scripts')
@@ -286,6 +320,22 @@
             } else {
                 selection.classList.add('hidden');
             }
+        }
+
+        function toggleArea(supervisorId, areaId) {
+            if (areaId === '') {
+                return; // Do nothing if no area selected
+            }
+            
+            const form = document.getElementById('areaToggleForm');
+            const areaInput = document.getElementById('areaToggleAreaId');
+            
+            // Set the form action and area ID
+            form.action = `/admin/supervisors/${supervisorId}/toggle-area`;
+            areaInput.value = areaId;
+            
+            // Submit the form
+            form.submit();
         }
     </script>
 @endpush

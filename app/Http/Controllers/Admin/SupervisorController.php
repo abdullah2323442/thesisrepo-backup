@@ -35,7 +35,9 @@ class SupervisorController extends Controller
             'last_sync' => $lastSync ? $lastSync->last_synced_at : null,
         ];
 
-        return view('admin.supervisors.index', compact('supervisors', 'stats'));
+        $areasOfInterest = AreaOfInterest::where('is_active', true)->orderBy('name')->get();
+
+        return view('admin.supervisors.index', compact('supervisors', 'stats', 'areasOfInterest'));
     }
 
     public function syncFromApi()
@@ -120,26 +122,65 @@ class SupervisorController extends Controller
             ->with('success', "Updated thesis limits for {$updated} supervisors.");
     }
 
-    public function toggleStatus(Supervisor $supervisor)
+    public function toggleStatus(Request $request, Supervisor $supervisor)
     {
         $supervisor->update(['is_active' => !$supervisor->is_active]);
         
         $status = $supervisor->is_active ? 'activated' : 'deactivated';
         
-        return redirect()->route('admin.supervisors.index')
+        // Preserve the current page
+        $page = $request->get('page', 1);
+        
+        return redirect()->route('admin.supervisors.index', ['page' => $page])
             ->with('success', "Supervisor {$supervisor->fullname} has been {$status}.");
     }
 
-    public function refreshFromApi(Supervisor $supervisor)
+    public function refreshFromApi(Request $request, Supervisor $supervisor)
     {
         $updated = $this->apiService->refreshSupervisor($supervisor->api_id);
 
+        // Preserve the current page
+        $page = $request->get('page', 1);
+
         if ($updated) {
-            return redirect()->route('admin.supervisors.index')
+            return redirect()->route('admin.supervisors.index', ['page' => $page])
                 ->with('success', "Supervisor {$supervisor->fullname} data refreshed from API.");
         } else {
-            return redirect()->route('admin.supervisors.index')
+            return redirect()->route('admin.supervisors.index', ['page' => $page])
                 ->with('error', "Failed to refresh supervisor data from API.");
         }
+    }
+
+    public function toggleAreaOfInterest(Request $request, Supervisor $supervisor)
+    {
+        $validator = Validator::make($request->all(), [
+            'area_id' => 'required|exists:area_of_interests,id',
+        ]);
+
+        if ($validator->fails()) {
+            // Preserve the current page even on error
+            $page = $request->get('page', 1);
+            return redirect()->route('admin.supervisors.index', ['page' => $page])
+                ->with('error', 'Invalid area of interest.');
+        }
+
+        $areaId = $request->area_id;
+        $area = AreaOfInterest::find($areaId);
+
+        if ($supervisor->areasOfInterest()->where('area_of_interests.id', $areaId)->exists()) {
+            // Remove the area
+            $supervisor->areasOfInterest()->detach($areaId);
+            $action = 'removed from';
+        } else {
+            // Add the area
+            $supervisor->areasOfInterest()->attach($areaId);
+            $action = 'assigned to';
+        }
+
+        // Preserve the current page
+        $page = $request->get('page', 1);
+
+        return redirect()->route('admin.supervisors.index', ['page' => $page])
+            ->with('success', "Area '{$area->name}' has been {$action} {$supervisor->fullname}.");
     }
 }
