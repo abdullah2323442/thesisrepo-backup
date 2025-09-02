@@ -1,0 +1,165 @@
+@extends('layouts.supervisor')
+
+@section('page-title', 'Edit Report')
+@section('page-description', 'Edit report details')
+
+@section('content')
+<div class="container mx-auto max-w-4xl">
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Report</h2>
+
+            @if(session('error'))
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    {{ session('error') }}
+                </div>
+            @endif
+
+            <form action="{{ route('supervisor.reports.update', $report) }}" method="POST" x-data="{ reportType: '{{ old('type', $report->type) }}' }">
+                @csrf
+                @method('PUT')
+
+                <!-- Group Selection -->
+                <div class="mb-6">
+                    <label for="group_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Select Group <span class="text-red-500">*</span>
+                    </label>
+                    <select name="group_id" id="group_id" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('group_id') border-red-500 @enderror">
+                        <option value="">-- Select a Group --</option>
+                        @foreach($groups as $group)
+                            <option value="{{ $group->id }}" {{ (old('group_id', $report->group_id) == $group->id) ? 'selected' : '' }}>
+                                {{ $group->name }} ({{ $group->students->count() }} students)
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('group_id')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Report Type -->
+                <div class="mb-6">
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-2">
+                        Report Type <span class="text-red-500">*</span>
+                    </label>
+                    <select name="type" id="type" required x-model="reportType"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('type') border-red-500 @enderror">
+                        <option value="general" {{ old('type', $report->type) == 'general' ? 'selected' : '' }}>General Report</option>
+                        <option value="final" {{ old('type', $report->type) == 'final' ? 'selected' : '' }}>Final Report</option>
+                    </select>
+                    @error('type')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    <p class="mt-2 text-sm text-gray-600">
+                        <span x-show="reportType === 'general'">General reports are for regular progress updates and don't require project details.</span>
+                        <span x-show="reportType === 'final'" x-cloak>Final reports require project title, abstract, and keywords.</span>
+                    </p>
+                </div>
+
+                <!-- Final Report Fields (shown only when type is 'final') -->
+                <div x-show="reportType === 'final'" x-cloak class="space-y-6">
+                    <!-- Project Title -->
+                    <div>
+                        <label for="project_title" class="block text-sm font-medium text-gray-700 mb-2">
+                            Project Title <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="project_title" id="project_title" 
+                               value="{{ old('project_title', $report->project_title) }}"
+                               x-bind:required="reportType === 'final'"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('project_title') border-red-500 @enderror"
+                               placeholder="Enter the thesis project title">
+                        @error('project_title')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Abstract -->
+                    <div>
+                        <label for="abstract_md" class="block text-sm font-medium text-gray-700 mb-2">
+                            Abstract <span class="text-red-500">*</span>
+                        </label>
+                        <textarea name="abstract_md" id="abstract_md" rows="8"
+                                  x-bind:required="reportType === 'final'"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('abstract_md') border-red-500 @enderror"
+                                  placeholder="Enter the project abstract.">{{ old('abstract_md', $report->abstract_md) }}</textarea>
+                        @error('abstract_md')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Keywords -->
+                    <div>
+                        <label for="keywords" class="block text-sm font-medium text-gray-700 mb-2">
+                            Keywords
+                        </label>
+                        @php
+                            $keywordsString = '';
+                            if ($report->keywords) {
+                                $keywordsArray = json_decode($report->keywords, true);
+                                if (is_array($keywordsArray)) {
+                                    $keywordsString = implode(', ', $keywordsArray);
+                                }
+                            }
+                        @endphp
+                        <input type="text" name="keywords" id="keywords" 
+                               value="{{ old('keywords', $keywordsString) }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('keywords') border-red-500 @enderror"
+                               placeholder="Enter keywords separated by commas (e.g., machine learning, AI, neural networks)">
+                        @error('keywords')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- Supervisor Message for Students -->
+                <div class="mb-6">
+                    <label for="supervisor_message" class="block text-sm font-medium text-gray-700 mb-2">
+                        Message to Students <span class="text-blue-600">(Will appear in notifications)</span>
+                    </label>
+                    <textarea name="supervisor_message" id="supervisor_message" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('supervisor_message') border-red-500 @enderror"
+                              placeholder="Enter instructions or message for students about what they need to do for this report...">{{ old('supervisor_message', $report->supervisor_message) }}</textarea>
+                    @error('supervisor_message')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    <p class="mt-1 text-xs text-gray-500">This message will be included in the notification sent to students and will help them understand what is expected.</p>
+                </div>
+
+                <!-- Additional Notes (for both types) -->
+                <div class="mb-6">
+                    <label for="extra_input" class="block text-sm font-medium text-gray-700 mb-2">
+                        Additional Notes (Optional)
+                    </label>
+                    <textarea name="extra_input" id="extra_input" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('extra_input') border-red-500 @enderror"
+                              placeholder="Any additional notes or instructions for students">{{ old('extra_input', $report->extra_input) }}</textarea>
+                    @error('extra_input')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-3">
+                    <a href="{{ route('supervisor.reports.show', $report) }}" 
+                       class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Update Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+@endsection
+
+@push('scripts')
+<script src="//unpkg.com/alpinejs" defer></script>
+@endpush

@@ -13,6 +13,8 @@ use App\Http\Controllers\Advisor\StudentController as AdvisorStudentController;
 use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardController;
 use App\Http\Controllers\Supervisor\GroupController as SupervisorGroupController;
 use App\Http\Controllers\Supervisor\MeetingController as SupervisorMeetingController;
+use App\Http\Controllers\Supervisor\ReportController as SupervisorReportController;
+use App\Http\Controllers\Teacher\ReportCommentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -36,6 +38,18 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     Route::get('/supervisor/meetings/{meeting}', [SupervisorMeetingController::class, 'show'])->name('supervisor.meetings.show');
     Route::get('/supervisor/meetings/{meeting}/edit', [SupervisorMeetingController::class, 'edit'])->name('supervisor.meetings.edit');
     Route::put('/supervisor/meetings/{meeting}', [SupervisorMeetingController::class, 'update'])->name('supervisor.meetings.update');
+    
+    // Report Management routes
+    Route::get('/supervisor/reports', [SupervisorReportController::class, 'index'])->name('supervisor.reports.index');
+    Route::get('/supervisor/reports/create', [SupervisorReportController::class, 'create'])->name('supervisor.reports.create');
+    Route::post('/supervisor/reports', [SupervisorReportController::class, 'store'])->name('supervisor.reports.store');
+    Route::get('/supervisor/reports/{report}', [SupervisorReportController::class, 'show'])->name('supervisor.reports.show');
+    Route::get('/supervisor/reports/{report}/edit', [SupervisorReportController::class, 'edit'])->name('supervisor.reports.edit');
+    Route::put('/supervisor/reports/{report}', [SupervisorReportController::class, 'update'])->name('supervisor.reports.update');
+    Route::delete('/supervisor/reports/{report}', [SupervisorReportController::class, 'destroy'])->name('supervisor.reports.destroy');
+    
+    // Teacher can comment on reports
+    Route::post('/teacher/reports/{report}/comments', [ReportCommentController::class, 'store'])->name('teacher.reports.comments.store');
 });
 
 // Student routes
@@ -47,6 +61,36 @@ Route::middleware(['auth', 'student'])->group(function () {
         ->name('student.meetings.index');
     Route::get('/student/meetings/pdf', [StudentDashboardController::class, 'downloadMeetingsPdf'])
         ->name('student.meetings.pdf');
+    
+    // Report routes
+    Route::get('/student/reports', [\App\Http\Controllers\Student\ReportController::class, 'index'])
+        ->name('student.reports.index');
+    Route::get('/student/reports/{report}', [\App\Http\Controllers\Student\ReportController::class, 'show'])
+        ->name('student.reports.show');
+    
+    // Report Submission routes
+    Route::get('/student/reports/{report}/submissions/create', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'create'])
+        ->name('student.reports.submissions.create');
+    Route::post('/student/reports/{report}/submissions', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'store'])
+        ->name('student.reports.submissions.store');
+    Route::get('/student/reports/{report}/submissions/{submission}', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'show'])
+        ->name('student.reports.submissions.show');
+    Route::get('/student/reports/{report}/submissions/{submission}/edit', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'edit'])
+        ->name('student.reports.submissions.edit');
+    Route::put('/student/reports/{report}/submissions/{submission}', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'update'])
+        ->name('student.reports.submissions.update');
+    Route::delete('/student/reports/{report}/submissions/{submission}', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'destroy'])
+        ->name('student.reports.submissions.destroy');
+    Route::get('/student/reports/{report}/submissions/{submission}/download', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'download'])
+        ->name('student.reports.submissions.download');
+    
+    // Notification routes
+    Route::get('/student/notifications', [\App\Http\Controllers\Student\ReportController::class, 'notifications'])
+        ->name('student.notifications');
+    Route::post('/student/notifications/{id}/mark-read', [\App\Http\Controllers\Student\ReportController::class, 'markNotificationAsRead'])
+        ->name('student.notifications.mark-read');
+    Route::post('/student/notifications/mark-all-read', [\App\Http\Controllers\Student\ReportController::class, 'markAllNotificationsAsRead'])
+        ->name('student.notifications.mark-all-read');
 });
 
 // Admin routes
@@ -167,6 +211,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// API routes for notifications (accessible by authenticated users)
+Route::middleware('auth')->prefix('api')->group(function () {
+    Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/mark-read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);
+});
+
+// Debug route (remove in production)
+Route::get('/debug/notifications', [\App\Http\Controllers\DebugController::class, 'checkNotifications']);
 
 require __DIR__.'/auth.php';
     // Group deletion routes

@@ -65,6 +65,14 @@ class Group extends Model
     }
 
     /**
+     * Get reports for this group
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class);
+    }
+
+    /**
      * Get the area of interest for this group (legacy - single area)
      * @deprecated Use areasOfInterest() for multiple areas support
      */
