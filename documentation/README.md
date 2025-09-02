@@ -12,20 +12,20 @@ Welcome to the Thesis Management System documentation. This folder contains comp
 | **[FEATURES_GUIDE.md](FEATURES_GUIDE.md)** | Comprehensive feature documentation and user guides | All Users |
 | **[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)** | Technical implementation details and API documentation | Developers |
 | **[TESTING_GUIDE.md](TESTING_GUIDE.md)** | Test suite documentation and execution guides | QA, Developers |
+| **[PERFORMANCE_MONITORING_GUIDE.md](PERFORMANCE_MONITORING_GUIDE.md)** | System monitoring and optimization guide | System Admins |
 
 ### Specialized Documentation
 
 | Document | Description | Audience |
 |----------|-------------|----------|
 | **[SUPERVISOR_ASSIGNMENT_ALGORITHM.md](SUPERVISOR_ASSIGNMENT_ALGORITHM.md)** | Complete algorithm documentation with flowcharts | Developers, Technical Staff |
-| **[PERFORMANCE_MONITORING_GUIDE.md](PERFORMANCE_MONITORING_GUIDE.md)** | System monitoring and optimization guide | System Admins |
 | **[QODO_PERMANENT_SETUP.md](QODO_PERMANENT_SETUP.md)** | AI assistant configuration for development | Developers |
+| **[IMPLEMENTATION_ARCHIVE.md](IMPLEMENTATION_ARCHIVE.md)** | Historical implementation details | Reference |
 
 ### Reference Documentation
 
 | Document | Description | Purpose |
 |----------|-------------|---------|
-| **[IMPLEMENTATION_ARCHIVE.md](IMPLEMENTATION_ARCHIVE.md)** | Historical implementation details | Reference |
 | **[DOCUMENTATION_STRUCTURE.md](DOCUMENTATION_STRUCTURE.md)** | Documentation organization guide | Maintenance |
 | **[DOCUMENTATION_UPDATE_SUMMARY.md](DOCUMENTATION_UPDATE_SUMMARY.md)** | Recent updates summary | Reference |
 | **[FINAL_CLEANUP_REPORT.md](FINAL_CLEANUP_REPORT.md)** | Repository cleanup and feature verification | Audit |
@@ -50,7 +50,7 @@ Welcome to the Thesis Management System documentation. This folder contains comp
 
 ## 📊 Documentation Statistics
 
-- **11 Documentation Files**: Covering all aspects of the system
+- **13 Documentation Files**: Covering all aspects of the system
 - **100% Feature Coverage**: Every feature documented
 - **5 User Roles**: Documentation for Admin, Advisor, Supervisor, Student, Teacher
 - **34+ Tests**: Comprehensive test documentation

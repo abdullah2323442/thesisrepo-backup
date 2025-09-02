@@ -53,8 +53,8 @@
                 @if($report->abstract_md)
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-3">Abstract</h3>
-                        <div class="prose max-w-none bg-gray-50 p-4 rounded-lg">
-                            {!! \Illuminate\Support\Str::markdown($report->abstract_md) !!}
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            {!! nl2br(e($report->abstract_md)) !!}
                         </div>
                     </div>
                 @endif

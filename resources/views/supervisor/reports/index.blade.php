@@ -83,6 +83,9 @@
                                                 @endif
                                                 {{ ucfirst($report->type) }} Report
                                             </span>
+                                            <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded {{ $report->status_badge_color }}">
+                                                {{ $report->formatted_status }}
+                                            </span>
                                             @if($report->project_title)
                                                 <h4 class="font-medium text-gray-900">{{ $report->project_title }}</h4>
                                             @endif

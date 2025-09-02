@@ -82,43 +82,49 @@ class ReportController extends Controller
         $validated = $request->validate([
             'group_id' => ['required', 'exists:groups,id'],
             'type' => ['required', 'in:general,final'],
-            'project_title' => ['required_if:type,final', 'nullable', 'string', 'max:255'],
-            'abstract_md' => ['required_if:type,final', 'nullable', 'string', 'max:5000'],
             'extra_input' => ['nullable', 'string', 'max:1000'],
             'supervisor_message' => ['nullable', 'string', 'max:2000'],
-            'keywords' => ['nullable', 'string', 'max:500'],
-        ], [
-            'project_title.required_if' => 'Project title is required for final reports.',
-            'abstract_md.required_if' => 'Abstract is required for final reports.',
         ]);
 
-        // Verify the group belongs to this supervisor
+        // Verify the group belongs to this supervisor and load relationships
         $group = Group::where('id', $validated['group_id'])
             ->where('supervisor_id', $supervisor->id)
+            ->with('areasOfInterest')
             ->first();
 
         if (!$group) {
             return back()->with('error', 'You are not authorized to create reports for this group.');
         }
 
+        // Load supervisor's areas of interest
+        $supervisor->load('areasOfInterest');
+
         DB::beginTransaction();
         try {
-            // Process keywords if provided
-            if (!empty($validated['keywords'])) {
-                $keywords = array_map('trim', explode(',', $validated['keywords']));
-                $validated['keywords'] = json_encode($keywords);
+            // Find the matched area of interest between group and supervisor
+            $matchedAreaOfInterest = null;
+            if ($group->areasOfInterest->isNotEmpty()) {
+                // Get supervisor's areas of interest
+                $supervisorAreas = $supervisor->areasOfInterest->pluck('id');
+                
+                // Find the first matching area of interest
+                $matchedAreaOfInterest = $group->areasOfInterest
+                    ->whereIn('id', $supervisorAreas)
+                    ->first();
             }
 
             // Create the report
             $report = Report::create([
                 'group_id' => $validated['group_id'],
+                'area_of_interest_id' => $matchedAreaOfInterest ? $matchedAreaOfInterest->id : null,
                 'type' => $validated['type'],
-                'project_title' => $validated['project_title'] ?? null,
-                'abstract_md' => $validated['abstract_md'] ?? null,
+                'project_title' => null,
+                'abstract_md' => null,
                 'extra_input' => $validated['extra_input'] ?? null,
                 'supervisor_message' => $validated['supervisor_message'] ?? null,
-                'keywords' => $validated['keywords'] ?? null,
+                'keywords' => null,
                 'created_by' => auth()->id(),
+                'status' => Report::STATUS_DRAFT,
             ]);
 
             // Get all students in the group
@@ -279,14 +285,8 @@ class ReportController extends Controller
         $validated = $request->validate([
             'group_id' => ['required', 'exists:groups,id'],
             'type' => ['required', 'in:general,final'],
-            'project_title' => ['required_if:type,final', 'nullable', 'string', 'max:255'],
-            'abstract_md' => ['required_if:type,final', 'nullable', 'string', 'max:5000'],
             'extra_input' => ['nullable', 'string', 'max:1000'],
             'supervisor_message' => ['nullable', 'string', 'max:2000'],
-            'keywords' => ['nullable', 'string', 'max:500'],
-        ], [
-            'project_title.required_if' => 'Project title is required for final reports.',
-            'abstract_md.required_if' => 'Abstract is required for final reports.',
         ]);
 
         // Verify the new group belongs to this supervisor
@@ -300,23 +300,12 @@ class ReportController extends Controller
 
         DB::beginTransaction();
         try {
-            // Process keywords if provided
-            if (!empty($validated['keywords'])) {
-                $keywords = array_map('trim', explode(',', $validated['keywords']));
-                $validated['keywords'] = json_encode($keywords);
-            } else {
-                $validated['keywords'] = null;
-            }
-
-            // Update the report
+            // Update the report (only basic fields, not project details)
             $report->update([
                 'group_id' => $validated['group_id'],
                 'type' => $validated['type'],
-                'project_title' => $validated['project_title'] ?? null,
-                'abstract_md' => $validated['abstract_md'] ?? null,
                 'extra_input' => $validated['extra_input'] ?? null,
                 'supervisor_message' => $validated['supervisor_message'] ?? null,
-                'keywords' => $validated['keywords'],
             ]);
 
             DB::commit();
@@ -390,6 +379,163 @@ class ReportController extends Controller
             ]);
 
             return back()->with('error', 'Failed to delete report. Please try again.');
+        }
+    }
+
+    /**
+     * Show the finalize form for the report
+     */
+    public function showFinalize(Report $report)
+    {
+        // Get the supervisor record for the authenticated user
+        $supervisor = Supervisor::where('email', auth()->user()->email)->first();
+        
+        if (!$supervisor) {
+            return redirect()->route('supervisor.dashboard')
+                ->with('error', 'Supervisor profile not found.');
+        }
+
+        // Verify the report belongs to a group supervised by this supervisor
+        if ($report->group->supervisor_id !== $supervisor->id) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+
+        // Check if report can be approved
+        if (!$report->canBeApproved()) {
+            return redirect()->route('supervisor.reports.show', $report)
+                ->with('error', 'This report cannot be approved. It must be a final report with student submissions.');
+        }
+
+        // Load relationships
+        $report->load(['group.students', 'submissions.student']);
+
+        return view('supervisor.reports.finalize', compact('report'));
+    }
+
+    /**
+     * Finalize and approve the report
+     */
+    public function finalize(Request $request, Report $report)
+    {
+        // Get the supervisor record for the authenticated user
+        $supervisor = Supervisor::where('email', auth()->user()->email)->first();
+        
+        if (!$supervisor) {
+            return redirect()->route('supervisor.dashboard')
+                ->with('error', 'Supervisor profile not found.');
+        }
+
+        // Verify the report belongs to a group supervised by this supervisor
+        if ($report->group->supervisor_id !== $supervisor->id) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+
+        // Check if report can be approved
+        if (!$report->canBeApproved()) {
+            return redirect()->route('supervisor.reports.show', $report)
+                ->with('error', 'This report cannot be approved. It must be a final report with student submissions.');
+        }
+
+        // Validate the request
+        $validated = $request->validate([
+            'project_title' => ['required', 'string', 'max:255'],
+            'abstract_md' => ['required', 'string', 'max:5000'],
+            'keywords' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Process keywords if provided
+            if (!empty($validated['keywords'])) {
+                $keywords = array_map('trim', explode(',', $validated['keywords']));
+                $validated['keywords'] = json_encode($keywords);
+            } else {
+                $validated['keywords'] = null;
+            }
+
+            // Update the report with final details and approve it
+            $report->update([
+                'project_title' => $validated['project_title'],
+                'abstract_md' => $validated['abstract_md'],
+                'keywords' => $validated['keywords'],
+                'status' => Report::STATUS_APPROVED,
+                'approved_at' => now(),
+                'approved_by' => auth()->user()->id,
+            ]);
+
+            DB::commit();
+
+            Log::info('Report approved successfully', [
+                'report_id' => $report->id,
+                'supervisor_id' => $supervisor->id,
+                'approved_at' => $report->approved_at,
+            ]);
+
+            return redirect()->route('supervisor.reports.show', $report)
+                ->with('success', 'Report has been approved successfully and is now published.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to approve report', [
+                'error' => $e->getMessage(),
+                'report_id' => $report->id,
+                'supervisor_id' => $supervisor->id,
+            ]);
+
+            return back()->withInput()
+                ->with('error', 'Failed to approve report. Please try again.');
+        }
+    }
+
+    /**
+     * Mark report as under review
+     */
+    public function markUnderReview(Report $report)
+    {
+        // Get the supervisor record for the authenticated user
+        $supervisor = Supervisor::where('email', auth()->user()->email)->first();
+        
+        if (!$supervisor) {
+            return redirect()->route('supervisor.dashboard')
+                ->with('error', 'Supervisor profile not found.');
+        }
+
+        // Verify the report belongs to a group supervised by this supervisor
+        if ($report->group->supervisor_id !== $supervisor->id) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+
+        // Check if report has submissions
+        if (!$report->hasSubmissions()) {
+            return redirect()->route('supervisor.reports.show', $report)
+                ->with('error', 'Cannot mark report as under review without student submissions.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $report->update([
+                'status' => Report::STATUS_UNDER_REVIEW,
+            ]);
+
+            DB::commit();
+
+            Log::info('Report marked as under review', [
+                'report_id' => $report->id,
+                'supervisor_id' => $supervisor->id,
+            ]);
+
+            return redirect()->route('supervisor.reports.show', $report)
+                ->with('success', 'Report has been marked as under review.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to mark report as under review', [
+                'error' => $e->getMessage(),
+                'report_id' => $report->id,
+                'supervisor_id' => $supervisor->id,
+            ]);
+
+            return back()->with('error', 'Failed to update report status. Please try again.');
         }
     }
 }

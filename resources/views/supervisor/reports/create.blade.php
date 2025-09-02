@@ -56,49 +56,21 @@
                     </p>
                 </div>
 
-                <!-- Final Report Fields (shown only when type is 'final') -->
-                <div x-show="reportType === 'final'" x-cloak class="space-y-6">
-                    <!-- Project Title -->
-                    <div>
-                        <label for="project_title" class="block text-sm font-medium text-gray-700 mb-2">
-                            Project Title <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="project_title" id="project_title" 
-                               value="{{ old('project_title') }}"
-                               x-bind:required="reportType === 'final'"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('project_title') border-red-500 @enderror"
-                               placeholder="Enter the thesis project title">
-                        @error('project_title')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Abstract -->
-                    <div>
-                        <label for="abstract_md" class="block text-sm font-medium text-gray-700 mb-2">
-                            Abstract <span class="text-red-500">*</span>
-                        </label>
-                        <textarea name="abstract_md" id="abstract_md" rows="8"
-                                  x-bind:required="reportType === 'final'"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('abstract_md') border-red-500 @enderror"
-                                  placeholder="Enter the project abstract.">{{ old('abstract_md') }}</textarea>
-                        @error('abstract_md')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Keywords -->
-                    <div>
-                        <label for="keywords" class="block text-sm font-medium text-gray-700 mb-2">
-                            Keywords
-                        </label>
-                        <input type="text" name="keywords" id="keywords" 
-                               value="{{ old('keywords') }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('keywords') border-red-500 @enderror"
-                               placeholder="Enter keywords separated by commas (e.g., machine learning, AI, neural networks)">
-                        @error('keywords')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                <!-- Final Report Info -->
+                <div x-show="reportType === 'final'" x-cloak class="mb-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-800 mb-1">Final Report Information</h4>
+                                <p class="text-sm text-blue-700">
+                                    For final reports, the project title, abstract, and keywords will be filled out during the approval process. 
+                                    Students will submit their work first, then you can review and approve with the final project details.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

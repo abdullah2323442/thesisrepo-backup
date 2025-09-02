@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Spatie\LaravelPdf\Facades\Pdf;
 
 class DashboardController extends Controller
 {
@@ -187,72 +186,4 @@ class DashboardController extends Controller
         return null;
     }
 
-    /**
-     * Download meetings PDF report
-     */
-    public function downloadMeetingsPdf()
-    {
-        try {
-            $user = Auth::user();
-            
-            // Get student ID
-            if ($user && $user->login_type === 'student' && session()->has('external_student_data')) {
-                $userData = session('external_student_data');
-                $studentId = $userData['Roll'] ?? $userData['roll'] ?? null;
-                $studentName = $userData['Name'] ?? 'Student';
-            } else {
-                $userData = $user;
-                $studentId = $user->roll ?? $user->student_id ?? null;
-                $studentName = $user->name ?? 'Student';
-            }
-
-            // Get student's group information
-            $groupInfo = $this->getStudentGroupInfo($studentId);
-            
-            if (!$groupInfo || !$groupInfo['hasGroup']) {
-                return redirect()->route('student.meetings.index')->with('error', 'You are not assigned to any group yet.');
-            }
-
-            // Get all meetings for the group
-            $meetings = Meeting::with(['attendances.groupStudent'])
-                ->where('group_id', $groupInfo['group']['id'])
-                ->orderBy('meeting_date', 'asc')
-                ->get();
-
-            // Get all group members for attendance tracking
-            $groupMembers = collect($groupInfo['members']);
-
-            // Prepare data for PDF
-            $pdfData = [
-                'universityName' => 'Premier University Chattogram',
-                'departmentName' => 'Department of Computer Science & Engineering',
-                'logoPath' => public_path('Picture1.png'),
-                'supervisor' => $groupInfo['supervisor'],
-                'areaOfInterest' => $groupInfo['areaOfInterest'],
-                'studentIds' => $groupMembers->pluck('student_id')->implode(', '),
-                'groupName' => $groupInfo['group']['name'],
-                'meetings' => $meetings,
-                'groupMembers' => $groupMembers,
-                'generatedDate' => now()->format('F d, Y')
-            ];
-
-            // Generate PDF
-            $pdf = Pdf::view('student.meetings-pdf', $pdfData)
-                ->format('a4')
-                ->margins(15, 15, 15, 15);
-
-            $filename = 'meetings_report_' . str_replace([' ', '/'], '_', $groupInfo['group']['name']) . '_' . now()->format('Y_m_d') . '.pdf';
-
-            return $pdf->download($filename);
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to generate meetings PDF:', [
-                'error' => $e->getMessage(),
-                'user_id' => $user->id ?? null,
-                'student_id' => $studentId ?? null
-            ]);
-            
-            return redirect()->route('student.meetings.index')->with('error', 'Failed to generate PDF report. Please try again or contact support.');
-        }
     }
-}

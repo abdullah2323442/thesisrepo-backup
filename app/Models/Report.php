@@ -14,6 +14,7 @@ class Report extends Model
 
     protected $fillable = [
         'group_id',
+        'area_of_interest_id',
         'type',
         'project_title',
         'abstract_md',
@@ -21,13 +22,22 @@ class Report extends Model
         'supervisor_message',
         'keywords',
         'created_by',
+        'status',
+        'approved_at',
+        'approved_by',
     ];
 
     protected $casts = [
-        'keywords' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
+
+    // Status constants
+    const STATUS_DRAFT = 'draft';
+    const STATUS_SUBMITTED = 'submitted';
+    const STATUS_UNDER_REVIEW = 'under_review';
+    const STATUS_APPROVED = 'approved';
 
     /**
      * Get the group that owns the report
@@ -59,6 +69,22 @@ class Report extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(StudentReportSubmission::class);
+    }
+
+    /**
+     * Get the user who approved the report
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * Get the area of interest for the report
+     */
+    public function areaOfInterest(): BelongsTo
+    {
+        return $this->belongsTo(AreaOfInterest::class, 'area_of_interest_id');
     }
 
     /**
@@ -110,5 +136,90 @@ class Report extends Model
     public function scopeForGroup($query, int $groupId)
     {
         return $query->where('group_id', $groupId);
+    }
+
+    /**
+     * Status check methods
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->status === self::STATUS_SUBMITTED;
+    }
+
+    public function isUnderReview(): bool
+    {
+        return $this->status === self::STATUS_UNDER_REVIEW;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    /**
+     * Check if report can be approved
+     */
+    public function canBeApproved(): bool
+    {
+        return $this->isFinal() && 
+               $this->submissions()->exists() && 
+               !$this->isApproved();
+    }
+
+    /**
+     * Check if report has student submissions
+     */
+    public function hasSubmissions(): bool
+    {
+        return $this->submissions()->exists();
+    }
+
+    /**
+     * Scope to filter approved reports
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    /**
+     * Scope to filter final reports
+     */
+    public function scopeFinal($query)
+    {
+        return $query->where('type', 'final');
+    }
+
+    /**
+     * Get status badge color
+     */
+    public function getStatusBadgeColorAttribute(): string
+    {
+        return match($this->status) {
+            self::STATUS_DRAFT => 'bg-gray-100 text-gray-800',
+            self::STATUS_SUBMITTED => 'bg-blue-100 text-blue-800',
+            self::STATUS_UNDER_REVIEW => 'bg-yellow-100 text-yellow-800',
+            self::STATUS_APPROVED => 'bg-green-100 text-green-800',
+            default => 'bg-gray-100 text-gray-800',
+        };
+    }
+
+    /**
+     * Get formatted status text
+     */
+    public function getFormattedStatusAttribute(): string
+    {
+        return match($this->status) {
+            self::STATUS_DRAFT => 'Draft',
+            self::STATUS_SUBMITTED => 'Submitted',
+            self::STATUS_UNDER_REVIEW => 'Under Review',
+            self::STATUS_APPROVED => 'Approved',
+            default => 'Unknown',
+        };
     }
 }

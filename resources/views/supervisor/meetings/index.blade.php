@@ -155,6 +155,35 @@
                 </form>
             </div>
 
+            <!-- Group PDF Downloads -->
+            @if($groups->isNotEmpty())
+            <div class="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Download Meeting Reports by Group
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    @foreach($groups as $group)
+                        <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ $group->name }}</div>
+                                <div class="text-xs text-gray-500">Batch {{ $group->batch_number }} • {{ $group->students->count() }} students</div>
+                            </div>
+                            <a href="{{ route('supervisor.meetings.group.pdf', $group) }}" 
+                               class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 transition-colors">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                PDF
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             @if($meetings->isEmpty())
                 <div class="text-center py-12">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

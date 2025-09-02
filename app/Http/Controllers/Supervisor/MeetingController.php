@@ -9,6 +9,8 @@ use App\Models\MeetingAttendance;
 use App\Models\Supervisor as SupervisorModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class MeetingController extends Controller
 {
@@ -153,5 +155,80 @@ class MeetingController extends Controller
             'name' => $s->student_name,
             'student_id' => $s->student_id,
         ]));
+    }
+
+    /**
+     * Download meetings PDF report for a specific group
+     */
+    public function downloadGroupMeetingsPdf(Group $group)
+    {
+        try {
+            $supervisor = $this->currentSupervisor();
+            
+            // Verify supervisor has access to this group
+            if (!$supervisor || $group->supervisor_id !== $supervisor->id) {
+                abort(403, 'Unauthorized');
+            }
+
+            // Load group with all related information
+            $group->load(['students', 'matchedAreaOfInterest', 'supervisor', 'advisor']);
+
+            // Get all meetings for the group
+            $meetings = Meeting::with(['attendances.groupStudent'])
+                ->where('group_id', $group->id)
+                ->orderBy('meeting_date', 'asc')
+                ->get();
+
+            // Get all group members for attendance tracking
+            $groupMembers = $group->students->map(function ($student) {
+                return [
+                    'student_id' => $student->student_id,
+                    'name' => $student->student_name,
+                    'email' => $student->student_email,
+                ];
+            });
+
+            // Prepare data for PDF
+            $pdfData = [
+                'universityName' => 'Premier University Chattogram',
+                'departmentName' => 'Department of Computer Science & Engineering',
+                'logoPath' => public_path('Picture1.png'),
+                'supervisor' => [
+                    'id' => $supervisor->id,
+                    'name' => $supervisor->fullname,
+                    'email' => $supervisor->email,
+                    'designation' => $supervisor->designation,
+                    'department' => $supervisor->department,
+                ],
+                'areaOfInterest' => $group->matchedAreaOfInterest ? [
+                    'id' => $group->matchedAreaOfInterest->id,
+                    'name' => $group->matchedAreaOfInterest->name,
+                    'description' => $group->matchedAreaOfInterest->description
+                ] : null,
+                'studentIds' => $groupMembers->pluck('student_id')->implode(', '),
+                'groupName' => $group->name,
+                'meetings' => $meetings,
+                'groupMembers' => $groupMembers,
+                'generatedDate' => now()->format('F d, Y')
+            ];
+
+            // Generate PDF
+            $pdf = Pdf::view('student.meetings-pdf', $pdfData)
+                ->format('a4')
+                ->margins(15, 15, 15, 15);
+
+            $filename = 'meetings_report_' . str_replace([' ', '/'], '_', $group->name) . '_' . now()->format('Y_m_d') . '.pdf';
+
+            return $pdf->download($filename);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to generate meetings PDF for supervisor:', [
+                'error' => $e->getMessage(),
+                'supervisor_id' => $supervisor->id ?? null,
+                'group_id' => $group->id ?? null
+            ]);
+            
+            return redirect()->route('supervisor.meetings.index')->with('error', 'Failed to generate PDF report. Please try again or contact support.');
+        }
     }
 }

@@ -17,9 +17,10 @@ use App\Http\Controllers\Supervisor\ReportController as SupervisorReportControll
 use App\Http\Controllers\Teacher\ReportCommentController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/reports/{report}', [App\Http\Controllers\HomeController::class, 'show'])->name('reports.show');
+Route::get('/reports/{report}/pdf/view', [App\Http\Controllers\HomeController::class, 'viewPdf'])->name('reports.pdf.view');
+Route::get('/reports/{report}/pdf/download', [App\Http\Controllers\HomeController::class, 'downloadPdf'])->name('reports.pdf.download');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -38,6 +39,7 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     Route::get('/supervisor/meetings/{meeting}', [SupervisorMeetingController::class, 'show'])->name('supervisor.meetings.show');
     Route::get('/supervisor/meetings/{meeting}/edit', [SupervisorMeetingController::class, 'edit'])->name('supervisor.meetings.edit');
     Route::put('/supervisor/meetings/{meeting}', [SupervisorMeetingController::class, 'update'])->name('supervisor.meetings.update');
+    Route::get('/supervisor/meetings/{group}/pdf', [SupervisorMeetingController::class, 'downloadGroupMeetingsPdf'])->name('supervisor.meetings.group.pdf');
     
     // Report Management routes
     Route::get('/supervisor/reports', [SupervisorReportController::class, 'index'])->name('supervisor.reports.index');
@@ -47,6 +49,11 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     Route::get('/supervisor/reports/{report}/edit', [SupervisorReportController::class, 'edit'])->name('supervisor.reports.edit');
     Route::put('/supervisor/reports/{report}', [SupervisorReportController::class, 'update'])->name('supervisor.reports.update');
     Route::delete('/supervisor/reports/{report}', [SupervisorReportController::class, 'destroy'])->name('supervisor.reports.destroy');
+    
+    // Report Approval routes
+    Route::get('/supervisor/reports/{report}/finalize', [SupervisorReportController::class, 'showFinalize'])->name('supervisor.reports.finalize');
+    Route::post('/supervisor/reports/{report}/finalize', [SupervisorReportController::class, 'finalize'])->name('supervisor.reports.finalize.store');
+    Route::post('/supervisor/reports/{report}/under-review', [SupervisorReportController::class, 'markUnderReview'])->name('supervisor.reports.under-review');
     
     // Teacher can comment on reports
     Route::post('/teacher/reports/{report}/comments', [ReportCommentController::class, 'store'])->name('teacher.reports.comments.store');
@@ -59,8 +66,6 @@ Route::middleware(['auth', 'student'])->group(function () {
         ->name('student.dashboard');
     Route::get('/student/meetings', [StudentDashboardController::class, 'meetings'])
         ->name('student.meetings.index');
-    Route::get('/student/meetings/pdf', [StudentDashboardController::class, 'downloadMeetingsPdf'])
-        ->name('student.meetings.pdf');
     
     // Report routes
     Route::get('/student/reports', [\App\Http\Controllers\Student\ReportController::class, 'index'])

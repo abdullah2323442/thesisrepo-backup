@@ -15,17 +15,21 @@ The documentation has been reorganized and consolidated for better maintainabili
 | **TESTING_GUIDE.md** | Testing documentation | Test suites, coverage reports, execution guides |
 | **PERFORMANCE_MONITORING_GUIDE.md** | System monitoring | Performance metrics, monitoring dashboard, optimization |
 
-### 🔧 Specialized Documentation (2 files)
+### 🔧 Specialized Documentation (3 files)
 
 | File | Purpose | Content |
 |------|---------|---------|
 | **QODO_PERMANENT_SETUP.md** | Development tools | AI assistant configuration for developers |
+| **SUPERVISOR_ASSIGNMENT_ALGORITHM.md** | Algorithm documentation | Complete supervisor assignment algorithm with flowcharts |
 | **IMPLEMENTATION_ARCHIVE.md** | Historical reference | Archived implementation details and bug fixes |
 
-### 📋 Reference Files (1 file)
+### 📋 Reference Files (4 files)
 
 | File | Purpose | Content |
 |------|---------|---------|
+| **DOCUMENTATION_STRUCTURE.md** | Documentation organization | This structure guide and maintenance rules |
+| **DOCUMENTATION_UPDATE_SUMMARY.md** | Update summary | Summary of latest documentation updates |
+| **FINAL_CLEANUP_REPORT.md** | Cleanup and verification | Repository cleanup and feature verification report |
 | **DELETED_FILES_BACKUP_LIST.txt** | Cleanup record | List of files removed during cleanup |
 
 ## Documentation Consolidation Summary
@@ -37,7 +41,7 @@ The documentation has been reorganized and consolidated for better maintainabili
 - Inconsistent organization
 
 ### After Consolidation
-- **9 total files** (6 core + 3 supporting)
+- **13 total files** (6 core + 3 specialized + 4 reference)
 - Clear, logical organization
 - No duplicate information
 - Easy navigation and maintenance

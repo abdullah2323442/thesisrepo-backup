@@ -26,6 +26,9 @@
                         <span class="px-3 py-1 text-sm font-semibold rounded {{ $report->type === 'final' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
                             {{ ucfirst($report->type) }} Report
                         </span>
+                        <span class="px-3 py-1 text-sm font-semibold rounded {{ $report->status_badge_color }}">
+                            {{ $report->formatted_status }}
+                        </span>
                         <h1 class="text-2xl font-bold text-gray-800">
                             {{ $report->project_title ?: 'Report for ' . $report->group->name }}
                         </h1>
@@ -74,8 +77,8 @@
                 @if($report->abstract_md)
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-3">Abstract</h3>
-                        <div class="prose max-w-none bg-gray-50 p-4 rounded-lg" id="abstract-content">
-                            {!! \Illuminate\Support\Str::markdown($report->abstract_md) !!}
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            {!! nl2br(e($report->abstract_md)) !!}
                         </div>
                     </div>
                 @endif
@@ -142,6 +145,74 @@
             </div>
         </div>
     </div>
+
+    <!-- Report Approval Actions -->
+    @if($report->canBeApproved())
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Report Approval</h3>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-medium text-green-800 mb-1">Ready for Approval</h4>
+                            <p class="text-sm text-green-700 mb-3">
+                                This final report has student submissions and is ready for your approval. Once approved, it will be published in the thesis repository.
+                            </p>
+                            <div class="flex items-center gap-3">
+                                @if($report->hasSubmissions() && !$report->isUnderReview())
+                                    <form action="{{ route('supervisor.reports.under-review', $report) }}" method="POST" class="inline-block">
+                                        @csrf
+                                        <button type="submit" 
+                                                class="inline-flex items-center px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700 transition-colors">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            Mark Under Review
+                                        </button>
+                                    </form>
+                                @endif
+                                <a href="{{ route('supervisor.reports.finalize', $report) }}" 
+                                   class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                    </svg>
+                                    Approve & Finalize Report
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @elseif($report->isApproved())
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">Report Status</h3>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-green-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="text-sm font-medium text-green-800 mb-1">Report Approved</h4>
+                            <p class="text-sm text-green-700">
+                                This report was approved on {{ $report->approved_at->format('M d, Y h:i A') }} and is now published in the thesis repository.
+                            </p>
+                            @if($report->approver)
+                                <p class="text-xs text-green-600 mt-1">
+                                    Approved by: {{ $report->approver->name }}
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Student Submissions Section -->
     @if($report->submissions->count() > 0)
