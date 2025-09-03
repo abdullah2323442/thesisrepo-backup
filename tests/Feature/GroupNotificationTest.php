@@ -53,7 +53,7 @@ class GroupNotificationTest extends TestCase
             $studentUser = User::factory()->create([
                 'name' => "Student {$i}",
                 'email' => "student{$i}@example.com",
-                'roll' => "2021{$i:03d}",
+                'roll' => '2021' . str_pad($i, 3, '0', STR_PAD_LEFT),
                 'login_type' => 'student',
             ]);
 

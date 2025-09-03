@@ -35,9 +35,9 @@
                     </div>
                     <div class="text-sm text-gray-600">
                         <span>Group: <strong>{{ $report->group->name }}</strong></span>
-                        <span class="mx-2">â€¢</span>
+                        <span class="mx-2">•</span>
                         <span>Created by: {{ $report->creator->name }}</span>
-                        <span class="mx-2">â€¢</span>
+                        <span class="mx-2">•</span>
                         <span>{{ $report->created_at->format('M d, Y h:i A') }}</span>
                     </div>
                 </div>
@@ -408,4 +408,56 @@ function openPowerPointOnline(fileUrl, filename) {
     
     // Create a modal to show viewing options
     const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">View PowerPoint Presentation</h3>
+            <p class="text-gray-600 mb-4">Choose how you'd like to view "${filename}":</p>
+            <div class="space-y-3">
+                <button onclick="window.open('${officeViewerUrl}', '_blank'); closeModal()" 
+                        class="w-full px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors">
+                    View with Microsoft Office Online
+                </button>
+                <button onclick="window.open('${googleViewerUrl}', '_blank'); closeModal()" 
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+                    View with Google Docs Viewer
+                </button>
+                <button onclick="window.open('${fileUrl}', '_blank'); closeModal()" 
+                        class="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors">
+                    Download File
+                </button>
+            </div>
+            <button onclick="closeModal()" 
+                    class="mt-4 w-full px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    function closeModal() {
+        document.body.removeChild(modal);
+    }
+    
+    // Make closeModal available globally for the modal buttons
+    window.closeModal = closeModal;
+}
+
+// Auto-hide success/error messages after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.bg-green-100, .bg-red-100');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.5s ease-out';
+            alert.style.opacity = '0';
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 500);
+        }, 5000);
+    });
+});
+</script>
 @endsection
