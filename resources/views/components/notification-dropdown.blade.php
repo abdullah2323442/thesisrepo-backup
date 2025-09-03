@@ -74,6 +74,9 @@
                                 <svg x-show="notification.data.type === 'report_comment'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                                 </svg>
+                                <svg x-show="notification.data.type === 'report_updated'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
                             </div>
                         </div>
 
@@ -206,6 +209,7 @@ function notificationDropdown() {
             const classes = {
                 'report_assigned': 'bg-purple-500',
                 'report_comment': 'bg-blue-500',
+                'report_updated': 'bg-orange-500',
                 'default': 'bg-gray-500'
             };
             return classes[type] || classes.default;

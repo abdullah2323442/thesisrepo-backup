@@ -31,6 +31,11 @@
                                     <span class="px-3 py-1 text-sm font-semibold rounded {{ $report->type === 'final' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
                                         {{ ucfirst($report->type) }} Report
                                     </span>
+                                    @if($report->isFinal() && $report->isApproved())
+                                        <span class="px-3 py-1 text-sm font-semibold rounded {{ $report->status_badge_color }}">
+                                            ✓ {{ $report->formatted_status }}
+                                        </span>
+                                    @endif
                                     @if($report->project_title)
                                         <h3 class="text-lg font-semibold text-gray-800">{{ $report->project_title }}</h3>
                                     @endif
@@ -49,6 +54,14 @@
                                 <div class="flex items-center gap-4 text-sm text-gray-500 mt-2">
                                     <span>Created {{ $report->created_at->diffForHumans() }}</span>
                                     <span>By {{ $report->creator->name }}</span>
+                                    @if($report->isFinal() && $report->isApproved())
+                                        <span class="text-green-600 font-medium">
+                                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            Approved {{ $report->approved_at->diffForHumans() }}
+                                        </span>
+                                    @endif
                                     @if($report->comments->count() > 0)
                                         <span class="text-blue-600">
                                             <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

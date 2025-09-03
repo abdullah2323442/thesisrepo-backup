@@ -105,7 +105,90 @@
                                                     {{ $report->comments->count() }} {{ Str::plural('comment', $report->comments->count()) }}
                                                 </span>
                                             @endif
+                                            @if($report->submissions->count() > 0)
+                                                <span class="flex items-center gap-1">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                    </svg>
+                                                    {{ $report->submissions->count() }} {{ Str::plural('submission', $report->submissions->count()) }}
+                                                </span>
+                                            @endif
                                         </div>
+
+                                        <!-- Student Submissions -->
+                                        @if($report->submissions->count() > 0)
+                                            <div class="mt-3 pt-3 border-t border-gray-200">
+                                                <h5 class="text-sm font-medium text-gray-700 mb-2">Student Submissions:</h5>
+                                                <div class="space-y-2">
+                                                    @foreach($report->submissions as $submission)
+                                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                                            <div class="flex items-center gap-2">
+                                                                <!-- File Type Icon -->
+                                                                @if($submission->isPdf())
+                                                                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                                                    </svg>
+                                                                @elseif($submission->isPowerPoint())
+                                                                    <svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                                                        <path d="M8 8a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1V8zM8 11a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1v-1z"></path>
+                                                                    </svg>
+                                                                @else
+                                                                    <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                                                    </svg>
+                                                                @endif
+                                                                
+                                                                <div class="flex-1 min-w-0">
+                                                                    <p class="text-sm font-medium text-gray-900 truncate">{{ $submission->subject }}</p>
+                                                                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                                                                        <span>{{ $submission->student->name }}</span>
+                                                                        <span>•</span>
+                                                                        <span>{{ $submission->file_type }}</span>
+                                                                        <span>•</span>
+                                                                        <span>{{ $submission->formatted_file_size }}</span>
+                                                                        <span>•</span>
+                                                                        <span>{{ $submission->created_at->diffForHumans() }}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <!-- Download/View Button -->
+                                                            <div class="flex items-center gap-1">
+                                                                @if($submission->isPdf())
+                                                                    <a href="{{ route('supervisor.reports.submissions.download', [$report, $submission]) }}" 
+                                                                       class="inline-flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                                                                       title="Download PDF">
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                                        </svg>
+                                                                        PDF
+                                                                    </a>
+                                                                @elseif($submission->isPowerPoint())
+                                                                    <a href="{{ route('supervisor.reports.submissions.download', [$report, $submission]) }}" 
+                                                                       class="inline-flex items-center gap-1 px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 transition-colors"
+                                                                       title="Download PowerPoint">
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                                        </svg>
+                                                                        PPT
+                                                                    </a>
+                                                                @else
+                                                                    <a href="{{ route('supervisor.reports.submissions.download', [$report, $submission]) }}" 
+                                                                       class="inline-flex items-center gap-1 px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors"
+                                                                       title="Download File">
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                                        </svg>
+                                                                        File
+                                                                    </a>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('supervisor.reports.show', $report) }}" 

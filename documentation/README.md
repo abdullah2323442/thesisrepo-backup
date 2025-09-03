@@ -66,6 +66,7 @@ Welcome to the Thesis Management System documentation. This folder contains comp
 - Group Management (Creation, Deletion, Assignment)
 - Supervisor Assignment (Manual & Lottery algorithms)
 - Meeting Management (Creation, Tracking, PDF Reports)
+- Report Submissions (PDF and PowerPoint file uploads with validation)
 - Excel Integration (Upload/Download with validation)
 - Performance Monitoring (Real-time dashboard)
 - API Integration (External authentication & data sync)

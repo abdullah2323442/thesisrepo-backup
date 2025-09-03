@@ -8,7 +8,9 @@ use App\Models\Group;
 use App\Models\GroupStudent;
 use App\Models\User;
 use App\Models\Supervisor;
+use App\Models\StudentReportSubmission;
 use App\Notifications\NewReportAssigned;
+use App\Notifications\ReportUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +34,7 @@ class ReportController extends Controller
         // Get all groups supervised by this supervisor
         $groups = Group::where('supervisor_id', $supervisor->id)
             ->with(['reports' => function ($query) {
-                $query->latest()->with('comments.teacher');
+                $query->latest()->with(['comments.teacher', 'submissions.student']);
             }])
             ->get();
 
@@ -300,6 +302,21 @@ class ReportController extends Controller
 
         DB::beginTransaction();
         try {
+            // Track changes for notification
+            $changes = [];
+            if ($report->group_id != $validated['group_id']) {
+                $changes['group_id'] = $validated['group_id'];
+            }
+            if ($report->type != $validated['type']) {
+                $changes['type'] = $validated['type'];
+            }
+            if ($report->extra_input != ($validated['extra_input'] ?? null)) {
+                $changes['extra_input'] = $validated['extra_input'] ?? null;
+            }
+            if ($report->supervisor_message != ($validated['supervisor_message'] ?? null)) {
+                $changes['supervisor_message'] = $validated['supervisor_message'] ?? null;
+            }
+
             // Update the report (only basic fields, not project details)
             $report->update([
                 'group_id' => $validated['group_id'],
@@ -308,6 +325,67 @@ class ReportController extends Controller
                 'supervisor_message' => $validated['supervisor_message'] ?? null,
             ]);
 
+            // Send notifications to students if there were meaningful changes
+            if (!empty($changes)) {
+                // Get all students in the group
+                $groupStudents = GroupStudent::where('group_id', $report->group_id)->get();
+                
+                Log::info('Sending update notifications to group students', [
+                    'report_id' => $report->id,
+                    'group_id' => $report->group_id,
+                    'student_count' => $groupStudents->count(),
+                    'changes' => array_keys($changes)
+                ]);
+
+                // Find users with matching roll numbers or student_id
+                $students = collect();
+                foreach ($groupStudents as $groupStudent) {
+                    // Try to find user by roll or student_id
+                    $user = User::where('roll', $groupStudent->student_id)
+                        ->orWhere('student_id', $groupStudent->student_id)
+                        ->first();
+                        
+                    if ($user) {
+                        $students->push($user);
+                        Log::info('Found user for update notification', [
+                            'student_id' => $groupStudent->student_id,
+                            'user_id' => $user->id,
+                            'user_name' => $user->name
+                        ]);
+                    } else {
+                        Log::warning('No user found for student in update notification', [
+                            'student_id' => $groupStudent->student_id
+                        ]);
+                    }
+                }
+
+                // Send notifications to students
+                if ($students->isNotEmpty()) {
+                    // Load relationships for the report
+                    $report->load(['group', 'creator']);
+                    
+                    foreach ($students as $student) {
+                        try {
+                            $student->notify(new ReportUpdated($report, $changes));
+                            Log::info('Update notification sent to student', [
+                                'user_id' => $student->id,
+                                'report_id' => $report->id
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send update notification to student', [
+                                'user_id' => $student->id,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                } else {
+                    Log::warning('No students found to notify for report update', [
+                        'group_id' => $report->group_id,
+                        'report_id' => $report->id
+                    ]);
+                }
+            }
+
             DB::commit();
 
             Log::info('Report updated successfully', [
@@ -315,10 +393,17 @@ class ReportController extends Controller
                 'group_id' => $group->id,
                 'type' => $report->type,
                 'supervisor_id' => $supervisor->id,
+                'changes_made' => array_keys($changes),
+                'notified_students' => $students->count() ?? 0,
             ]);
 
+            $successMessage = 'Report updated successfully';
+            if (!empty($changes) && isset($students) && $students->count() > 0) {
+                $successMessage .= ' and students have been notified of the changes';
+            }
+
             return redirect()->route('supervisor.reports.show', $report)
-                ->with('success', 'Report updated successfully.');
+                ->with('success', $successMessage . '.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -537,5 +622,44 @@ class ReportController extends Controller
 
             return back()->with('error', 'Failed to update report status. Please try again.');
         }
+    }
+
+    /**
+     * Download a student submission file
+     */
+    public function downloadSubmission(Report $report, StudentReportSubmission $submission)
+    {
+        // Get the supervisor record for the authenticated user
+        $supervisor = Supervisor::where('email', auth()->user()->email)->first();
+        
+        if (!$supervisor) {
+            return redirect()->route('supervisor.dashboard')
+                ->with('error', 'Supervisor profile not found.');
+        }
+
+        // Verify the report belongs to a group supervised by this supervisor
+        if ($report->group->supervisor_id !== $supervisor->id) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+
+        // Verify the submission belongs to this report
+        if ($submission->report_id !== $report->id) {
+            abort(403, 'Unauthorized access to this submission.');
+        }
+
+        // Check if file exists
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($submission->file_path)) {
+            return back()->with('error', 'File not found.');
+        }
+
+        Log::info('Supervisor downloading student submission', [
+            'supervisor_id' => $supervisor->id,
+            'report_id' => $report->id,
+            'submission_id' => $submission->id,
+            'student_id' => $submission->student_id,
+            'filename' => $submission->original_filename,
+        ]);
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->download($submission->file_path, $submission->original_filename);
     }
 }

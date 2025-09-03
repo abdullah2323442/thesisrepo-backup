@@ -89,7 +89,7 @@ class ReportSubmissionController extends Controller
         $validated = $request->validate([
             'subject' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'file' => ['required', 'file', 'mimes:pdf', 'max:10240'], // 10MB max
+            'file' => ['required', 'file', 'mimes:pdf,ppt,pptx', 'max:20480'], // 20MB max for PPT files
         ]);
         
         try {
@@ -98,8 +98,9 @@ class ReportSubmissionController extends Controller
             $fileSize = $file->getSize();
             $mimeType = $file->getMimeType();
             
-            // Generate unique filename
-            $filename = Str::uuid() . '.pdf';
+            // Generate unique filename with proper extension
+            $extension = $file->getClientOriginalExtension();
+            $filename = Str::uuid() . '.' . $extension;
             $filePath = 'student-submissions/' . $filename;
             
             // Store the file
@@ -188,7 +189,7 @@ class ReportSubmissionController extends Controller
         $validated = $request->validate([
             'subject' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'file' => ['nullable', 'file', 'mimes:pdf', 'max:10240'], // 10MB max
+            'file' => ['nullable', 'file', 'mimes:pdf,ppt,pptx', 'max:20480'], // 20MB max for PPT files
         ]);
         
         try {
@@ -209,8 +210,9 @@ class ReportSubmissionController extends Controller
                     Storage::disk('public')->delete($submission->file_path);
                 }
                 
-                // Generate unique filename
-                $filename = Str::uuid() . '.pdf';
+                // Generate unique filename with proper extension
+                $extension = $file->getClientOriginalExtension();
+                $filename = Str::uuid() . '.' . $extension;
                 $filePath = 'student-submissions/' . $filename;
                 
                 // Store the new file

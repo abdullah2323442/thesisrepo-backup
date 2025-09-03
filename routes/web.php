@@ -55,6 +55,9 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     Route::post('/supervisor/reports/{report}/finalize', [SupervisorReportController::class, 'finalize'])->name('supervisor.reports.finalize.store');
     Route::post('/supervisor/reports/{report}/under-review', [SupervisorReportController::class, 'markUnderReview'])->name('supervisor.reports.under-review');
     
+    // Supervisor submission download route
+    Route::get('/supervisor/reports/{report}/submissions/{submission}/download', [SupervisorReportController::class, 'downloadSubmission'])->name('supervisor.reports.submissions.download');
+    
     // Teacher can comment on reports
     Route::post('/teacher/reports/{report}/comments', [ReportCommentController::class, 'store'])->name('teacher.reports.comments.store');
 });

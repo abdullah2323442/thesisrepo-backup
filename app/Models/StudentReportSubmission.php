@@ -76,6 +76,39 @@ class StudentReportSubmission extends Model
     }
 
     /**
+     * Check if file is a PowerPoint presentation
+     */
+    public function isPowerPoint(): bool
+    {
+        return in_array($this->mime_type, [
+            'application/vnd.ms-powerpoint', // .ppt
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' // .pptx
+        ]);
+    }
+
+    /**
+     * Get file type display name
+     */
+    public function getFileTypeAttribute(): string
+    {
+        if ($this->isPdf()) {
+            return 'PDF Document';
+        } elseif ($this->isPowerPoint()) {
+            return 'PowerPoint Presentation';
+        }
+        
+        return 'Document';
+    }
+
+    /**
+     * Get file extension from original filename
+     */
+    public function getFileExtensionAttribute(): string
+    {
+        return strtolower(pathinfo($this->original_filename, PATHINFO_EXTENSION));
+    }
+
+    /**
      * Delete the associated file when the model is deleted
      */
     protected static function boot()

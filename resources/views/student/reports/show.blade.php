@@ -28,6 +28,11 @@
                         <span class="px-3 py-1 text-sm font-semibold rounded {{ $report->type === 'final' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
                             {{ ucfirst($report->type) }} Report
                         </span>
+                        @if($report->isFinal() && $report->isApproved())
+                            <span class="px-3 py-1 text-sm font-semibold rounded {{ $report->status_badge_color }}">
+                                ✓ {{ $report->formatted_status }}
+                            </span>
+                        @endif
                         <h1 class="text-2xl font-bold text-gray-800">
                             {{ $report->project_title ?: 'Report for ' . $report->group->name }}
                         </h1>
@@ -46,6 +51,56 @@
                     Back to Reports
                 </a>
             </div>
+
+            <!-- Approval Status for Final Reports -->
+            @if($report->isFinal() && $report->isApproved())
+                <div class="mb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-lg font-semibold text-green-800 mb-2">
+                                    🎉 Congratulations! Your Final Report has been Approved
+                                </h3>
+                                <div class="text-green-700 space-y-1">
+                                    <p class="font-medium">
+                                        This report was approved on {{ $report->approved_at->format('F d, Y \a\t h:i A') }} and is now published in the thesis repository.
+                                    </p>
+                                    @if($report->approver)
+                                        <p class="text-sm">
+                                            Approved by: <span class="font-medium">{{ $report->approver->name }}</span>
+                                        </p>
+                                    @endif
+                                    <div class="mt-3 pt-3 border-t border-green-200">
+                                        <p class="text-sm font-medium mb-2">Your thesis is now publicly available:</p>
+                                        <div class="flex items-center space-x-3">
+                                            <a href="{{ route('reports.show', $report) }}" 
+                                               target="_blank"
+                                               class="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-1M10 6V4a2 2 0 112 0v2M10 6h4m0 0v2m0-2a2 2 0 012 2v1M4 11h16m-8 4h8"></path>
+                                                </svg>
+                                                View Public Thesis Page
+                                            </a>
+                                            <button onclick="copyThesisLink()" 
+                                                    class="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                                </svg>
+                                                Copy Link
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <!-- Report Content -->
             @if($report->isFinal())
@@ -225,4 +280,108 @@
         </div>
     </div>
 </div>
+
+@if($report->isFinal() && $report->isApproved())
+<script>
+function copyThesisLink() {
+    const url = '{{ route('reports.show', $report) }}';
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    // Function to show success state
+    function showSuccess() {
+        button.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Copied!
+        `;
+        button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+        button.classList.add('bg-green-600', 'hover:bg-green-700');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('bg-green-600', 'hover:bg-green-700');
+            button.classList.add('bg-gray-600', 'hover:bg-gray-700');
+        }, 2000);
+    }
+    
+    // Function to show error state
+    function showError() {
+        button.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Failed
+        `;
+        button.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+        button.classList.add('bg-red-600', 'hover:bg-red-700');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('bg-red-600', 'hover:bg-red-700');
+            button.classList.add('bg-gray-600', 'hover:bg-gray-700');
+        }, 2000);
+    }
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url).then(function() {
+            showSuccess();
+        }).catch(function(err) {
+            console.error('Clipboard API failed:', err);
+            fallbackCopyTextToClipboard(url);
+        });
+    } else {
+        // Fallback for older browsers or non-secure contexts
+        fallbackCopyTextToClipboard(url);
+    }
+    
+    function fallbackCopyTextToClipboard(text) {
+        // Create a temporary textarea element
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        
+        // Avoid scrolling to bottom
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showSuccess();
+            } else {
+                throw new Error('Copy command failed');
+            }
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            showError();
+            
+            // Show manual copy dialog
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            
+            if (isMobile) {
+                // For mobile devices, select the text and show instructions
+                textArea.style.opacity = "1";
+                textArea.style.position = "relative";
+                textArea.select();
+                alert('Please manually copy the selected link:\n\n' + text);
+            } else {
+                // For desktop, show copy dialog
+                prompt('Copy this link manually (Ctrl+C):', text);
+            }
+        } finally {
+            document.body.removeChild(textArea);
+        }
+    }
+}
+</script>
+@endif
 @endsection

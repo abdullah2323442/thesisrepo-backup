@@ -63,12 +63,45 @@
                     <div class="border border-gray-200 rounded-lg p-4">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
-                                <svg class="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                </svg>
+                                @php
+                                    $extension = pathinfo($submission->original_filename, PATHINFO_EXTENSION);
+                                    $isPdf = strtolower($extension) === 'pdf';
+                                    $isPpt = in_array(strtolower($extension), ['ppt', 'pptx']);
+                                    
+                                    if ($isPdf) {
+                                        $fileType = 'PDF Document';
+                                        $iconColor = 'text-red-600';
+                                        $bgColor = 'bg-red-100';
+                                    } elseif ($isPpt) {
+                                        $fileType = 'PowerPoint Presentation';
+                                        $iconColor = 'text-orange-600';
+                                        $bgColor = 'bg-orange-100';
+                                    } else {
+                                        $fileType = 'Document';
+                                        $iconColor = 'text-gray-600';
+                                        $bgColor = 'bg-gray-100';
+                                    }
+                                @endphp
+                                
+                                <div class="w-10 h-10 {{ $bgColor }} rounded-lg flex items-center justify-center mr-3">
+                                    @if($isPdf)
+                                        <svg class="w-6 h-6 {{ $iconColor }}" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                                        </svg>
+                                    @elseif($isPpt)
+                                        <svg class="w-6 h-6 {{ $iconColor }}" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h6a1 1 0 001-1V3a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                                        </svg>
+                                    @else
+                                        <svg class="w-6 h-6 {{ $iconColor }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                        </svg>
+                                    @endif
+                                </div>
                                 <div>
                                     <p class="font-medium text-gray-800">{{ $submission->original_filename }}</p>
-                                    <p class="text-sm text-gray-600">{{ $submission->formatted_file_size }} • PDF Document</p>
+                                    <p class="text-sm text-gray-600">{{ $submission->formatted_file_size }} • {{ $fileType }}</p>
                                 </div>
                             </div>
                             <a href="{{ route('student.reports.submissions.download', [$report, $submission]) }}" 

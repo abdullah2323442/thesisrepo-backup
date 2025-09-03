@@ -50,11 +50,7 @@
                     <a href="{{ route('login') }}"
                         class="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors">
                         Sign In
-                    </a>
-                    <a href="{{ route('register') }}"
-                        class="inline-flex items-center px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-colors">
-                        Register
-                    </a>
+                    </a> 
                 </div>
                 @endauth
             </div>

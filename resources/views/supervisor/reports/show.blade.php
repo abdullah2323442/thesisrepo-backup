@@ -1,4 +1,4 @@
-@extends('layouts.supervisor')
+﻿@extends('layouts.supervisor')
 
 @section('page-title', 'Report Details')
 @section('page-description', 'View report details and comments')
@@ -35,9 +35,9 @@
                     </div>
                     <div class="text-sm text-gray-600">
                         <span>Group: <strong>{{ $report->group->name }}</strong></span>
-                        <span class="mx-2">•</span>
+                        <span class="mx-2">â€¢</span>
                         <span>Created by: {{ $report->creator->name }}</span>
-                        <span class="mx-2">•</span>
+                        <span class="mx-2">â€¢</span>
                         <span>{{ $report->created_at->format('M d, Y h:i A') }}</span>
                     </div>
                 </div>
@@ -222,46 +222,121 @@
                 
                 <div class="space-y-4">
                     @foreach($report->submissions as $submission)
-                        <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                             <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <h4 class="font-semibold text-gray-800">{{ $submission->subject }}</h4>
-                                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Submitted</span>
+                                <div class="flex items-start gap-3 flex-1">
+                                    <!-- File Type Icon -->
+                                    <div class="flex-shrink-0 mt-1">
+                                        @if($submission->isPdf())
+                                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </div>
+                                        @elseif($submission->isPowerPoint())
+                                            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                                    <path d="M8 8a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1V8zM8 11a1 1 0 011-1h1a1 1 0 011 1v1a1 1 0 01-1 1H9a1 1 0 01-1-1v-1z"></path>
+                                                </svg>
+                                            </div>
+                                        @else
+                                            <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </div>
+                                        @endif
                                     </div>
-                                    
-                                    @if($submission->description)
-                                        <p class="text-gray-600 text-sm mb-2">{{ $submission->description }}</p>
-                                    @endif
-                                    
-                                    <div class="flex items-center text-sm text-gray-500 space-x-4">
-                                        <span class="flex items-center">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                            </svg>
-                                            {{ $submission->student->name }}
-                                        </span>
-                                        <span>{{ $submission->created_at->diffForHumans() }}</span>
-                                        <span>{{ $submission->formatted_file_size }}</span>
-                                        <span class="flex items-center">
-                                            <svg class="w-4 h-4 mr-1 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                            </svg>
-                                            {{ $submission->original_filename }}
-                                        </span>
+
+                                    <!-- Submission Details -->
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-3 mb-2">
+                                            <h4 class="font-semibold text-gray-800 truncate">{{ $submission->subject }}</h4>
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full flex-shrink-0">Submitted</span>
+                                        </div>
+                                        
+                                        @if($submission->description)
+                                            <p class="text-gray-600 text-sm mb-3">{{ $submission->description }}</p>
+                                        @endif
+                                        
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                                <span class="font-medium">{{ $submission->student->name }}</span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <span>{{ $submission->created_at->diffForHumans() }}</span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <span>{{ $submission->file_type }}</span>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                                                </svg>
+                                                <span>{{ $submission->formatted_file_size }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-2 text-xs text-gray-400">
+                                            <span class="font-mono">{{ $submission->original_filename }}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <div class="ml-4">
-                                    <a href="{{ asset('storage/' . $submission->file_path) }}" 
-                                       target="_blank"
-                                       class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        View PDF
-                                    </a>
+                                <!-- Action Buttons -->
+                                <div class="flex items-center gap-2 ml-4 flex-shrink-0">
+                                    @if($submission->isPdf())
+                                        <!-- PDF View Button -->
+                                        <a href="{{ asset('storage/' . $submission->file_path) }}" 
+                                           target="_blank"
+                                           class="inline-flex items-center px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                                           title="View PDF in browser">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            View PDF
+                                        </a>
+                                        <!-- PDF Download Button -->
+                                        <a href="{{ route('supervisor.reports.submissions.download', [$report, $submission]) }}" 
+                                           class="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                                           title="Download PDF file">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            Download
+                                        </a>
+                                    @elseif($submission->isPowerPoint())
+                                        <!-- PowerPoint Download Button -->
+                                        <a href="{{ route('supervisor.reports.submissions.download', [$report, $submission]) }}" 
+                                           class="inline-flex items-center px-3 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+                                           title="Download PowerPoint presentation">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            Download PPT
+                                        </a>
+                                    @else
+                                        <!-- Generic File Download Button -->
+                                        <a href="{{ route('supervisor.reports.submissions.download', [$report, $submission]) }}" 
+                                           class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                                           title="Download file">
+                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            Download
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -320,4 +395,17 @@
         </div>
     </div>
 </div>
+
+<script>
+function openPowerPointOnline(fileUrl, filename) {
+    // Try multiple approaches to view PowerPoint files
+    
+    // Option 1: Try Microsoft Office Online Viewer
+    const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+    
+    // Option 2: Try Google Docs Viewer as fallback
+    const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+    
+    // Create a modal to show viewing options
+    const modal = document.createElement('div');
 @endsection
