@@ -1,0 +1,271 @@
+@startuml Admin_Management_Activity_Diagram
+!theme plain
+title Admin System Management Workflow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+start
+:Admin Login;
+:Access Admin Dashboard;
+
+fork
+  partition "Area of Interest Management" {
+    :View Areas of Interest;
+    
+    if (Action?) then (Create New)
+      :Click Create Area;
+      :Enter Area Name;
+      :Enter Description;
+      :Set Active Status;
+      :Save Area;
+      
+    elseif (Bulk Create)
+      :Prepare Bulk Data;
+      note right
+        Format: One area per line
+        Can paste from Excel
+      end note
+      :Paste Multiple Areas;
+      :Validate Entries;
+      :Bulk Save Areas;
+      
+    elseif (Edit Existing)
+      :Select Area;
+      :Modify Details;
+      :Update Area;
+      
+    else (Delete)
+      :Select Area;
+      :Check Dependencies;
+      if (Has Assignments?) then (yes)
+        :Show Warning;
+        :Confirm Deletion;
+      else (no)
+        :Delete Area;
+      endif
+    endif
+  }
+
+fork again
+  partition "Supervisor Management" {
+    :View Supervisor List;
+    
+    if (Sync from API?) then (yes)
+      :Initiate API Sync;
+      :Fetch Teacher Data;
+      note left
+        API provides:
+        - Teacher ID
+        - Name
+        - Email
+        - Designation
+        - Department
+      end note
+      :Map to Supervisor Records;
+      :Update Database;
+      :Show Sync Results;
+    else (no)
+      :Manual Management;
+    endif
+    
+    :Select Supervisor;
+    
+    fork
+      :Set Thesis Limit;
+      :Configure Max Groups;
+    fork again
+      :Assign Areas of Interest;
+      :Toggle Area Associations;
+    fork again
+      :Set Active/Inactive Status;
+    fork again
+      :Update Designation/Rank;
+      note right
+        Rank Priority:
+        1. Professor
+        2. Associate Professor
+        3. Assistant Professor
+        4. Lecturer
+      end note
+    end fork
+    
+    :Save Supervisor Settings;
+  }
+
+fork again
+  partition "Batch Management" {
+    :View Batch List;
+    
+    if (Sync Batches?) then (yes)
+      :Call Batch API;
+      :Retrieve Batch Data;
+      :Compare with Local;
+      :Show Differences;
+      
+      if (Confirm Sync?) then (yes)
+        :Update Local Batches;
+        :Activate/Deactivate Batches;
+      else (no)
+        :Cancel Sync;
+      endif
+    else (no)
+      :Manual Batch Management;
+    endif
+    
+    :Select Batch Actions;
+    fork
+      :Toggle Batch Status;
+    fork again
+      :Edit Batch Details;
+    fork again
+      :Bulk Activate/Deactivate;
+    end fork
+  }
+
+fork again
+  partition "Group Management" {
+    :View All Groups;
+    :Filter by Batch/Status;
+    
+    if (Group Action?) then (Create)
+      :Create New Group;
+      :Set Group Properties;
+      
+    elseif (Assign Students)
+      :Select Group;
+      :Add/Remove Students;
+      :Validate Assignments;
+      
+    elseif (Assign Supervisor)
+      :Select Group;
+      :Choose Supervisor;
+      :Check Capacity;
+      :Confirm Assignment;
+      
+    elseif (Assign Panel)
+      :Select Group;
+      :Add Panel Members;
+      :Set Panel Roles;
+      
+    else (Delete)
+      :Select Groups;
+      if (Bulk Delete?) then (yes)
+        :Select Multiple Groups;
+        :Confirm Bulk Delete;
+        :Remove All Selected;
+      else (no)
+        :Delete Single Group;
+      endif
+    endif
+  }
+
+fork again
+  partition "Performance Monitoring" {
+    :Access Performance Dashboard;
+    
+    fork
+      :View System Metrics;
+      note left
+        Metrics Include:
+        - Response Times
+        - Database Performance
+        - API Call Statistics
+        - Cache Hit Rates
+      end note
+      
+    fork again
+      :Check System Health;
+      if (Issues Detected?) then (yes)
+        :View Issue Details;
+        :Take Corrective Action;
+      else (no)
+        :System Healthy;
+      endif
+      
+    fork again
+      :Monitor API Usage;
+      :Check Rate Limits;
+      :View API Errors;
+      
+    fork again
+      :Security Monitoring;
+      :Check Failed Logins;
+      :Review Access Logs;
+    end fork
+    
+    if (Performance Issues?) then (yes)
+      :Clear Cache;
+      :Optimize Database;
+      :Restart Services;
+    else (no)
+      :Continue Monitoring;
+    endif
+    
+    :Generate Performance Report;
+    :Export Metrics;
+  }
+
+fork again
+  partition "User Management" {
+    :View User List;
+    :Filter by Role;
+    
+    if (User Action?) then (Create)
+      :Create New User;
+      :Set User Role;
+      note right
+        Roles:
+        - Admin
+        - Advisor
+        - Teacher
+        - Student
+      end note
+      :Set Credentials;
+      
+    elseif (Edit)
+      :Select User;
+      :Modify User Details;
+      :Update Permissions;
+      
+    elseif (Reset Password)
+      :Select User;
+      :Generate New Password;
+      :Send Reset Email;
+      
+    else (Deactivate)
+      :Select User;
+      :Deactivate Account;
+      :Log Action;
+    endif
+  }
+
+end fork
+
+partition "System Maintenance" {
+  :Schedule Maintenance;
+  
+  fork
+    :Backup Database;
+    :Archive Old Data;
+  fork again
+    :Clean Temporary Files;
+    :Purge Old Logs;
+  fork again
+    :Update System Settings;
+    :Configure Parameters;
+  end fork
+  
+  :Generate Admin Report;
+  :Log Admin Activities;
+}
+
+:Save System State;
+:Logout;
+
+stop
+
+@enduml

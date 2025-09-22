@@ -1,0 +1,217 @@
+@startuml Advisor_Workflow_Activity_Diagram
+!theme plain
+title Advisor Group Management & Assignment Workflow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+start
+:Login as Advisor;
+:Access Advisor Dashboard;
+
+partition "Initial Setup" {
+  :Sync Student Data from External API;
+  note right
+    API Endpoints:
+    - Fetch Batch Students
+    - Validate Registrations
+    - Update Student Info
+  end note
+  
+  :View Available Students;
+  :Check Batch Status;
+}
+
+partition "Group Creation Process" {
+  if (Group Creation Method?) then (Manual)
+    :Click "Add Group";
+    :Enter Group Name;
+    :Set Group Number;
+    :Create Empty Group;
+    
+    repeat
+      :Select Students;
+      :Assign to Group;
+      :Validate Assignment;
+    repeat while (More Students to Assign?)
+    
+  else (Excel Import)
+    :Download Excel Template;
+    note left
+      Template Columns:
+      - Group Name
+      - Student Registration
+      - Student Name
+      - Area of Interest
+    end note
+    
+    :Fill Excel Template;
+    :Upload Excel File;
+    :System Validates Data;
+    
+    if (Validation Successful?) then (yes)
+      :Preview Import Results;
+      :Confirm Import;
+      :Groups Created in Bulk;
+    else (no)
+      :View Validation Errors;
+      :Fix Excel Data;
+      -> Retry Upload;
+    endif
+  endif
+}
+
+partition "Area of Interest Assignment" {
+  :Select Groups;
+  :View Available Areas;
+  
+  if (Assignment Type?) then (Single Area)
+    :Select One Area of Interest;
+    :Assign to Group;
+  else (Multiple Areas)
+    :Select Primary Area;
+    :Select Secondary Areas;
+    note right
+      Fallback mechanism:
+      If primary area has no
+      available supervisors,
+      system tries secondary areas
+    end note
+    :Assign Multiple Areas;
+  endif
+  
+  :Validate Area Assignment;
+}
+
+partition "Supervisor Assignment Process" {
+  if (Assignment Method?) then (Manual)
+    :Select Group;
+    :View Available Supervisors;
+    :Filter by Area of Interest;
+    :Check Supervisor Capacity;
+    :Select Supervisor;
+    :Confirm Manual Assignment;
+    
+  else (Lottery System)
+    :Select Groups for Lottery;
+    :Choose Assignment Mode;
+    
+    if (Lottery Mode?) then (AOI Mode)
+      :Configure AOI Matching;
+      note left
+        AOI Mode:
+        - Matches by area of interest
+        - Random selection within area
+        - Supports multiple areas
+      end note
+      
+    elseif (Ranking Mode)
+      :Configure Ranking Priority;
+      note left
+        Ranking Mode:
+        - Professor > Associate > Assistant
+        - Round-robin within rank
+        - Ignores area of interest
+      end note
+      
+    else (Combined Mode)
+      :Configure Combined Settings;
+      note left
+        Combined Mode:
+        - Considers both AOI and rank
+        - Intelligent round-robin
+        - Fair load distribution
+      end note
+    endif
+    
+    :Preview Lottery Results;
+    note right
+      Preview Shows:
+      - Proposed assignments
+      - Unassigned groups
+      - Assignment statistics
+      - Load distribution
+    end note
+    
+    if (Accept Preview?) then (yes)
+      :Run Lottery Assignment;
+      :Store Assignment History;
+      :Send Notifications;
+    else (no)
+      :Adjust Settings;
+      -> Retry Preview;
+    endif
+  endif
+}
+
+partition "Post-Assignment Management" {
+  :View Assignment Results;
+  
+  fork
+    :Monitor Group Progress;
+    :Track Supervisor Load;
+  fork again
+    :Handle Unassigned Groups;
+    if (Groups Remain Unassigned?) then (yes)
+      :Review Unassigned Reasons;
+      note left
+        Common Reasons:
+        - No matching supervisors
+        - All supervisors at capacity
+        - No area of interest set
+      end note
+      
+      :Take Corrective Action;
+      if (Action?) then (Add Supervisors)
+        :Request Admin to Add Supervisors;
+      elseif (Adjust Areas)
+        :Modify Area Assignments;
+      else (Manual Override)
+        :Force Manual Assignment;
+      endif
+    else (no)
+      :All Groups Assigned;
+    endif
+  end fork
+}
+
+partition "Co-Supervisor & Panel Assignment" {
+  if (Co-Supervisor Needed?) then (yes)
+    :Select Groups;
+    :Choose Co-Supervisors;
+    :Assign Co-Supervisors;
+  else (no)
+    :Skip Co-Supervisor;
+  endif
+  
+  if (Panel Members Needed?) then (yes)
+    :Select Groups;
+    :Choose Panel Members;
+    :Assign Panel Members;
+  else (no)
+    :Skip Panel Assignment;
+  endif
+}
+
+partition "Reporting & Monitoring" {
+  :Generate Assignment Report;
+  :Export to Excel;
+  :View Statistics Dashboard;
+  note right
+    Statistics Include:
+    - Total groups created
+    - Assignment success rate
+    - Supervisor distribution
+    - Area coverage
+  end note
+}
+
+:Save Semester Configuration;
+:Archive Assignment Data;
+
+stop
+
+@enduml

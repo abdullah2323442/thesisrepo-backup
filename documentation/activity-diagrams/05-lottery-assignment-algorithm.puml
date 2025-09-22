@@ -1,0 +1,201 @@
+@startuml Lottery_Assignment_Algorithm_Detailed
+!theme plain
+title Supervisor Lottery Assignment Algorithm - Detailed Flow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+start
+:Initialize Lottery System;
+:Load Unassigned Groups;
+:Sort Groups by Number;
+note right: Groups sorted numerically for fair ordering
+
+if (Select Assignment Mode) then (AOI Mode)
+  
+  partition "AOI Matching Mode" {
+    :Collect All Area IDs from Groups;
+    :Build Supervisor Pools by Area;
+    
+    repeat
+      :Take Next Group;
+      :Get Group's Area IDs;
+      note left
+        Primary area tried first,
+        then secondary areas
+        in order
+      end note
+      
+      if (Has Areas?) then (yes)
+        repeat
+          :Try Next Area;
+          :Get Area Supervisor Pool;
+          
+          if (Pool Has Supervisors?) then (yes)
+            :Group Supervisors by Rank;
+            :Randomize Within Each Rank;
+            
+            repeat
+              :Select Random Supervisor;
+              :Check Availability;
+              
+              if (Has Capacity?) then (yes)
+                :Assign Supervisor;
+                :Update Capacity;
+                :Record Assignment History;
+                :Mark Assignment Success;
+                break
+              else (no)
+                :Try Next Supervisor;
+              endif
+              
+            repeat while (More Supervisors in Pool?)
+            
+          else (no)
+            :No Supervisors for Area;
+          endif
+          
+        repeat while (More Areas to Try?)
+        
+      else (no)
+        :Mark as No Area Set;
+      endif
+      
+      if (Not Assigned?) then (yes)
+        :Add to Unassigned List;
+      endif
+      
+    repeat while (More Groups?)
+  }
+  
+elseif (Ranking Mode)
+  
+  partition "Ranking Priority Mode" {
+    :Load All Active Supervisors;
+    :Sort by Rank Priority;
+    note right
+      Priority Order:
+      1. Professor
+      2. Associate Professor
+      3. Assistant Professor
+      4. Lecturer
+    end note
+    
+    :Initialize Round-Robin Tracker;
+    
+    repeat
+      :Take Next Group;
+      :Start from Current Round;
+      
+      repeat
+        :Get Next Supervisor in Round;
+        
+        if (Supervisor Assignment Count <= Current Round?) then (yes)
+          if (Has Available Slots?) then (yes)
+            :Assign to Group;
+            :Increment Assignment Count;
+            :Update Round-Robin Position;
+            :Mark Assignment Success;
+            break
+          else (no)
+            :Skip - No Capacity;
+          endif
+        else (no)
+          :Skip - Already Assigned in Round;
+        endif
+        
+        :Move to Next Supervisor;
+        
+        if (Completed Full Cycle?) then (yes)
+          :Increment Round Number;
+        endif
+        
+      repeat while (Not Assigned & Supervisors Available?)
+      
+      if (Not Assigned?) then (yes)
+        :Add to Unassigned List;
+      endif
+      
+    repeat while (More Groups?)
+  }
+  
+else (Combined Mode)
+  
+  partition "Intelligent Combined Mode" {
+    :Build AOI Pools Without Randomization;
+    :Initialize Global Assignment Tracker;
+    :Initialize Per-Area Last Assigned;
+    
+    repeat
+      :Take Next Group;
+      :Get Group's Area IDs;
+      
+      if (Has Areas?) then (yes)
+        repeat
+          :Try Next Area;
+          :Get Area Supervisors;
+          :Calculate Area Minimum Count;
+          note left
+            Ensures no supervisor in area
+            gets 2 groups before everyone
+            in that area gets 1
+          end note
+          
+          :Filter to Minimum Count Supervisors;
+          
+          if (Eligible Supervisors Found?) then (yes)
+            :Avoid Last Assigned if Possible;
+            :Sort by Rank (if equal count);
+            :Select Best Candidate;
+            :Assign Supervisor;
+            :Update Global Counts;
+            :Update Last Assigned;
+            :Mark Assignment Success;
+            break
+          else (no)
+            :No Eligible Supervisors;
+          endif
+          
+        repeat while (More Areas?)
+      else (no)
+        :No Area Set;
+      endif
+      
+      if (Not Assigned?) then (yes)
+        :Add to Unassigned List;
+      endif
+      
+    repeat while (More Groups?)
+  }
+  
+endif
+
+partition "Post-Processing" {
+  :Calculate Statistics;
+  note right
+    Statistics:
+    - Total Assigned
+    - Total Unassigned
+    - No Matches Found
+    - Assignment Distribution
+  end note
+  
+  :Generate Assignment Report;
+  
+  fork
+    :Log Assignment History;
+  fork again
+    :Send Notifications;
+  fork again
+    :Update Database;
+  end fork
+  
+  :Return Results;
+}
+
+stop
+
+@enduml

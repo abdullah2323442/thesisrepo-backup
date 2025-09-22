@@ -1,0 +1,172 @@
+@startuml Supervisor_Workflow_Activity_Diagram
+!theme plain
+title Supervisor Management Workflow - Detailed Activity Flow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+|#LightBlue|Supervisor|
+start
+:Login to System;
+:Access Supervisor Dashboard;
+
+:View Assigned Groups;
+note right
+  Group Information:
+  - Group Name & Number
+  - Student Details
+  - Area of Interest
+  - Co-supervisor (if any)
+end note
+
+|#LightGreen|Group Management|
+fork
+  :Manage Group Settings;
+  if (Co-supervisor Exists?) then (yes)
+    :Toggle Co-supervisor Meeting Permission;
+    note left: Allow/Deny meeting creation rights
+  else (no)
+    :Continue;
+  endif
+fork again
+  :View Group Students;
+  :Check Student Progress;
+end fork
+
+|#LightYellow|Meeting Management|
+:Schedule New Meeting;
+:Select Group;
+:Set Meeting Details;
+note right
+  Meeting Fields:
+  - Title
+  - Date & Time
+  - Location
+  - Agenda
+  - Meeting Type
+end note
+:Send Notifications to Students;
+
+:Conduct Meeting;
+:Record Attendance;
+:Document Meeting Minutes;
+:Generate Meeting Report PDF;
+
+|#LightPink|Report Management|
+:View Pending Reports;
+
+repeat
+  :Select Report for Review;
+  :Check Submission Status;
+  
+  if (New Submission Available?) then (yes)
+    :Open Report Submission;
+    
+    fork
+      :View/Download Original File;
+      if (File Type?) then (PowerPoint)
+        :View PowerPoint Presentation;
+      else (PDF)
+        :View PDF Document;
+      endif
+    fork again
+      :Start Annotation Process;
+    end fork
+    
+    partition "Annotation Process" {
+      :Create Annotation Session;
+      :Open PDF Annotator;
+      
+      repeat
+        :Add Annotations;
+        note left
+          Annotation Types:
+          - Text Comments
+          - Highlights
+          - Drawings
+          - Sticky Notes
+        end note
+        :Save Annotation Progress;
+      repeat while (More Annotations Needed?)
+      
+      :Finalize Annotations;
+      :Generate Annotated PDF;
+    }
+    
+    partition "Feedback Process" {
+      :Write Overall Feedback;
+      :Set Report Status;
+      note right
+        Status Options:
+        - Under Review
+        - Needs Revision
+        - Approved
+        - Rejected
+      end note
+      
+      if (Send Feedback Now?) then (yes)
+        :Send Feedback to Student;
+        :Notification Sent;
+      else (no)
+        :Save as Draft;
+      endif
+    }
+    
+  else (no)
+    :No New Submissions;
+  endif
+  
+  :Update Report Progress;
+  
+repeat while (More Reports to Review?)
+
+|#LightCyan|Report Finalization|
+:Review All Group Reports;
+if (All Reports Satisfactory?) then (yes)
+  :Initiate Finalization;
+  :Add Final Comments;
+  :Set Final Grades;
+  :Submit to Panel;
+else (no)
+  :Request Revisions;
+  -> Back to Report Management;
+endif
+
+|#LightGray|Co-Supervisor Coordination|
+if (Acting as Co-Supervisor?) then (yes)
+  :Access Co-Supervisor Dashboard;
+  :View Shared Groups;
+  
+  if (Meeting Permission Granted?) then (yes)
+    :Create/Manage Meetings;
+  else (no)
+    :View Meetings Only;
+  endif
+  
+  :Collaborate on Report Reviews;
+  :Add Co-Supervisor Annotations;
+else (no)
+  :Continue as Primary Supervisor;
+endif
+
+|#Lavender|Panel Member Activities|
+if (Acting as Panel Member?) then (yes)
+  :Access Panel Dashboard;
+  :Review Assigned Theses;
+  :Provide Panel Evaluation;
+  :Submit Assessment Scores;
+else (no)
+  :Continue Regular Activities;
+endif
+
+|Supervisor|
+:Generate Semester Report;
+:Archive Completed Theses;
+:Update Availability for Next Semester;
+
+stop
+
+@enduml

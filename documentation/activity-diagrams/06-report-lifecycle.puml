@@ -1,0 +1,206 @@
+@startuml Report_Lifecycle_Activity_Diagram
+!theme plain
+title Report Submission & Review Lifecycle
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+|#LightBlue|Supervisor|
+start
+:Create Report Assignment;
+:Set Report Details;
+note right
+  Report Fields:
+  - Title
+  - Description
+  - Type (Proposal/Progress/Final)
+  - Due Date
+  - Max File Size
+  - Allowed Formats
+end note
+:Assign to Group;
+:Publish Report;
+
+|#LightGreen|System|
+:Generate Notifications;
+:Send to All Group Students;
+:Update Student Dashboards;
+
+|#LightYellow|Student|
+:Receive Report Notification;
+:View Report Requirements;
+:Prepare Report Document;
+
+partition "Submission Process" {
+  :Click Submit Report;
+  :Select File to Upload;
+  
+  if (File Validation) then (Pass)
+    :Upload File;
+    :Add Submission Notes;
+    :Confirm Submission;
+    :Receive Confirmation;
+  else (Fail)
+    :View Error Message;
+    note left
+      Common Errors:
+      - File too large (>10MB)
+      - Wrong format
+      - Corrupted file
+    end note
+    :Fix Issues;
+    -> Retry;
+  endif
+}
+
+|System|
+:Store Submission;
+:Create Submission Record;
+:Notify Supervisor;
+:Notify Co-Supervisor;
+:Notify Panel Members;
+
+|#LightPink|Supervisor Review|
+:View New Submission;
+:Download Report File;
+:Initial Review;
+
+if (Immediate Action?) then (Mark Under Review)
+  :Set Status to "Under Review";
+  :Notify Student;
+else (Start Annotation)
+  :Continue to Annotation;
+endif
+
+partition "Annotation Process" {
+  :Create Annotation Session;
+  :Open PDF Annotator;
+  
+  repeat
+    :Add Annotations;
+    note right
+      Annotation Tools:
+      - Highlight text
+      - Add comments
+      - Draw shapes
+      - Insert notes
+      - Mark corrections
+    end note
+    :Save Progress;
+  repeat while (More Annotations?)
+  
+  :Finalize Annotation Session;
+  :Generate Annotated PDF;
+}
+
+partition "Feedback Decision" {
+  :Write Overall Feedback;
+  :Determine Report Status;
+  
+  if (Status Decision) then (Approved)
+    :Mark as Approved;
+    :Add Approval Comments;
+    :Set Final Grade;
+    
+  elseif (Needs Revision)
+    :Mark as Needs Revision;
+    :List Required Changes;
+    :Set Revision Deadline;
+    
+  elseif (Rejected)
+    :Mark as Rejected;
+    :Provide Rejection Reasons;
+    :Suggest Major Changes;
+    
+  else (Under Review)
+    :Keep Under Review;
+    :Save Draft Feedback;
+  endif
+  
+  if (Send Feedback?) then (yes)
+    :Send to Student;
+  else (no)
+    :Save as Draft;
+    stop
+  endif
+}
+
+|System|
+:Update Report Status;
+:Generate Notification;
+:Store Feedback History;
+
+|Student|
+:Receive Status Notification;
+:View Report Status;
+
+if (Status?) then (Approved)
+  :Download Approved Report;
+  :View Final Feedback;
+  :Download Certificate;
+  stop
+  
+elseif (Needs Revision)
+  :Download Annotated PDF;
+  :Review Feedback;
+  :Review Annotations;
+  
+  partition "Revision Process" {
+    :Make Required Changes;
+    :Prepare Revised Document;
+    :Create New Submission;
+    -> Back to Submission Process;
+  }
+  
+elseif (Rejected)
+  :View Rejection Details;
+  :Schedule Meeting with Supervisor;
+  :Discuss Major Changes;
+  :Start Over;
+  -> Back to Report Preparation;
+  
+else (Under Review)
+  :Wait for Review Completion;
+  :Check Status Periodically;
+endif
+
+|#LightCyan|Co-Supervisor Review|
+if (Co-Supervisor Assigned?) then (yes)
+  :Access Report Submission;
+  :Add Co-Supervisor Annotations;
+  :Provide Additional Feedback;
+  :Collaborate with Supervisor;
+else (no)
+  :Skip Co-Supervisor Review;
+endif
+
+|#Lavender|Panel Review|
+if (Final Report & Panel Assigned?) then (yes)
+  :Panel Members Review;
+  :Add Panel Annotations;
+  :Provide Evaluation Scores;
+  :Submit Assessment;
+  
+  if (Defense Required?) then (yes)
+    :Schedule Defense;
+    :Conduct Defense;
+    :Record Defense Outcome;
+  else (no)
+    :Direct Evaluation;
+  endif
+  
+  :Finalize Grades;
+else (no)
+  :Skip Panel Review;
+endif
+
+|Supervisor|
+:Archive Completed Report;
+:Update Progress Tracking;
+
+stop
+
+@enduml

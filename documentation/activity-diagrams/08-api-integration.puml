@@ -1,0 +1,273 @@
+@startuml API_Integration_Activity_Diagram
+!theme plain
+title External API Integration Workflows
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+start
+
+partition "API Configuration" {
+  :Load API Configuration;
+  note right
+    Config includes:
+    - Base URL
+    - API Token
+    - Timeout Settings
+    - Rate Limits
+  end note
+  
+  :Initialize HTTP Client;
+  :Set Authentication Headers;
+}
+
+fork
+  partition "Student API Integration" {
+    |#LightBlue|Student Dashboard|
+    :Request Student Data;
+    :Check Cache;
+    
+    if (Cache Valid?) then (yes)
+      :Return Cached Data;
+    else (no)
+      :Call Student API;
+      note left
+        Endpoint: /api/student/{registration}
+        Rate Limit: 60 requests/minute
+      end note
+      
+      if (API Response) then (Success)
+        :Parse Student Data;
+        :Extract Details;
+        note right
+          Data Retrieved:
+          - Name
+          - Registration
+          - Batch
+          - CGPA
+          - Email
+          - Phone
+        end note
+        :Cache Response (5 min);
+        :Return Data;
+      else (Error)
+        :Log API Error;
+        :Use Fallback Data;
+        :Show Warning to User;
+      endif
+    endif
+  }
+
+fork again
+  partition "Batch API Integration" {
+    |#LightGreen|Admin/Advisor|
+    :Request Batch Sync;
+    :Call Batch List API;
+    note left
+      Endpoint: /api/batches
+      Returns all active batches
+    end note
+    
+    if (API Response) then (Success)
+      :Parse Batch List;
+      
+      repeat
+        :Process Each Batch;
+        :Check Local Database;
+        
+        if (Batch Exists?) then (yes)
+          :Compare Data;
+          if (Different?) then (yes)
+            :Update Local Record;
+          else (no)
+            :Skip;
+          endif
+        else (no)
+          :Create New Batch;
+        endif
+        
+      repeat while (More Batches?)
+      
+      :Show Sync Summary;
+    else (Error)
+      :Log Error;
+      :Show Error Message;
+      :Rollback Changes;
+    endif
+  }
+
+fork again
+  partition "Supervisor API Integration" {
+    |#LightYellow|Admin|
+    :Request Supervisor Sync;
+    :Call Teacher API;
+    note right
+      Endpoint: /api/teachers
+      Returns all teachers
+    end note
+    
+    if (API Response) then (Success)
+      :Parse Teacher List;
+      
+      repeat
+        :Process Each Teacher;
+        :Map to Supervisor Model;
+        
+        if (Supervisor Exists?) then (yes)
+          :Update Information;
+          :Preserve Local Settings;
+          note left
+            Preserved:
+            - Thesis limit
+            - Areas of interest
+            - Active status
+          end note
+        else (no)
+          :Create New Supervisor;
+          :Set Default Settings;
+        endif
+        
+        :Calculate Rank Priority;
+        note right
+          Based on designation:
+          Professor = 1
+          Associate = 2
+          Assistant = 3
+          Lecturer = 4
+        end note
+        
+      repeat while (More Teachers?)
+      
+      :Update Supervisor Count;
+      :Generate Report;
+    else (Error)
+      :Handle API Error;
+      :Maintain Current Data;
+    endif
+  }
+
+fork again
+  partition "Group Student Validation" {
+    |#LightPink|Advisor|
+    :Upload Student List;
+    
+    repeat
+      :Extract Registration Number;
+      :Call Student Validation API;
+      note left
+        Endpoint: /api/student/validate/{reg}
+        Validates if student exists
+      end note
+      
+      if (Student Valid?) then (yes)
+        :Fetch Student Details;
+        :Add to Valid List;
+      else (no)
+        :Add to Invalid List;
+        :Mark for Review;
+      endif
+      
+    repeat while (More Students?)
+    
+    :Show Validation Results;
+    
+    if (Has Invalid Students?) then (yes)
+      :Display Invalid List;
+      :Request Correction;
+    else (no)
+      :Proceed with Assignment;
+    endif
+  }
+
+end fork
+
+partition "Rate Limiting & Error Handling" {
+  if (Rate Limit Exceeded?) then (yes)
+    :Calculate Wait Time;
+    :Show Rate Limit Message;
+    :Implement Exponential Backoff;
+    note right
+      Backoff Strategy:
+      1st retry: 1 second
+      2nd retry: 2 seconds
+      3rd retry: 4 seconds
+      Max: 30 seconds
+    end note
+    :Retry After Delay;
+  else (no)
+    :Continue;
+  endif
+  
+  if (Connection Error?) then (yes)
+    :Log Connection Issue;
+    :Check Network Status;
+    :Use Cached Data if Available;
+    :Queue for Later Sync;
+  else (no)
+    :Process Normally;
+  endif
+  
+  if (Authentication Error?) then (yes)
+    :Refresh API Token;
+    :Retry Request;
+    if (Still Fails?) then (yes)
+      :Alert Administrator;
+      :Disable API Features;
+    else (no)
+      :Continue;
+    endif
+  else (no)
+    :Continue;
+  endif
+}
+
+partition "Caching Strategy" {
+  :Implement Cache Layers;
+  
+  fork
+    :Memory Cache (1 min);
+    note left
+      For frequently accessed
+      data like student info
+    end note
+  fork again
+    :Redis Cache (5 min);
+    note left
+      For batch and
+      supervisor data
+    end note
+  fork again
+    :Database Cache (1 hour);
+    note left
+      For rarely changing
+      configuration data
+    end note
+  end fork
+  
+  :Cache Invalidation on Update;
+}
+
+partition "API Monitoring" {
+  :Track API Calls;
+  :Log Response Times;
+  :Monitor Error Rates;
+  :Generate API Usage Report;
+  
+  if (Degraded Performance?) then (yes)
+    :Alert Admin;
+    :Switch to Degraded Mode;
+    :Use Local Data Only;
+  else (no)
+    :Normal Operation;
+  endif
+}
+
+:Return Processed Data;
+:Update UI;
+
+stop
+
+@enduml

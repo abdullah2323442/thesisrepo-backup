@@ -1,0 +1,283 @@
+@startuml Notification_System_Activity_Diagram
+!theme plain
+title Notification System Workflow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+start
+
+partition "Notification Triggers" {
+  |#LightBlue|System Events|
+  
+  fork
+    :Report Assignment Created;
+    -> Generate NewReportAssigned;
+    
+  fork again
+    :Report Status Changed;
+    -> Generate ReportUpdated;
+    
+  fork again
+    :New Annotation Added;
+    -> Generate NewReportAnnotation;
+    
+  fork again
+    :Comment Posted;
+    -> Generate NewReportComment;
+    
+  fork again
+    :Meeting Scheduled;
+    -> Generate MeetingNotification;
+    
+  fork again
+    :Group Assignment Changed;
+    -> Generate GroupNotification;
+  end fork
+}
+
+|#LightGreen|Notification Processing|
+
+partition "Notification Creation" {
+  :Identify Recipients;
+  note right
+    Recipients based on:
+    - User role
+    - Group membership
+    - Report ownership
+    - Subscription preferences
+  end note
+  
+  :Create Notification Object;
+  :Set Notification Type;
+  :Add Notification Data;
+  note left
+    Data includes:
+    - Title
+    - Message
+    - Action URL
+    - Priority
+    - Metadata
+  end note
+  
+  :Determine Delivery Channels;
+  
+  fork
+    if (In-App Notification?) then (yes)
+      :Queue for Database Storage;
+    endif
+  fork again
+    if (Email Notification?) then (yes)
+      :Queue for Email Service;
+    endif
+  fork again
+    if (Real-time Update?) then (yes)
+      :Queue for WebSocket;
+    endif
+  end fork
+}
+
+partition "Database Notifications" {
+  :Store in notifications table;
+  :Set user_id;
+  :Set notification type;
+  :Store JSON data;
+  :Mark as unread;
+  :Set created timestamp;
+}
+
+partition "Email Notifications" {
+  if (Email Enabled?) then (yes)
+    :Load Email Template;
+    :Populate Template Data;
+    :Set Email Headers;
+    
+    if (Queue Driver?) then (sync)
+      :Send Immediately;
+    else (queue)
+      :Add to Queue;
+      :Process via Queue Worker;
+    endif
+    
+    if (Send Successful?) then (yes)
+      :Log Email Sent;
+    else (no)
+      :Log Error;
+      :Retry Later;
+    endif
+  else (no)
+    :Skip Email;
+  endif
+}
+
+partition "Real-time Notifications" {
+  if (WebSocket Connected?) then (yes)
+    :Broadcast to User Channel;
+    :Send Notification Payload;
+    :Update UI Badge Count;
+    :Show Toast Message;
+  else (no)
+    :User Will See on Next Login;
+  endif
+}
+
+|#LightYellow|User Interaction|
+
+partition "Notification Display" {
+  :User Logs In;
+  :Load Unread Notifications;
+  :Display Notification Badge;
+  :Show Notification Count;
+  
+  if (User Clicks Bell Icon?) then (yes)
+    :Show Notification Dropdown;
+    :Display Recent Notifications;
+    
+    repeat
+      :Show Notification Item;
+      note right
+        Display:
+        - Icon based on type
+        - Title and message
+        - Time ago
+        - Read/unread status
+      end note
+      
+      if (User Clicks Notification?) then (yes)
+        :Mark as Read;
+        :Navigate to Related Page;
+        :Update Badge Count;
+      endif
+      
+    repeat while (More Notifications?)
+    
+    if (View All Clicked?) then (yes)
+      :Navigate to Notifications Page;
+      :Show Full List;
+      :Enable Filtering;
+    endif
+    
+  else (no)
+    :Keep Badge Visible;
+  endif
+}
+
+partition "Notification Management" {
+  fork
+    :Mark Individual as Read;
+    :Update Database;
+    :Refresh UI;
+    
+  fork again
+    :Mark All as Read;
+    :Bulk Update Database;
+    :Clear Badge;
+    
+  fork again
+    :Delete Old Notifications;
+    if (Auto-cleanup Enabled?) then (yes)
+      :Delete > 30 days old;
+    else (no)
+      :Keep All;
+    endif
+  end fork
+}
+
+|#LightPink|Notification Types Detail|
+
+partition "Report Notifications" {
+  if (Type = NewReportAssigned) then
+    :Notify All Group Students;
+    :Include Report Details;
+    :Add Due Date;
+    :Link to Report Page;
+    
+  elseif (Type = ReportUpdated)
+    :Notify Report Owner;
+    :Include Status Change;
+    :Add Supervisor Comments;
+    :Link to Submission;
+    
+  elseif (Type = NewReportAnnotation)
+    :Notify Student;
+    :Include Annotation Count;
+    :Add Annotator Name;
+    :Link to Annotated PDF;
+    
+  elseif (Type = NewReportComment)
+    :Notify Relevant Users;
+    :Include Comment Preview;
+    :Add Commenter Name;
+    :Link to Report;
+  endif
+}
+
+partition "Meeting Notifications" {
+  :Extract Meeting Details;
+  :Identify All Attendees;
+  
+  fork
+    :Notify Students;
+  fork again
+    :Notify Supervisor;
+  fork again
+    :Notify Co-supervisor;
+  end fork
+  
+  :Include Meeting Info;
+  note left
+    Meeting details:
+    - Date and time
+    - Location
+    - Agenda
+    - Group name
+  end note
+  
+  :Add Calendar Link;
+  :Set Reminder;
+}
+
+partition "Group Notifications" {
+  if (Supervisor Assigned?) then
+    :Notify All Group Members;
+    :Include Supervisor Info;
+    :Add Contact Details;
+    
+  elseif (Co-supervisor Added?)
+    :Notify Group;
+    :Include Co-supervisor Info;
+    
+  elseif (Panel Member Added?)
+    :Notify Group;
+    :Include Panel Info;
+    
+  elseif (Student Added/Removed?)
+    :Notify Affected Students;
+    :Notify Supervisor;
+    :Update Group Info;
+  endif
+}
+
+|#LightCyan|Notification Analytics|
+
+:Track Notification Metrics;
+fork
+  :Count Sent Notifications;
+  :Track Read Rate;
+fork again
+  :Monitor Delivery Success;
+  :Log Failed Deliveries;
+fork again
+  :Measure Response Time;
+  :Track Click-through Rate;
+end fork
+
+:Generate Analytics Report;
+:Optimize Notification Strategy;
+
+stop
+
+@enduml

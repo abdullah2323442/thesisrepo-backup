@@ -1,0 +1,62 @@
+@startuml System_Overview_Activity_Diagram
+!theme plain
+title Thesis Management System - Overall Activity Flow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+  DiamondBackgroundColor #FFF3E0
+  DiamondBorderColor #F57C00
+}
+
+|#LightBlue|Admin|
+start
+:System Initialization;
+:Configure Areas of Interest;
+:Sync Supervisors from API;
+:Manage Batches;
+:Monitor System Performance;
+
+|#LightGreen|Advisor|
+:Create Student Groups;
+:Assign Students to Groups;
+:Set Areas of Interest;
+:Run Supervisor Assignment Lottery;
+note right
+  Assignment Modes:
+  - AOI Matching
+  - Ranking Priority
+  - Combined Mode
+end note
+
+|#LightYellow|Supervisor|
+:Receive Group Assignment;
+:Schedule Meetings;
+:Review Report Submissions;
+fork
+  :Annotate Reports;
+fork again
+  :Provide Feedback;
+end fork
+:Finalize Reports;
+
+|#LightPink|Student|
+:Join Assigned Group;
+:Attend Meetings;
+:Submit Reports;
+:View Annotations;
+:Receive Feedback;
+:Revise & Resubmit;
+
+|#LightGray|Panel Member|
+:Review Final Reports;
+:Provide Evaluation;
+:Submit Grades;
+
+|Admin|
+:Generate Final Reports;
+:Archive Data;
+stop
+
+@enduml

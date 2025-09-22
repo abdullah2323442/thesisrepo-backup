@@ -1,0 +1,126 @@
+@startuml Student_Workflow_Activity_Diagram
+!theme plain
+title Student Thesis Journey - Detailed Activity Flow
+skinparam backgroundColor #FEFEFE
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+  FontColor #0D47A1
+}
+
+start
+:Student Login;
+note right: Authentication via external API
+
+:Access Student Dashboard;
+
+if (Check Group Assignment?) then (Assigned)
+  :View Group Details;
+  :View Supervisor Information;
+  :View Co-supervisor (if any);
+  :View Panel Members;
+else (Not Assigned)
+  :Wait for Group Assignment;
+  :Receive Notification;
+  -> Retry;
+  :Access Student Dashboard;
+endif
+
+:Check Notifications;
+note left
+  Notification Types:
+  - New Report Assigned
+  - Report Feedback Available
+  - Meeting Scheduled
+  - Annotation Available
+end note
+
+partition "Meeting Management" {
+  if (Meeting Scheduled?) then (yes)
+    :View Meeting Details;
+    :Attend Meeting;
+    :Mark Attendance;
+    :View Meeting Minutes;
+  else (no)
+    :Continue;
+  endif
+}
+
+partition "Report Submission Process" {
+  :View Assigned Reports;
+  
+  if (Report Due?) then (yes)
+    :Create Report Submission;
+    
+    if (Choose Format) then (PowerPoint)
+      :Upload PowerPoint File;
+      note right: Max 10MB, .pptx format
+    else (PDF)
+      :Upload PDF File;
+      note right: Max 10MB, .pdf format
+    endif
+    
+    :Add Submission Notes;
+    :Submit Report;
+    
+    if (Submission Successful?) then (yes)
+      :Receive Confirmation;
+      :Notification Sent to Supervisor;
+    else (no)
+      :View Error Message;
+      :Fix Issues;
+      -> Retry submission;
+      :Create Report Submission;
+    endif
+  else (no)
+    :View Previous Submissions;
+  endif
+}
+
+partition "Feedback & Revision Cycle" {
+  :Wait for Supervisor Review;
+  
+  repeat
+    :Receive Notification of Feedback;
+    :View Report Status;
+    
+    if (Status?) then (Under Review)
+      :Wait for Completion;
+    elseif (Needs Revision)
+      :View Annotations;
+      :Download Annotated PDF;
+      :Read Feedback Comments;
+      :Revise Report;
+      :Resubmit Report;
+    elseif (Approved)
+      :View Final Feedback;
+      :Download Approved Report;
+    else (Rejected)
+      :View Rejection Reasons;
+      :Consult with Supervisor;
+      :Major Revision Required;
+    endif
+    
+  repeat while (Report Not Finalized?)
+}
+
+partition "Final Submission" {
+  :Submit Final Thesis;
+  :Wait for Panel Review;
+  :View Panel Feedback;
+  
+  if (Defense Required?) then (yes)
+    :Prepare for Defense;
+    :Attend Defense Session;
+    :Receive Final Grade;
+  else (no)
+    :Receive Final Grade;
+  endif
+}
+
+:View Completion Certificate;
+:Download Transcript;
+
+stop
+
+@enduml
