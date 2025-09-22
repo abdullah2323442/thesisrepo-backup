@@ -27,7 +27,7 @@ class SupervisorAssignmentController extends Controller
         $user = auth()->user();
         
         // Get groups for this advisor with optional batch filtering
-        $groupsQuery = Group::with(['areaOfInterest', 'areasOfInterest', 'matchedAreaOfInterest', 'supervisor', 'students'])
+        $groupsQuery = Group::with(['areaOfInterest', 'areasOfInterest', 'matchedAreaOfInterest', 'supervisor', 'coSupervisor', 'students'])
             ->where('advisor_id', $user->id)
             ->whereHas('students'); // Only show groups that have students
             
@@ -100,6 +100,12 @@ class SupervisorAssignmentController extends Controller
                      ->firstOrFail();
 
         $supervisor = Supervisor::findOrFail($request->supervisor_id);
+
+        // Prevent assigning the same person as existing co-supervisor
+        if (!is_null($group->co_supervisor_id) && $group->co_supervisor_id == $request->supervisor_id) {
+            return redirect()->back()
+                ->with('error', 'Cannot assign this supervisor because they are already assigned as co-supervisor for this group. The co-supervisor role is managed by admin only.');
+        }
 
         // Check if supervisor has available slots
         if (!$supervisor->canTakeThesis()) {
@@ -266,6 +272,7 @@ class SupervisorAssignmentController extends Controller
         try {
             \Log::info('getAvailableSupervisors called', [
                 'area_of_interest_id' => $request->get('area_of_interest_id'),
+                'group_id' => $request->get('group_id'),
                 'user_id' => auth()->id()
             ]);
 
@@ -278,6 +285,17 @@ class SupervisorAssignmentController extends Controller
             if (empty($ids)) {
                 return response()->json([]);
             }
+            
+            // Get group ID to check for co-supervisor
+            $groupId = $request->input('group_id');
+            $coSupervisorId = null;
+            if ($groupId) {
+                $group = Group::find($groupId);
+                if ($group) {
+                    $coSupervisorId = $group->co_supervisor_id;
+                }
+            }
+            
             // First get all active supervisors
             $allActiveSupervisors = Supervisor::where('is_active', true)->get();
             \Log::info('Found active supervisors', ['count' => $allActiveSupervisors->count()]);
@@ -288,13 +306,18 @@ class SupervisorAssignmentController extends Controller
             });
             \Log::info('Supervisors with available slots', ['count' => $supervisorsWithSlots->count()]);
 
-            // Filter by any of the requested areas
-            $matchingSupervisors = $supervisorsWithSlots->filter(function ($supervisor) use ($ids) {
+            // Filter by any of the requested areas and exclude co-supervisor
+            $matchingSupervisors = $supervisorsWithSlots->filter(function ($supervisor) use ($ids, $coSupervisorId) {
+                // Exclude if this supervisor is already the co-supervisor
+                if ($coSupervisorId && $supervisor->id == $coSupervisorId) {
+                    return false;
+                }
+                
                 return $supervisor->areasOfInterest()
                     ->whereIn('area_of_interests.id', $ids)
                     ->exists();
             });
-            \Log::info('Supervisors matching area of interest', ['count' => $matchingSupervisors->count()]);
+            \Log::info('Supervisors matching area of interest (excluding co-supervisor)', ['count' => $matchingSupervisors->count()]);
 
             // Sort by rank priority and format response
             $supervisors = $matchingSupervisors->sortBy('rank_priority')->map(function ($supervisor) {

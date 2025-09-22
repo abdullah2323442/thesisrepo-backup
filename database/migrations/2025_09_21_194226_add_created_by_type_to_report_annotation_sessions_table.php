@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('reports', function (Blueprint $table) {
-            $table->text('supervisor_message')->nullable()->after('extra_input');
+        Schema::table('report_annotation_sessions', function (Blueprint $table) {
+            $table->string('created_by_type')->default('supervisor')->after('sent_at');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('reports', function (Blueprint $table) {
-            $table->dropColumn('supervisor_message');
+        Schema::table('report_annotation_sessions', function (Blueprint $table) {
+            $table->dropColumn('created_by_type');
         });
     }
 };

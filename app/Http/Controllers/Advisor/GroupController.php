@@ -74,7 +74,7 @@ class GroupController extends Controller
                                   $query->where('created_by_type', 'advisor')
                                         ->orWhereNull('created_by_type'); // Handle legacy groups
                               })
-                              ->with(['students', 'areaOfInterest', 'areasOfInterest'])
+                              ->with(['students', 'areaOfInterest', 'areasOfInterest', 'supervisor', 'coSupervisor'])
                               ->get()
                               ->sortBy(function ($group) {
                                   // Extract number from group name for sorting
@@ -87,7 +87,7 @@ class GroupController extends Controller
                 // Get read-only groups from other advisors in the same batch
                 $readonlyGroups = Group::where('batch_number', $selectedBatch)
                                      ->where('advisor_id', '!=', $advisorLocalId)
-                                     ->with(['students', 'areaOfInterest', 'areasOfInterest', 'advisor'])
+                                     ->with(['students', 'areaOfInterest', 'areasOfInterest', 'advisor', 'supervisor', 'coSupervisor'])
                                      ->get()
                                      ->sortBy(function ($group) {
                                          // Extract number from group name for sorting
@@ -101,7 +101,7 @@ class GroupController extends Controller
                 $adminCreatedGroups = Group::where('batch_number', $selectedBatch)
                                          ->where('advisor_id', $advisorLocalId)
                                          ->where('created_by_type', 'admin')
-                                         ->with(['students', 'areaOfInterest', 'areasOfInterest', 'supervisor', 'createdByAdmin'])
+                                         ->with(['students', 'areaOfInterest', 'areasOfInterest', 'supervisor', 'coSupervisor', 'createdByAdmin'])
                                          ->get()
                                          ->sortBy(function ($group) {
                                              // Extract number from group name for sorting

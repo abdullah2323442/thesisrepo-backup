@@ -41,12 +41,12 @@
                 Preview Lottery
             </button>
             <form id="lottery-form" action="{{ route('advisor.supervisor-assignment.run-lottery') }}" method="POST" class="inline" 
-                  onsubmit="updateLotteryParams(); return confirm('Are you sure you want to run the lottery assignment? This will assign supervisors to all eligible groups.')">
+                  onsubmit="return false;">
                 @csrf
                 <input type="hidden" name="batch" id="lottery-batch" value="{{ request('batch') }}">
                 <input type="hidden" name="use_aoi" id="lottery-use-aoi" value="1">
                 <input type="hidden" name="use_ranking" id="lottery-use-ranking" value="0">
-                <button type="submit" 
+                <button type="button" onclick="showLotteryConfirmModal()"
                         class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     Run Lottery Assignment
                 </button>
@@ -67,15 +67,57 @@
 @section('content')
     <!-- Success/Error Messages -->
     @if(session('success'))
-        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
+        <div class="mb-6 bg-green-50 border-l-4 border-green-400 p-4 rounded-lg shadow-sm" role="alert">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-green-700">{{ session('success') }}</p>
+                </div>
+            </div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <span class="block sm:inline">{{ session('error') }}</span>
-        </div>
+        @if(str_contains(session('error'), 'co-supervisor'))
+            <div class="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-lg shadow-sm" role="alert">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-amber-800">Co-Supervisor Conflict</h3>
+                        <div class="mt-2 text-sm text-amber-700">
+                            <p>{{ session('error') }}</p>
+                            <div class="mt-2 p-2 bg-amber-100 rounded">
+                                <p class="text-xs">
+                                    <strong>Note:</strong> Co-supervisors are assigned exclusively by administrators. 
+                                    A person cannot serve as both main supervisor and co-supervisor for the same group.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="mb-6 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg shadow-sm" role="alert">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700">{{ session('error') }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
     @endif
 
     <!-- Assignment Statistics -->
@@ -228,12 +270,13 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area of Interest</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area of Interest</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Main Supervisor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Co-Supervisor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assignment</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -291,7 +334,23 @@
                                         <div class="text-sm font-medium text-gray-900">{{ $group->supervisor->fullname }}</div>
                                         <div class="text-xs text-gray-500">{{ $group->supervisor->designation }}</div>
                                     @else
-                                        <span class="text-sm text-gray-500">Unassigned</span>
+                                        <span class="text-sm text-gray-500 italic">Not assigned</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @if($group->coSupervisor)
+                                        <div class="flex flex-col">
+                                            <div class="text-sm font-medium text-blue-700">{{ $group->coSupervisor->fullname }}</div>
+                                            <div class="text-xs text-blue-600">{{ $group->coSupervisor->designation }}</div>
+                                            <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/>
+                                                </svg>
+                                                Admin Only
+                                            </span>
+                                        </div>
+                                    @else
+                                        <span class="text-sm text-gray-400 italic">Not assigned</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -487,6 +546,107 @@
             </div>
         </div>
     </div>
+
+    <!-- Beautiful Lottery Confirmation Modal -->
+    <div id="lotteryConfirmModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 transition-opacity duration-300">
+        <div class="relative top-20 mx-auto p-5 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0" id="lotteryConfirmContent">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <!-- Header with gradient background -->
+                <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-2 bg-white bg-opacity-20 rounded-full">
+                                <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <h3 class="ml-3 text-xl font-bold text-white">Confirm Lottery Assignment</h3>
+                    </div>
+                </div>
+                
+                <!-- Body -->
+                <div class="px-6 py-5">
+                    <!-- Warning Icon and Message -->
+                    <div class="flex items-start mb-4">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">Are you sure you want to run the lottery assignment?</p>
+                            <p class="mt-2 text-sm text-gray-600">This action will automatically assign supervisors to all eligible groups based on your selected criteria.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Criteria Display -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">Selected Criteria</h4>
+                        <div id="selectedCriteriaDisplay" class="space-y-2">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Impact Summary -->
+                    <div class="border-l-4 border-blue-400 bg-blue-50 p-4 rounded">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-blue-900">What will happen:</h4>
+                                <ul class="mt-2 text-xs text-blue-700 space-y-1">
+                                    <li class="flex items-start">
+                                        <span class="text-blue-400 mr-1">•</span>
+                                        <span>Eligible groups will be automatically assigned supervisors</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-blue-400 mr-1">•</span>
+                                        <span>Assignments will follow the selected criteria and rules</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-blue-400 mr-1">•</span>
+                                        <span>Manual assignments will not be affected</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <span class="text-blue-400 mr-1">•</span>
+                                        <span>This action cannot be automatically undone</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer with Actions -->
+                <div class="bg-gray-50 px-6 py-4">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="hideLotteryConfirmModal()" 
+                                class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                            <span class="flex items-center">
+                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                Cancel
+                            </span>
+                        </button>
+                        <button type="button" onclick="confirmLotteryAssignment()" 
+                                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                            <span class="flex items-center">
+                                <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Confirm & Run Lottery
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -523,7 +683,8 @@
         }
 
         const q = ids.map(id => `area_of_interest_ids[]=${encodeURIComponent(id)}`).join('&');
-        fetch(`{{ route('advisor.supervisor-assignment.available-supervisors') }}?${q}`, {
+        const url = `{{ route('advisor.supervisor-assignment.available-supervisors') }}?${q}&group_id=${encodeURIComponent(groupId)}`;
+        fetch(url, {
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Accept': 'application/json',
@@ -683,6 +844,114 @@ function updateLotteryParams() {
         } else {
             return 'none';
         }
+    }
+
+    // Show beautiful lottery confirmation modal
+    function showLotteryConfirmModal() {
+        // First validate parameters
+        if (!updateLotteryParams()) {
+            return;
+        }
+        
+        // Update criteria display
+        const criteriaDisplay = document.getElementById('selectedCriteriaDisplay');
+        const useAoi = document.getElementById('use-aoi').checked;
+        const useRanking = document.getElementById('use-ranking').checked;
+        const selectedBatch = document.getElementById('batch-filter').value;
+        
+        let criteriaHtml = '';
+        
+        if (useAoi && useRanking) {
+            criteriaHtml = `
+                <div class="flex items-center text-sm">
+                    <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">Combined Mode:</span>
+                    <span class="ml-1 text-gray-600">Area of Interest + Ranking Priority</span>
+                </div>
+                <div class="ml-6 text-xs text-gray-500 mt-1">
+                    Fair distribution within each area, with ranking as tiebreaker
+                </div>`;
+        } else if (useAoi) {
+            criteriaHtml = `
+                <div class="flex items-center text-sm">
+                    <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">Area of Interest Only</span>
+                    <span class="ml-1 text-gray-600">- Random selection from matching supervisors</span>
+                </div>`;
+        } else if (useRanking) {
+            criteriaHtml = `
+                <div class="flex items-center text-sm">
+                    <svg class="h-4 w-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">Ranking Priority Only</span>
+                    <span class="ml-1 text-gray-600">- Round-robin by designation</span>
+                </div>`;
+        }
+        
+        if (selectedBatch) {
+            criteriaHtml += `
+                <div class="flex items-center text-sm mt-2">
+                    <svg class="h-4 w-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">Batch Filter:</span>
+                    <span class="ml-1 text-gray-600">Batch ${selectedBatch}</span>
+                </div>`;
+        } else {
+            criteriaHtml += `
+                <div class="flex items-center text-sm mt-2">
+                    <svg class="h-4 w-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="font-medium">Batch Filter:</span>
+                    <span class="ml-1 text-gray-600">All Batches</span>
+                </div>`;
+        }
+        
+        criteriaDisplay.innerHTML = criteriaHtml;
+        
+        // Show modal with animation
+        const modal = document.getElementById('lotteryConfirmModal');
+        const content = document.getElementById('lotteryConfirmContent');
+        
+        modal.classList.remove('hidden');
+        
+        // Trigger animation
+        setTimeout(() => {
+            modal.classList.add('opacity-100');
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+    
+    // Hide lottery confirmation modal
+    function hideLotteryConfirmModal() {
+        const modal = document.getElementById('lotteryConfirmModal');
+        const content = document.getElementById('lotteryConfirmContent');
+        
+        // Reverse animation
+        modal.classList.remove('opacity-100');
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        
+        // Hide after animation
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+    
+    // Confirm and submit lottery assignment
+    function confirmLotteryAssignment() {
+        // Hide modal
+        hideLotteryConfirmModal();
+        
+        // Submit the form
+        document.getElementById('lottery-form').submit();
     }
 </script>
 @endpush

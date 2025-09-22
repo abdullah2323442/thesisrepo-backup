@@ -23,6 +23,9 @@ return new class extends Migration
             $table->unsignedBigInteger('area_of_interest_id')->nullable();
             $table->unsignedBigInteger('matched_area_of_interest_id')->nullable();
             $table->unsignedBigInteger('supervisor_id')->nullable();
+            $table->unsignedBigInteger('co_supervisor_id')->nullable();
+            $table->timestamp('co_supervisor_assigned_at')->nullable();
+            $table->boolean('co_supervisor_can_manage_meetings')->default(false);
             $table->boolean('is_manual_assignment')->default(false);
             $table->integer('assignment_priority')->nullable();
             $table->timestamp('assigned_at')->nullable();
@@ -34,11 +37,13 @@ return new class extends Migration
             $table->foreign('area_of_interest_id')->references('id')->on('area_of_interests')->onDelete('set null');
             $table->foreign('matched_area_of_interest_id')->references('id')->on('area_of_interests')->onDelete('set null');
             $table->foreign('supervisor_id')->references('id')->on('supervisors')->onDelete('set null');
+            $table->foreign('co_supervisor_id')->references('id')->on('supervisors')->onDelete('set null');
             
             // Indexes
             $table->unique(['name', 'batch_number', 'advisor_id']);
             $table->index(['created_by_type', 'batch_number']);
             $table->index(['advisor_id', 'created_by_type']);
+            $table->index('co_supervisor_id');
         });
     }
 

@@ -7,7 +7,10 @@
 <div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-lg shadow">
         <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">Meeting Details</h3>
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Meeting Details</h3>
+                <p class="text-sm text-gray-600 mt-1">{{ $meeting->group->name }} - {{ $meeting->meeting_date->format('F j, Y') }}</p>
+            </div>
             <div class="flex space-x-2">
                 <a href="{{ route('supervisor.meetings.edit', $meeting) }}" 
                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">

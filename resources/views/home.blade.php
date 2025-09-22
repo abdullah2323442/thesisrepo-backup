@@ -493,32 +493,39 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-slate-900/80 backdrop-blur-md text-white border-t border-white/10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="text-center">
-                <!-- Brand -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-center mb-4">
-                        <img src="{{ asset('Picture1.png') }}" alt="Picture1" class="w-12 h-auto object-contain">
-                        <div class="ml-3">
-                            <h3 class="text-xl font-bold">University Thesis Repository System</h3>
-                            <p class="text-sm text-slate-400">Academic Research Archive</p>
-                        </div>
-                    </div>
-                    <p class="text-slate-400 text-sm leading-relaxed max-w-2xl mx-auto">
-                        Advancing knowledge through open access to academic research. Discover, explore, and contribute
-                        to the global scholarly community.
-                    </p>
-                </div>
+    <footer class="bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500 text-white backdrop-blur-md border-t border-white/20 shadow-lg relative overflow-hidden">
 
-                <div class="border-t border-slate-800 pt-8">
-                    <p class="text-sm text-slate-400">
-                        &copy; {{ date('Y') }} University Thesis Repository System. All rights reserved.
-                    </p>
+    <!-- Decorative Glow Effect -->
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.15),transparent)]"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+        <div class="text-center">
+
+            <!-- Brand Section -->
+            <div class="mb-8">
+                <div class="flex items-center justify-center mb-4 hover:scale-105 transition-transform duration-300">
+                    <img src="{{ asset('Picture1.png') }}" alt="Picture1" class="w-12 h-auto object-contain drop-shadow-lg">
+                    <div class="ml-3 text-left">
+                        <h3 class="text-2xl font-bold tracking-wide">University Thesis Repository System</h3>
+                        <p class="text-sm text-slate-200">Academic Research Archive</p>
+                    </div>
                 </div>
+                <p class="text-slate-200 text-sm leading-relaxed max-w-2xl mx-auto">
+                    Advancing knowledge through open access to academic research. Discover, explore, and contribute
+                    to the global scholarly community.
+                </p>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-white/20 pt-6">
+                <p class="text-sm text-slate-200 hover:text-white transition-colors duration-300">
+                    &copy; {{ date('Y') }} University Thesis Repository System. All rights reserved.
+                </p>
             </div>
         </div>
-    </footer>
+    </div>
+</footer>
+
 
     <style>
     .line-clamp-2 {

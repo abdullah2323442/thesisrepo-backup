@@ -14,6 +14,7 @@ use App\Http\Controllers\Supervisor\DashboardController as SupervisorDashboardCo
 use App\Http\Controllers\Supervisor\GroupController as SupervisorGroupController;
 use App\Http\Controllers\Supervisor\MeetingController as SupervisorMeetingController;
 use App\Http\Controllers\Supervisor\ReportController as SupervisorReportController;
+use App\Http\Controllers\Supervisor\ReportAnnotationController;
 use App\Http\Controllers\Teacher\ReportCommentController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,7 +33,44 @@ Route::middleware(['auth', 'teacher'])->group(function () {
 
     // Supervisor panel (for teachers acting as supervisors)
     Route::get('/supervisor/dashboard', [SupervisorDashboardController::class, 'index'])->name('supervisor.dashboard');
+    
+    // Co-Supervisor panel (for teachers acting as co-supervisors)
+    Route::get('/co-supervisor/dashboard', [\App\Http\Controllers\CoSupervisor\DashboardController::class, 'index'])->name('co-supervisor.dashboard');
+    Route::get('/co-supervisor/groups', [\App\Http\Controllers\CoSupervisor\GroupController::class, 'index'])->name('co-supervisor.groups.index');
+    Route::get('/co-supervisor/meetings', [\App\Http\Controllers\CoSupervisor\MeetingController::class, 'index'])->name('co-supervisor.meetings.index');
+    Route::post('/co-supervisor/meetings', [\App\Http\Controllers\CoSupervisor\MeetingController::class, 'store'])->name('co-supervisor.meetings.store');
+    Route::get('/co-supervisor/meetings/{meeting}', [\App\Http\Controllers\CoSupervisor\MeetingController::class, 'show'])->name('co-supervisor.meetings.show');
+    Route::get('/co-supervisor/meetings/{meeting}/edit', [\App\Http\Controllers\CoSupervisor\MeetingController::class, 'edit'])->name('co-supervisor.meetings.edit');
+    Route::put('/co-supervisor/meetings/{meeting}', [\App\Http\Controllers\CoSupervisor\MeetingController::class, 'update'])->name('co-supervisor.meetings.update');
+    Route::get('/co-supervisor/reports', [\App\Http\Controllers\CoSupervisor\ReportController::class, 'index'])->name('co-supervisor.reports.index');
+    Route::get('/co-supervisor/reports/{report}', [\App\Http\Controllers\CoSupervisor\ReportController::class, 'show'])->name('co-supervisor.reports.show');
+    Route::post('/co-supervisor/reports/{report}/under-review', [\App\Http\Controllers\CoSupervisor\ReportController::class, 'markUnderReview'])->name('co-supervisor.reports.under-review');
+    Route::get('/co-supervisor/reports/{report}/submissions/{submission}/view', [\App\Http\Controllers\CoSupervisor\ReportController::class, 'viewSubmission'])->name('co-supervisor.reports.submissions.view');
+    Route::get('/co-supervisor/reports/{report}/submissions/{submission}/download', [\App\Http\Controllers\CoSupervisor\ReportController::class, 'downloadSubmission'])->name('co-supervisor.reports.submissions.download');
+    
+    // Co-Supervisor Report Annotations
+    Route::get('/co-supervisor/reports/{report}/submissions/{submission}/annotate', [\App\Http\Controllers\CoSupervisor\ReportAnnotationController::class, 'annotate'])->name('co-supervisor.reports.submissions.annotate');
+    Route::post('/co-supervisor/reports/{report}/submissions/{submission}/annotations', [\App\Http\Controllers\CoSupervisor\ReportAnnotationController::class, 'store'])->name('co-supervisor.reports.submissions.annotations.store');
+    Route::post('/co-supervisor/reports/{report}/submissions/{submission}/annotations/{annotationSession}/send-feedback', [\App\Http\Controllers\CoSupervisor\ReportAnnotationController::class, 'sendFeedback'])->name('co-supervisor.reports.submissions.annotations.send-feedback');
+    Route::get('/co-supervisor/reports/{report}/submissions/{submission}/annotations', [\App\Http\Controllers\CoSupervisor\ReportAnnotationController::class, 'history'])->name('co-supervisor.reports.submissions.annotations.history');
+    
+    // Panel Member panel (for teachers acting as panel members)
+    Route::get('/panel-member/dashboard', [\App\Http\Controllers\PanelMember\DashboardController::class, 'index'])->name('panel-member.dashboard');
+    Route::get('/panel-member/groups', [\App\Http\Controllers\PanelMember\GroupController::class, 'index'])->name('panel-member.groups.index');
+    Route::get('/panel-member/reports', [\App\Http\Controllers\PanelMember\ReportController::class, 'index'])->name('panel-member.reports.index');
+    Route::get('/panel-member/reports/{report}', [\App\Http\Controllers\PanelMember\ReportController::class, 'show'])->name('panel-member.reports.show');
+    Route::post('/panel-member/reports/{report}/under-review', [\App\Http\Controllers\PanelMember\ReportController::class, 'markUnderReview'])->name('panel-member.reports.under-review');
+    Route::get('/panel-member/reports/{report}/submissions/{submission}/view', [\App\Http\Controllers\PanelMember\ReportController::class, 'viewSubmission'])->name('panel-member.reports.submissions.view');
+    Route::get('/panel-member/reports/{report}/submissions/{submission}/download', [\App\Http\Controllers\PanelMember\ReportController::class, 'downloadSubmission'])->name('panel-member.reports.submissions.download');
+    
+    // Panel Member Report Annotations
+    Route::get('/panel-member/reports/{report}/submissions/{submission}/annotate', [\App\Http\Controllers\PanelMember\ReportAnnotationController::class, 'annotate'])->name('panel-member.reports.submissions.annotate');
+    Route::post('/panel-member/reports/{report}/submissions/{submission}/annotations', [\App\Http\Controllers\PanelMember\ReportAnnotationController::class, 'store'])->name('panel-member.reports.submissions.annotations.store');
+    Route::post('/panel-member/reports/{report}/submissions/{submission}/annotations/{annotationSession}/send-feedback', [\App\Http\Controllers\PanelMember\ReportAnnotationController::class, 'sendFeedback'])->name('panel-member.reports.submissions.annotations.send-feedback');
+    Route::get('/panel-member/reports/{report}/submissions/{submission}/annotations', [\App\Http\Controllers\PanelMember\ReportAnnotationController::class, 'history'])->name('panel-member.reports.submissions.annotations.history');
+    
     Route::get('/supervisor/groups', [SupervisorGroupController::class, 'index'])->name('supervisor.groups.index');
+    Route::post('/supervisor/groups/toggle-co-supervisor-meetings', [SupervisorGroupController::class, 'toggleCoSupervisorMeetingPermission'])->name('supervisor.groups.toggle-co-supervisor-meetings');
     Route::get('/supervisor/meetings', [SupervisorMeetingController::class, 'index'])->name('supervisor.meetings.index');
     Route::post('/supervisor/meetings', [SupervisorMeetingController::class, 'store'])->name('supervisor.meetings.store');
     Route::get('/supervisor/meetings/students', [SupervisorMeetingController::class, 'students'])->name('supervisor.meetings.students');
@@ -49,6 +87,7 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     Route::get('/supervisor/reports/{report}/edit', [SupervisorReportController::class, 'edit'])->name('supervisor.reports.edit');
     Route::put('/supervisor/reports/{report}', [SupervisorReportController::class, 'update'])->name('supervisor.reports.update');
     Route::delete('/supervisor/reports/{report}', [SupervisorReportController::class, 'destroy'])->name('supervisor.reports.destroy');
+    Route::get('/supervisor/reports/{report}/submissions/{submission}/view', [SupervisorReportController::class, 'viewSubmission'])->name('supervisor.reports.submissions.view');
     
     // Report Approval routes
     Route::get('/supervisor/reports/{report}/finalize', [SupervisorReportController::class, 'showFinalize'])->name('supervisor.reports.finalize');
@@ -57,6 +96,12 @@ Route::middleware(['auth', 'teacher'])->group(function () {
     
     // Supervisor submission download route
     Route::get('/supervisor/reports/{report}/submissions/{submission}/download', [SupervisorReportController::class, 'downloadSubmission'])->name('supervisor.reports.submissions.download');
+
+    // Report Annotations (Supervisor)
+    Route::get('/supervisor/reports/{report}/submissions/{submission}/annotate', [ReportAnnotationController::class, 'annotate'])->name('supervisor.reports.submissions.annotate');
+    Route::post('/supervisor/reports/{report}/submissions/{submission}/annotations', [ReportAnnotationController::class, 'store'])->name('supervisor.reports.submissions.annotations.store');
+    Route::post('/supervisor/reports/{report}/submissions/{submission}/annotations/{annotationSession}/send-feedback', [ReportAnnotationController::class, 'sendFeedback'])->name('supervisor.reports.submissions.annotations.send-feedback');
+    Route::get('/supervisor/reports/{report}/submissions/{submission}/annotations', [ReportAnnotationController::class, 'history'])->name('supervisor.reports.submissions.annotations.history');
     
     // Teacher can comment on reports
     Route::post('/teacher/reports/{report}/comments', [ReportCommentController::class, 'store'])->name('teacher.reports.comments.store');
@@ -91,6 +136,14 @@ Route::middleware(['auth', 'student'])->group(function () {
         ->name('student.reports.submissions.destroy');
     Route::get('/student/reports/{report}/submissions/{submission}/download', [\App\Http\Controllers\Student\ReportSubmissionController::class, 'download'])
         ->name('student.reports.submissions.download');
+    
+    // Student Annotation routes
+    Route::get('/student/reports/{report}/submissions/{submission}/annotations', [\App\Http\Controllers\Student\ReportAnnotationController::class, 'history'])
+        ->name('student.reports.submissions.annotations.history');
+    Route::get('/student/reports/{report}/submissions/{submission}/annotations/{session}', [\App\Http\Controllers\Student\ReportAnnotationController::class, 'view'])
+        ->name('student.reports.submissions.annotations.view');
+    Route::get('/student/reports/{report}/submissions/{submission}/annotations/{session}/download', [\App\Http\Controllers\Student\ReportAnnotationController::class, 'download'])
+        ->name('student.reports.submissions.annotations.download');
     
     // Notification routes
     Route::get('/student/notifications', [\App\Http\Controllers\Student\ReportController::class, 'notifications'])
@@ -151,6 +204,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/groups/assign-area-of-interest', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignAreaOfInterest'])->name('admin.groups.assign-area-of-interest');
     Route::post('/admin/groups/assign-supervisor', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignSupervisor'])->name('admin.groups.assign-supervisor');
     Route::post('/admin/groups/unassign-supervisor', [\App\Http\Controllers\Admin\GroupManagementController::class, 'unassignSupervisor'])->name('admin.groups.unassign-supervisor');
+    Route::post('/admin/groups/assign-co-supervisor', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignCoSupervisor'])->name('admin.groups.assign-co-supervisor');
+    Route::post('/admin/groups/unassign-co-supervisor', [\App\Http\Controllers\Admin\GroupManagementController::class, 'unassignCoSupervisor'])->name('admin.groups.unassign-co-supervisor');
+    Route::post('/admin/groups/assign-panel-member', [\App\Http\Controllers\Admin\GroupManagementController::class, 'assignPanelMember'])->name('admin.groups.assign-panel-member');
+    Route::post('/admin/groups/unassign-panel-member', [\App\Http\Controllers\Admin\GroupManagementController::class, 'unassignPanelMember'])->name('admin.groups.unassign-panel-member');
     Route::get('/admin/groups/available-supervisors', [\App\Http\Controllers\Admin\GroupManagementController::class, 'getAvailableSupervisors'])->name('admin.groups.available-supervisors');
 Route::post('/admin/groups/create', [\App\Http\Controllers\Admin\GroupManagementController::class, 'createGroup'])->name('admin.groups.create');
     // Performance Monitoring
@@ -227,10 +284,6 @@ Route::middleware('auth')->prefix('api')->group(function () {
     Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
     Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);
 });
-
-// Debug route (remove in production)
-Route::get('/debug/notifications', [\App\Http\Controllers\DebugController::class, 'checkNotifications']);
-
 require __DIR__.'/auth.php';
     // Group deletion routes
     Route::delete('/admin/groups/{group}', [\App\Http\Controllers\Admin\GroupManagementController::class, 'deleteGroup'])->name('admin.groups.delete');

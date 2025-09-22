@@ -27,8 +27,17 @@ class MeetingController extends Controller
     {
         $supervisor = $this->currentSupervisor();
 
+        // Get groups where user can manage meetings (main supervisor or co-supervisor with permission)
         $groups = Group::with(['students'])
-            ->when($supervisor, fn($q) => $q->where('supervisor_id', $supervisor->id))
+            ->when($supervisor, function($q) use ($supervisor) {
+                $q->where(function($query) use ($supervisor) {
+                    $query->where('supervisor_id', $supervisor->id)
+                          ->orWhere(function($subQuery) use ($supervisor) {
+                              $subQuery->where('co_supervisor_id', $supervisor->id)
+                                       ->where('co_supervisor_can_manage_meetings', true);
+                          });
+                });
+            })
             ->orderBy('batch_number', 'desc')
             ->orderBy('name')
             ->get();
@@ -59,8 +68,8 @@ class MeetingController extends Controller
         ]);
 
         $group = Group::with('students')->findOrFail($data['group_id']);
-        if (!$supervisor || $group->supervisor_id !== $supervisor->id) {
-            abort(403, 'Unauthorized');
+        if (!$supervisor || !$group->canSupervisorManageMeetings($supervisor->id)) {
+            abort(403, 'Unauthorized - You do not have permission to manage meetings for this group');
         }
 
         $meeting = Meeting::create([
@@ -86,8 +95,8 @@ class MeetingController extends Controller
         $supervisor = $this->currentSupervisor();
         $meeting->load(['group.students', 'attendances.groupStudent']);
         
-        if (!$supervisor || $meeting->group->supervisor_id !== $supervisor->id) {
-            abort(403, 'Unauthorized');
+        if (!$supervisor || !$meeting->group->canSupervisorManageMeetings($supervisor->id)) {
+            abort(403, 'Unauthorized - You do not have permission to manage meetings for this group');
         }
 
         return view('supervisor.meetings.show', compact('meeting', 'supervisor'));
@@ -98,8 +107,8 @@ class MeetingController extends Controller
         $supervisor = $this->currentSupervisor();
         $meeting->load(['group.students', 'attendances.groupStudent']);
         
-        if (!$supervisor || $meeting->group->supervisor_id !== $supervisor->id) {
-            abort(403, 'Unauthorized');
+        if (!$supervisor || !$meeting->group->canSupervisorManageMeetings($supervisor->id)) {
+            abort(403, 'Unauthorized - You do not have permission to manage meetings for this group');
         }
 
         return view('supervisor.meetings.edit', compact('meeting', 'supervisor'));
@@ -109,8 +118,8 @@ class MeetingController extends Controller
     {
         $supervisor = $this->currentSupervisor();
         
-        if (!$supervisor || $meeting->group->supervisor_id !== $supervisor->id) {
-            abort(403, 'Unauthorized');
+        if (!$supervisor || !$meeting->group->canSupervisorManageMeetings($supervisor->id)) {
+            abort(403, 'Unauthorized - You do not have permission to manage meetings for this group');
         }
 
         $data = $request->validate([
@@ -147,8 +156,8 @@ class MeetingController extends Controller
         $supervisor = $this->currentSupervisor();
         $request->validate(['group_id' => ['required', 'integer', 'exists:groups,id']]);
         $group = Group::with('students')->findOrFail($request->group_id);
-        if (!$supervisor || $group->supervisor_id !== $supervisor->id) {
-            abort(403);
+        if (!$supervisor || !$group->canSupervisorManageMeetings($supervisor->id)) {
+            abort(403, 'Unauthorized - You do not have permission to manage meetings for this group');
         }
         return response()->json($group->students->map(fn($s) => [
             'id' => $s->id,
@@ -165,9 +174,21 @@ class MeetingController extends Controller
         try {
             $supervisor = $this->currentSupervisor();
             
-            // Verify supervisor has access to this group
-            if (!$supervisor || $group->supervisor_id !== $supervisor->id) {
-                abort(403, 'Unauthorized');
+            Log::info('PDF Download attempt:', [
+                'supervisor' => $supervisor ? $supervisor->id : 'null',
+                'group_id' => $group->id,
+                'group_supervisor_id' => $group->supervisor_id
+            ]);
+            
+            // Verify supervisor has access to this group (allow both main supervisor and co-supervisor)
+            if (!$supervisor || !$group->canSupervisorManageMeetings($supervisor->id)) {
+                Log::error('Unauthorized PDF access attempt:', [
+                    'supervisor_id' => $supervisor->id ?? null,
+                    'group_id' => $group->id,
+                    'group_supervisor_id' => $group->supervisor_id,
+                    'group_co_supervisor_id' => $group->co_supervisor_id ?? null
+                ]);
+                abort(403, 'Unauthorized - You do not have permission to access this group');
             }
 
             // Load group with all related information
@@ -197,8 +218,8 @@ class MeetingController extends Controller
                     'id' => $supervisor->id,
                     'name' => $supervisor->fullname,
                     'email' => $supervisor->email,
-                    'designation' => $supervisor->designation,
-                    'department' => $supervisor->department,
+                    'designation' => $supervisor->designation ?? 'N/A',
+                    'department' => $supervisor->department ?? 'N/A',
                 ],
                 'areaOfInterest' => $group->matchedAreaOfInterest ? [
                     'id' => $group->matchedAreaOfInterest->id,
@@ -211,6 +232,12 @@ class MeetingController extends Controller
                 'groupMembers' => $groupMembers,
                 'generatedDate' => now()->format('F d, Y')
             ];
+
+            Log::info('Generating PDF with data:', [
+                'group_name' => $group->name,
+                'meetings_count' => $meetings->count(),
+                'students_count' => $groupMembers->count()
+            ]);
 
             // Generate PDF
             $pdf = Pdf::view('student.meetings-pdf', $pdfData)
@@ -225,10 +252,11 @@ class MeetingController extends Controller
             Log::error('Failed to generate meetings PDF for supervisor:', [
                 'error' => $e->getMessage(),
                 'supervisor_id' => $supervisor->id ?? null,
-                'group_id' => $group->id ?? null
+                'group_id' => $group->id ?? null,
+                'trace' => $e->getTraceAsString()
             ]);
             
-            return redirect()->route('supervisor.meetings.index')->with('error', 'Failed to generate PDF report. Please try again or contact support.');
+            return redirect()->route('supervisor.meetings.index')->with('error', 'Failed to generate PDF report: ' . $e->getMessage());
         }
     }
 }

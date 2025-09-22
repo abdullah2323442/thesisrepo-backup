@@ -125,6 +125,8 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area of Interest</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Co-Supervisor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Panel Members</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -220,6 +222,61 @@
                                                     Assign
                                                 </button>
                                             @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            @if($group->coSupervisor)
+                                                <div>
+                                                    <div class="font-medium">{{ $group->coSupervisor->fullname }}</div>
+                                                    <div class="text-xs text-gray-500">{{ $group->coSupervisor->designation }}</div>
+                                                </div>
+                                                <form method="POST" action="{{ route('admin.groups.unassign-co-supervisor') }}" class="inline mt-1">
+                                                    @csrf
+                                                    <input type="hidden" name="group_id" value="{{ $group->id }}">
+                                                    <button type="submit" class="text-red-600 hover:text-red-800 text-xs"
+                                                            onclick="return confirm('Remove co-supervisor assignment?')">
+                                                        Remove
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <span class="text-gray-400 italic">Not assigned</span>
+                                                <button onclick="showCoSupervisorModal({{ $group->id }}, '{{ $group->name }}', {{ $group->supervisor_id ?: 'null' }})" 
+                                                        class="text-purple-600 hover:text-purple-800 text-xs block mt-1">
+                                                    Assign
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            @if($group->panelMembers->count() > 0)
+                                                <div class="space-y-1">
+                                                    @foreach($group->panelMembers as $panelMember)
+                                                        <div class="flex items-center justify-between bg-orange-50 px-2 py-1 rounded">
+                                                            <div>
+                                                                <div class="text-xs font-medium text-gray-900">{{ $panelMember->supervisor->fullname }}</div>
+                                                                <div class="text-xs text-gray-500">{{ $panelMember->supervisor->designation }}</div>
+                                                            </div>
+                                                            <form method="POST" action="{{ route('admin.groups.unassign-panel-member') }}" class="inline">
+                                                                @csrf
+                                                                <input type="hidden" name="group_id" value="{{ $group->id }}">
+                                                                <input type="hidden" name="supervisor_id" value="{{ $panelMember->supervisor_id }}">
+                                                                <button type="submit" class="text-red-600 hover:text-red-800 text-xs"
+                                                                        onclick="return confirm('Remove this panel member?')">
+                                                                    Remove
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <span class="text-gray-400 italic">No panel members</span>
+                                            @endif
+                                            <button onclick="showPanelMemberModal({{ $group->id }}, '{{ $group->name }}')" 
+                                                    class="text-orange-600 hover:text-orange-800 text-xs block mt-1">
+                                                {{ $group->panelMembers->count() > 0 ? 'Add More' : 'Assign' }}
+                                            </button>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -448,6 +505,94 @@
     </div>
 </div>
 
+<!-- Assign Co-Supervisor Modal -->
+<div id="co-supervisor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Co-Supervisor to <span id="co-supervisor-modal-group-name"></span></h3>
+        
+        <form method="POST" action="{{ route('admin.groups.assign-co-supervisor') }}">
+            @csrf
+            <input type="hidden" name="group_id" id="co-supervisor-modal-group-id">
+            <input type="hidden" id="co-supervisor-modal-main-supervisor-id">
+            
+            <div class="mb-4">
+                <label for="co_supervisor_id" class="block text-sm font-medium text-gray-700 mb-2">Select Co-Supervisor</label>
+                <select name="co_supervisor_id" id="co_supervisor_id" required class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">Choose a co-supervisor</option>
+                    @foreach($supervisors as $supervisor)
+                        <option value="{{ $supervisor->id }}" data-supervisor-id="{{ $supervisor->id }}">
+                            {{ $supervisor->fullname }} ({{ $supervisor->designation }}) - {{ $supervisor->available_slots }} slots
+                        </option>
+                    @endforeach
+                </select>
+                <div id="co-supervisor-warning" class="hidden mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                    <p class="text-xs text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <span id="co-supervisor-warning-text"></span>
+                    </p>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    Only supervisors with available thesis slots are shown. Cannot assign the same person as main supervisor.
+                </p>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="hideCoSupervisorModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                    Assign Co-Supervisor
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assign Panel Member Modal -->
+<div id="panel-member-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Assign Panel Member to <span id="panel-member-modal-group-name"></span></h3>
+        
+        <form method="POST" action="{{ route('admin.groups.assign-panel-member') }}">
+            @csrf
+            <input type="hidden" name="group_id" id="panel-member-modal-group-id">
+            <input type="hidden" id="panel-member-modal-main-supervisor-id">
+            <input type="hidden" id="panel-member-modal-co-supervisor-id">
+            <input type="hidden" id="panel-member-modal-existing-members">
+            
+            <div class="mb-4">
+                <label for="panel_member_id" class="block text-sm font-medium text-gray-700 mb-2">Select Panel Member</label>
+                <select name="supervisor_id" id="panel_member_id" required class="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">Choose a panel member</option>
+                    @foreach($supervisors as $supervisor)
+                        <option value="{{ $supervisor->id }}" data-supervisor-id="{{ $supervisor->id }}">
+                            {{ $supervisor->fullname }} ({{ $supervisor->designation }})
+                        </option>
+                    @endforeach
+                </select>
+                <div class="mt-2 p-2 bg-orange-50 border border-orange-200 rounded">
+                    <p class="text-xs text-orange-800">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>Note:</strong> Panel members are reviewers/evaluators only. They don't supervise the thesis directly, so thesis limits don't apply.
+                    </p>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    Cannot assign the same person as main supervisor, co-supervisor, or existing panel member.
+                </p>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="hidePanelMemberModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors">
+                    Assign Panel Member
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 function toggleAddGroup() {
@@ -537,6 +682,63 @@ function hideSupervisorModal() {
     document.getElementById('supervisor-modal').classList.remove('flex');
 }
 
+function showCoSupervisorModal(groupId, groupName, mainSupervisorId) {
+    document.getElementById('co-supervisor-modal-group-id').value = groupId;
+    document.getElementById('co-supervisor-modal-group-name').textContent = groupName;
+    document.getElementById('co-supervisor-modal-main-supervisor-id').value = mainSupervisorId || '';
+    
+    // Get the select element
+    const selectElement = document.getElementById('co_supervisor_id');
+    const warningDiv = document.getElementById('co-supervisor-warning');
+    const warningText = document.getElementById('co-supervisor-warning-text');
+    
+    // Reset all options to be visible
+    const options = selectElement.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value) {
+            option.style.display = 'block';
+            option.disabled = false;
+            
+            // Check if this option is the main supervisor
+            if (mainSupervisorId && option.value == mainSupervisorId) {
+                option.style.display = 'none';
+                option.disabled = true;
+            }
+        }
+    });
+    
+    // Show warning if no main supervisor is assigned yet
+    if (!mainSupervisorId) {
+        warningDiv.classList.remove('hidden');
+        warningText.textContent = 'No main supervisor assigned yet. It\'s recommended to assign a main supervisor first.';
+    } else {
+        warningDiv.classList.add('hidden');
+    }
+    
+    // Reset selection
+    selectElement.value = '';
+    
+    document.getElementById('co-supervisor-modal').classList.remove('hidden');
+    document.getElementById('co-supervisor-modal').classList.add('flex');
+}
+
+function hideCoSupervisorModal() {
+    document.getElementById('co-supervisor-modal').classList.add('hidden');
+    document.getElementById('co-supervisor-modal').classList.remove('flex');
+}
+
+function showPanelMemberModal(groupId, groupName) {
+    document.getElementById('panel-member-modal-group-id').value = groupId;
+    document.getElementById('panel-member-modal-group-name').textContent = groupName;
+    document.getElementById('panel-member-modal').classList.remove('hidden');
+    document.getElementById('panel-member-modal').classList.add('flex');
+}
+
+function hidePanelMemberModal() {
+    document.getElementById('panel-member-modal').classList.add('hidden');
+    document.getElementById('panel-member-modal').classList.remove('flex');
+}
+
 // Close modals when clicking outside
 document.getElementById('delete-modal').addEventListener('click', function(e) {
     if (e.target === this) {
@@ -559,6 +761,18 @@ document.getElementById('area-of-interest-modal').addEventListener('click', func
 document.getElementById('supervisor-modal').addEventListener('click', function(e) {
     if (e.target === this) {
         hideSupervisorModal();
+    }
+});
+
+document.getElementById('co-supervisor-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideCoSupervisorModal();
+    }
+});
+
+document.getElementById('panel-member-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hidePanelMemberModal();
     }
 });
 </script>

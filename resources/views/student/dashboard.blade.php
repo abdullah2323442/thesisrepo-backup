@@ -258,26 +258,104 @@ Welcome back, {{ $userType === 'model' ? ($user->name ?? 'Student') : ($user['Na
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
-                Assigned Supervisor
+                Supervision Team
             </h3>
         </div>
         <div class="p-6">
             @if($groupInfo && $groupInfo['hasGroup'] && $groupInfo['supervisor'])
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                            {{ substr($groupInfo['supervisor']['name'], 0, 1) }}
+                <div class="space-y-4">
+                    <!-- Main Supervisor -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-blue-900">Main Supervisor</h4>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Primary</span>
                         </div>
-                        <div class="flex-1">
-                            <h4 class="text-xl font-semibold text-blue-900">{{ $groupInfo['supervisor']['name'] }}</h4>
-                            <p class="text-blue-700">{{ $groupInfo['supervisor']['designation'] }}</p>
-                            <p class="text-sm text-blue-600">{{ $groupInfo['supervisor']['department'] }}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-sm text-blue-600">Contact</p>
-                            <p class="text-sm font-medium text-blue-800">{{ $groupInfo['supervisor']['email'] }}</p>
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                {{ substr($groupInfo['supervisor']['name'], 0, 1) }}
+                            </div>
+                            <div class="flex-1">
+                                <h5 class="text-xl font-semibold text-blue-900">{{ $groupInfo['supervisor']['name'] }}</h5>
+                                <p class="text-blue-700">{{ $groupInfo['supervisor']['designation'] }}</p>
+                                <p class="text-sm text-blue-600">{{ $groupInfo['supervisor']['department'] }}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-blue-600">Contact</p>
+                                <p class="text-sm font-medium text-blue-800">{{ $groupInfo['supervisor']['email'] }}</p>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Co-Supervisor -->
+                    @if($groupInfo['coSupervisor'])
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-lg font-semibold text-purple-900">Co-Supervisor</h4>
+                                <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Secondary</span>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                    {{ substr($groupInfo['coSupervisor']['name'], 0, 1) }}
+                                </div>
+                                <div class="flex-1">
+                                    <h5 class="text-xl font-semibold text-purple-900">{{ $groupInfo['coSupervisor']['name'] }}</h5>
+                                    <p class="text-purple-700">{{ $groupInfo['coSupervisor']['designation'] }}</p>
+                                    <p class="text-sm text-purple-600">{{ $groupInfo['coSupervisor']['department'] }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-purple-600">Contact</p>
+                                    <p class="text-sm font-medium text-purple-800">{{ $groupInfo['coSupervisor']['email'] }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Panel Members -->
+                        @if(count($groupInfo['panelMembers']) > 0)
+                            @foreach($groupInfo['panelMembers'] as $panelMember)
+                                <div class="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="text-lg font-semibold text-orange-900">Panel Member</h4>
+                                        <span class="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Advisory</span>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                            {{ substr($panelMember['name'], 0, 1) }}
+                                        </div>
+                                        <div class="flex-1">
+                                            <h5 class="text-xl font-semibold text-orange-900">{{ $panelMember['name'] }}</h5>
+                                            <p class="text-orange-700">{{ $panelMember['designation'] }}</p>
+                                            <p class="text-sm text-orange-600">{{ $panelMember['department'] }}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm text-orange-600">Contact</p>
+                                            <p class="text-sm font-medium text-orange-800">{{ $panelMember['email'] }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+
+                        <!-- Important Note -->
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-medium text-amber-800">Supervision Team</p>
+                                    <p class="text-sm text-amber-700 mt-1">
+                                        @if(count($groupInfo['panelMembers']) > 0)
+                                            Your supervision team includes main supervisor, co-supervisor (if assigned), and panel members. 
+                                            All can guide you and provide feedback, but <strong>only your main supervisor can approve final projects</strong>.
+                                        @else
+                                            Both supervisors can guide you, review your work, and provide feedback. However, 
+                                            <strong>only your main supervisor can approve final projects</strong>.
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @else
                 <div class="text-center py-8">

@@ -220,6 +220,13 @@
                                 </svg>
                                 Download
                             </a>
+                            <a href="{{ route('student.reports.submissions.annotations.history', [$report, $currentSubmission]) }}" 
+                               class="inline-flex items-center px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Annotations
+                            </a>
                             <a href="{{ route('student.reports.submissions.edit', [$report, $currentSubmission]) }}" 
                                class="inline-flex items-center px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700 transition-colors">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,27 +262,256 @@
         </div>
     </div>
 
-    <!-- Comments Section -->
+    <!-- Comprehensive Feedback Hub -->
     <div class="bg-white rounded-lg shadow-md">
         <div class="p-6">
-            <h3 class="text-xl font-semibold text-gray-800 mb-4">Supervisor Comments & Feedback</h3>
+            <!-- Header with Stats -->
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Supervisor Feedback & Comments</h3>
+                    <div class="flex items-center gap-4 text-sm text-gray-600">
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            {{ $report->comments->count() }} General Comments
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            {{ $annotationSessions->count() }} Annotation Sessions
+                        </span>
+                        @php
+                            $totalAnnotations = $annotationSessions->sum(function($session) {
+                                return count($session->annotations_json ?? []);
+                            });
+                        @endphp
+                        <span class="flex items-center gap-1">
+                            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2h-1l-4 4z"></path>
+                            </svg>
+                            {{ $totalAnnotations }} PDF Annotations
+                        </span>
+                    </div>
+                </div>
+                @if($currentSubmission && $annotationSessions->count() > 0)
+                    <a href="{{ route('student.reports.submissions.annotations.history', [$report, $currentSubmission]) }}" 
+                       class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        View All Annotations
+                    </a>
+                @endif
+            </div>
 
-            @if($report->comments->count() > 0)
-                <div class="space-y-4">
-                    @foreach($report->comments as $comment)
-                        <div class="border-l-4 border-blue-500 pl-4 py-3 bg-gray-50 rounded">
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <span class="font-medium text-gray-800">{{ $comment->teacher->name }}</span>
-                                    <span class="text-sm text-gray-600 ml-2">{{ $comment->created_at->diffForHumans() }}</span>
+            @if($report->comments->count() > 0 || $annotationSessions->count() > 0)
+                <!-- Feedback Timeline -->
+                <div class="space-y-6">
+                    @php
+                        // Combine and sort all feedback chronologically
+                        $allFeedback = collect();
+                        
+                        // Add general comments
+                        foreach($report->comments as $comment) {
+                            $allFeedback->push([
+                                'type' => 'comment',
+                                'data' => $comment,
+                                'created_at' => $comment->created_at,
+                                'timestamp' => $comment->created_at->timestamp
+                            ]);
+                        }
+                        
+                        // Add annotation sessions
+                        foreach($annotationSessions as $session) {
+                            $allFeedback->push([
+                                'type' => 'annotation',
+                                'data' => $session,
+                                'created_at' => $session->created_at,
+                                'timestamp' => $session->created_at->timestamp
+                            ]);
+                        }
+                        
+                        // Sort by timestamp (newest first)
+                        $allFeedback = $allFeedback->sortByDesc('timestamp');
+                    @endphp
+
+                    @foreach($allFeedback as $feedback)
+                        @if($feedback['type'] === 'comment')
+                            @php $comment = $feedback['data']; @endphp
+                            <!-- General Comment -->
+                            <div class="relative">
+                                <div class="flex items-start space-x-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h4 class="text-sm font-semibold text-blue-900">General Comment</h4>
+                                                    <p class="text-xs text-blue-700">by {{ $comment->teacher->name }}</p>
+                                                </div>
+                                                <div class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                                    {{ $comment->created_at->format('M d, Y h:i A') }}
+                                                </div>
+                                            </div>
+                                            <p class="text-blue-800 leading-relaxed">{{ $comment->body }}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <p class="text-gray-700">{{ $comment->body }}</p>
-                        </div>
+
+                        @elseif($feedback['type'] === 'annotation')
+                            @php 
+                                $session = $feedback['data']; 
+                                $annotations = $session->annotations_json ?? [];
+                                $annotationsByType = [];
+                                foreach ($annotations as $annotation) {
+                                    $type = $annotation['type'] ?? 'unknown';
+                                    if (!isset($annotationsByType[$type])) {
+                                        $annotationsByType[$type] = 0;
+                                    }
+                                    $annotationsByType[$type]++;
+                                }
+                                $commentAnnotations = array_filter($annotations, function($ann) {
+                                    return ($ann['type'] ?? '') === 'comment' && !empty($ann['comment']);
+                                });
+                            @endphp
+                            <!-- Annotation Session -->
+                            <div class="relative">
+                                <div class="flex items-start space-x-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                            <div class="flex justify-between items-start mb-3">
+                                                <div>
+                                                    <h4 class="text-sm font-semibold text-purple-900">PDF Annotation Session #{{ $session->version }}</h4>
+                                                    <p class="text-xs text-purple-700">by {{ $session->supervisor->name }}</p>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                                                        {{ $session->created_at->format('M d, Y h:i A') }}
+                                                    </div>
+                                                    <a href="{{ route('student.reports.submissions.annotations.history', [$report, $currentSubmission]) }}" 
+                                                       class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 transition-colors">
+                                                        View PDF
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <!-- General Message -->
+                                            @if($session->message)
+                                                <div class="mb-3 p-3 bg-purple-100 rounded-lg">
+                                                    <p class="text-sm font-medium text-purple-800 mb-1">General Feedback:</p>
+                                                    <p class="text-purple-700 text-sm">{{ $session->message }}</p>
+                                                </div>
+                                            @endif
+
+                                            <!-- Annotation Summary -->
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                                                @foreach($annotationsByType as $type => $count)
+                                                    <div class="bg-white p-2 rounded text-center border border-purple-200">
+                                                        <div class="text-lg mb-1">
+                                                            @if($type === 'comment') 💬
+                                                            @elseif($type === 'highlight') 🖍️
+                                                            @elseif($type === 'underline') ↳
+                                                            @elseif($type === 'strikethrough') ↗
+                                                            @else 📝
+                                                            @endif
+                                                        </div>
+                                                        <div class="text-xs font-medium text-purple-700">{{ ucfirst($type) }}</div>
+                                                        <div class="text-sm font-bold text-purple-900">{{ $count }}</div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            <!-- Recent Comments Preview -->
+                                            @if(count($commentAnnotations) > 0)
+                                                <div class="border-t border-purple-200 pt-3">
+                                                    <p class="text-xs font-medium text-purple-800 mb-2">Recent PDF Comments:</p>
+                                                    <div class="space-y-1">
+                                                        @foreach(array_slice($commentAnnotations, 0, 2) as $comment)
+                                                            <div class="flex items-start gap-2 text-xs">
+                                                                <span class="text-purple-600 font-medium flex-shrink-0">Page {{ $comment['page'] ?? '?' }}:</span>
+                                                                <span class="text-purple-700">{{ Str::limit($comment['comment'] ?? '', 80) }}</span>
+                                                            </div>
+                                                        @endforeach
+                                                        @if(count($commentAnnotations) > 2)
+                                                            <div class="text-xs text-purple-600 italic">
+                                                                ... and {{ count($commentAnnotations) - 2 }} more comments
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
+
+                <!-- Action Center -->
+                @if($currentSubmission)
+                    <div class="mt-8 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="text-sm font-semibold text-gray-800 mb-1">Need to review feedback in detail?</h4>
+                                <p class="text-xs text-gray-600">View all annotations with interactive PDF viewer and detailed comment modals.</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                @if($annotationSessions->count() > 0)
+                                    <a href="{{ route('student.reports.submissions.annotations.history', [$report, $currentSubmission]) }}" 
+                                       class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors shadow-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        Interactive PDF View
+                                    </a>
+                                @endif
+                                <a href="{{ route('student.reports.submissions.download', [$report, $currentSubmission]) }}" 
+                                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    Download PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
             @else
-                <p class="text-gray-500 italic">No comments from supervisor yet.</p>
+                <!-- Empty State -->
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">No Feedback Yet</h4>
+                    <p class="text-gray-600 mb-4">Your supervisor hasn't provided any comments or annotations yet.</p>
+                    @if(!$currentSubmission)
+                        <p class="text-sm text-gray-500">Submit your report to receive feedback from your supervisor.</p>
+                    @else
+                        <p class="text-sm text-gray-500">You'll receive notifications when feedback is available.</p>
+                    @endif
+                </div>
             @endif
         </div>
     </div>

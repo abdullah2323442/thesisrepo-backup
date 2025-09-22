@@ -194,6 +194,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area of Interest</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisors</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -248,6 +249,28 @@
                                                 class="text-blue-600 hover:text-blue-800 text-xs mt-1">
                                             {{ ($group->areasOfInterest->count() > 0 || $group->areaOfInterest) ? 'Change' : 'Assign' }}
                                         </button>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="space-y-1">
+                                            @if($group->supervisor)
+                                                <div>
+                                                    <span class="text-xs font-medium text-gray-600">Main:</span>
+                                                    <span class="text-sm text-gray-900">{{ $group->supervisor->fullname }}</span>
+                                                </div>
+                                            @endif
+                                            @if($group->coSupervisor)
+                                                <div>
+                                                    <span class="text-xs font-medium text-blue-600">Co-supervisor:</span>
+                                                    <span class="text-sm text-blue-900">{{ $group->coSupervisor->fullname }}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 ml-1">
+                                                        Admin Assigned
+                                                    </span>
+                                                </div>
+                                            @endif
+                                            @if(!$group->supervisor && !$group->coSupervisor)
+                                                <span class="text-sm text-gray-400 italic">Not assigned</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">

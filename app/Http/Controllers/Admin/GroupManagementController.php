@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Group;
 use App\Models\GroupStudent;
+use App\Models\GroupPanelMember;
 use App\Models\AreaOfInterest;
 use App\Models\Supervisor;
 use App\Models\Batch;
@@ -607,6 +608,181 @@ class GroupManagementController extends Controller
 
             return redirect()->back()
                 ->with('error', 'Failed to remove supervisor assignment: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Assign co-supervisor to group
+     */
+    public function assignCoSupervisor(Request $request)
+    {
+        $request->validate([
+            'group_id' => 'required|exists:groups,id',
+            'co_supervisor_id' => 'required|exists:supervisors,id',
+        ]);
+
+        try {
+            $group = Group::findOrFail($request->group_id);
+            $coSupervisor = Supervisor::findOrFail($request->co_supervisor_id);
+
+            // Check if group has a main supervisor
+            if (!$group->supervisor_id) {
+                throw new \Exception("Cannot assign co-supervisor without a main supervisor. Please assign a main supervisor first.");
+            }
+
+            // Check if trying to assign the same supervisor as main supervisor
+            if ($group->supervisor_id === $coSupervisor->id) {
+                throw new \Exception("Cannot assign the same supervisor as both main supervisor and co-supervisor.");
+            }
+
+            // Check if co-supervisor has available slots
+            if (!$coSupervisor->canTakeThesis()) {
+                throw new \Exception("Co-supervisor {$coSupervisor->fullname} has no available thesis slots.");
+            }
+
+            // Assign co-supervisor
+            $group->update([
+                'co_supervisor_id' => $coSupervisor->id,
+                'co_supervisor_assigned_at' => now(),
+            ]);
+
+            return redirect()->back()
+                ->with('success', "Co-supervisor {$coSupervisor->fullname} has been assigned to {$group->name}.");
+
+        } catch (\Exception $e) {
+            Log::error('Admin co-supervisor assignment failed', [
+                'group_id' => $request->group_id,
+                'co_supervisor_id' => $request->co_supervisor_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to assign co-supervisor: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove co-supervisor assignment from group
+     */
+    public function unassignCoSupervisor(Request $request)
+    {
+        $request->validate([
+            'group_id' => 'required|exists:groups,id',
+        ]);
+
+        try {
+            $group = Group::findOrFail($request->group_id);
+            $coSupervisorName = $group->coSupervisor ? $group->coSupervisor->fullname : 'Unknown';
+
+            $group->update([
+                'co_supervisor_id' => null,
+                'co_supervisor_assigned_at' => null,
+            ]);
+
+            return redirect()->back()
+                ->with('success', "Co-supervisor assignment removed from {$group->name}. {$coSupervisorName} is now available for other assignments.");
+
+        } catch (\Exception $e) {
+            Log::error('Admin co-supervisor unassignment failed', [
+                'group_id' => $request->group_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to remove co-supervisor assignment: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Assign panel member to group
+     */
+    public function assignPanelMember(Request $request)
+    {
+        $request->validate([
+            'group_id' => 'required|exists:groups,id',
+            'supervisor_id' => 'required|exists:supervisors,id',
+        ]);
+
+        try {
+            $group = Group::findOrFail($request->group_id);
+            $panelMember = Supervisor::findOrFail($request->supervisor_id);
+
+            // Check if supervisor is already assigned as main supervisor or co-supervisor
+            if ($group->supervisor_id === $panelMember->id) {
+                throw new \Exception("Cannot assign main supervisor as panel member.");
+            }
+
+            if ($group->co_supervisor_id === $panelMember->id) {
+                throw new \Exception("Cannot assign co-supervisor as panel member.");
+            }
+
+            // Check if already assigned as panel member
+            if ($group->isPanelMember($panelMember->id)) {
+                throw new \Exception("This supervisor is already assigned as a panel member to this group.");
+            }
+
+            // Note: Panel members don't need thesis limit check as they are only reviewers
+            // They don't supervise the thesis directly, just evaluate and provide feedback
+
+            // Assign panel member
+            GroupPanelMember::create([
+                'group_id' => $group->id,
+                'supervisor_id' => $panelMember->id,
+                'assigned_at' => now(),
+                'assigned_by' => auth()->id(),
+            ]);
+
+            return redirect()->back()
+                ->with('success', "Panel member {$panelMember->fullname} has been assigned to {$group->name}.");
+
+        } catch (\Exception $e) {
+            Log::error('Admin panel member assignment failed', [
+                'group_id' => $request->group_id,
+                'supervisor_id' => $request->supervisor_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to assign panel member: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove panel member assignment from group
+     */
+    public function unassignPanelMember(Request $request)
+    {
+        $request->validate([
+            'group_id' => 'required|exists:groups,id',
+            'supervisor_id' => 'required|exists:supervisors,id',
+        ]);
+
+        try {
+            $group = Group::findOrFail($request->group_id);
+            $panelMember = Supervisor::findOrFail($request->supervisor_id);
+
+            $panelMemberRecord = GroupPanelMember::where('group_id', $group->id)
+                ->where('supervisor_id', $panelMember->id)
+                ->first();
+
+            if (!$panelMemberRecord) {
+                throw new \Exception("Panel member not found for this group.");
+            }
+
+            $panelMemberRecord->delete();
+
+            return redirect()->back()
+                ->with('success', "Panel member {$panelMember->fullname} has been removed from {$group->name}.");
+
+        } catch (\Exception $e) {
+            Log::error('Admin panel member unassignment failed', [
+                'group_id' => $request->group_id,
+                'supervisor_id' => $request->supervisor_id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to remove panel member: ' . $e->getMessage());
         }
     }
 

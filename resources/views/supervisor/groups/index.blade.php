@@ -27,7 +27,25 @@
                         </div>
 
                         <div class="p-4">
-                            <p class="text-sm text-gray-700 mb-2">Area of Interest: <span class="font-medium">{{ optional($group->matchedAreaOfInterest)->name ?? 'Not set' }}</span></p>
+                            <div class="flex items-center justify-between mb-4">
+                                <p class="text-sm text-gray-700">Area of Interest: <span class="font-medium">{{ optional($group->matchedAreaOfInterest)->name ?? 'Not set' }}</span></p>
+                                
+                                @if($supervisor && $group->supervisor_id === $supervisor->id && $group->hasCoSupervisor())
+                                    <!-- Co-supervisor Meeting Permission Toggle -->
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-gray-600">Co-supervisor can manage meetings:</span>
+                                        <button 
+                                            onclick="toggleCoSupervisorMeetings({{ $group->id }})"
+                                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $group->co_supervisor_can_manage_meetings ? 'bg-blue-600' : 'bg-gray-200' }}"
+                                            id="toggle-{{ $group->id }}"
+                                            data-current-state="{{ $group->co_supervisor_can_manage_meetings ? 'true' : 'false' }}"
+                                        >
+                                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {{ $group->co_supervisor_can_manage_meetings ? 'translate-x-6' : 'translate-x-1' }}" id="toggle-dot-{{ $group->id }}"></span>
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                            
                             @if($group->students->isEmpty())
                                 <p class="text-gray-500">No students in this group.</p>
                             @else
@@ -62,3 +80,83 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function toggleCoSupervisorMeetings(groupId) {
+    const toggle = document.getElementById(`toggle-${groupId}`);
+    const dot = document.getElementById(`toggle-dot-${groupId}`);
+    
+    // Get current state from data attribute
+    const currentState = toggle.getAttribute('data-current-state') === 'true';
+    const newState = !currentState;
+    
+    // Disable button during request
+    toggle.disabled = true;
+    toggle.style.opacity = '0.6';
+    
+    fetch('{{ route("supervisor.groups.toggle-co-supervisor-meetings") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            group_id: groupId,
+            allow_meetings: newState
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update data attribute with new state
+            toggle.setAttribute('data-current-state', data.can_manage_meetings ? 'true' : 'false');
+            
+            // Update toggle appearance
+            if (data.can_manage_meetings) {
+                toggle.classList.remove('bg-gray-200');
+                toggle.classList.add('bg-blue-600');
+                dot.classList.remove('translate-x-1');
+                dot.classList.add('translate-x-6');
+            } else {
+                toggle.classList.remove('bg-blue-600');
+                toggle.classList.add('bg-gray-200');
+                dot.classList.remove('translate-x-6');
+                dot.classList.add('translate-x-1');
+            }
+            
+            // Show success message
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.error || 'Failed to update permission', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred while updating permission', 'error');
+    })
+    .finally(() => {
+        // Re-enable button
+        toggle.disabled = false;
+        toggle.style.opacity = '1';
+    });
+}
+
+function showNotification(message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+@endpush

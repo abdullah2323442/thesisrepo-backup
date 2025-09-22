@@ -132,8 +132,20 @@
                             @endif
                             
                             @if($hasTeacherRole)
-                                <a href="{{ route('supervisor.dashboard') }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors text-center">
+                                <a href="{{ route('supervisor.dashboard') }}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors text-center" title="Main supervisor dashboard - Full access including project approval">
                                     Supervisor Panel
+                                </a>
+                            @endif
+                            
+                            @if($hasTeacherRole)
+                                <a href="{{ route('co-supervisor.dashboard') }}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors text-center" title="Co-supervisor dashboard - Support main supervisor (no approval rights)">
+                                    Co-Supervisor Panel
+                                </a>
+                            @endif
+                            
+                            @if($hasTeacherRole)
+                                <a href="{{ route('panel-member.dashboard') }}" class="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm transition-colors text-center" title="Panel member dashboard - Advisory role for evaluation and guidance">
+                                    Panel Member Panel
                                 </a>
                             @endif
                             
@@ -158,7 +170,7 @@
                         
                         <!-- Display current roles -->
                         <div class="mt-4 pt-4 border-t border-gray-200">
-                            <p class="text-xs text-gray-600 mb-2">Current Roles:</p>
+                            <p class="text-xs text-gray-600 mb-2">Available Roles:</p>
                             <div class="flex flex-wrap gap-1">
                                 @foreach($typeDescriptions as $description)
                                     <span class="px-2 py-1 text-xs rounded-full 
@@ -170,6 +182,16 @@
                                     </span>
                                 @endforeach
                             </div>
+                            @if($hasTeacherRole)
+                                <div class="mt-2">
+                                    <p class="text-xs text-gray-600 mb-1">Teacher Sub-roles:</p>
+                                    <div class="flex flex-wrap gap-1">
+                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Supervisor</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800">Co-Supervisor</span>
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Panel Member</span>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

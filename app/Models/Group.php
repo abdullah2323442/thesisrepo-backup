@@ -19,6 +19,9 @@ class Group extends Model
         'area_of_interest_id',
         'matched_area_of_interest_id',
         'supervisor_id',
+        'co_supervisor_id',
+        'co_supervisor_assigned_at',
+        'co_supervisor_can_manage_meetings',
         'is_manual_assignment',
         'assignment_priority',
         'assigned_at',
@@ -32,10 +35,13 @@ class Group extends Model
         'advisor_id' => 'integer',
         'max_students' => 'integer',
         'supervisor_id' => 'integer',
+        'co_supervisor_id' => 'integer',
         'area_of_interest_id' => 'integer',
         'is_manual_assignment' => 'boolean',
         'assignment_priority' => 'integer',
         'assigned_at' => 'datetime',
+        'co_supervisor_assigned_at' => 'datetime',
+        'co_supervisor_can_manage_meetings' => 'boolean',
         'created_by_admin_id' => 'integer',
         'advisor_auto_detected' => 'boolean'
     ];
@@ -96,6 +102,32 @@ class Group extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(Supervisor::class, 'supervisor_id');
+    }
+
+    /**
+     * Get the co-supervisor assigned to this group
+     */
+    public function coSupervisor(): BelongsTo
+    {
+        return $this->belongsTo(Supervisor::class, 'co_supervisor_id');
+    }
+
+    /**
+     * Get the panel members assigned to this group
+     */
+    public function panelMembers(): HasMany
+    {
+        return $this->hasMany(GroupPanelMember::class);
+    }
+
+    /**
+     * Get the supervisors who are panel members for this group
+     */
+    public function panelSupervisors(): BelongsToMany
+    {
+        return $this->belongsToMany(Supervisor::class, 'group_panel_members')
+                    ->withPivot(['assigned_at', 'assigned_by'])
+                    ->withTimestamps();
     }
 
     /**
@@ -313,5 +345,121 @@ class Group extends Model
         }
         
         return 'Advisor manually assigned';
+    }
+
+    /**
+     * Check if group has a co-supervisor assigned
+     */
+    public function hasCoSupervisor(): bool
+    {
+        return !is_null($this->co_supervisor_id);
+    }
+
+    /**
+     * Check if a supervisor (main or co-supervisor) can approve final projects
+     * Only main supervisor can approve final projects
+     */
+    public function canSupervisorApprove(int $supervisorId): bool
+    {
+        return $this->supervisor_id === $supervisorId;
+    }
+
+    /**
+     * Check if a supervisor (main, co-supervisor, or panel member) can access this group
+     */
+    public function canSupervisorAccess(int $supervisorId): bool
+    {
+        // Check main supervisor
+        if ($this->supervisor_id === $supervisorId) {
+            return true;
+        }
+        
+        // Check co-supervisor
+        if ($this->co_supervisor_id === $supervisorId) {
+            return true;
+        }
+        
+        // Check panel members
+        return $this->panelMembers()->where('supervisor_id', $supervisorId)->exists();
+    }
+
+    /**
+     * Check if group has panel members
+     */
+    public function hasPanelMembers(): bool
+    {
+        return $this->panelMembers()->exists();
+    }
+
+    /**
+     * Check if a supervisor is a panel member of this group
+     */
+    public function isPanelMember(int $supervisorId): bool
+    {
+        return $this->panelMembers()->where('supervisor_id', $supervisorId)->exists();
+    }
+
+    /**
+     * Check if a supervisor can manage meetings for this group
+     * Main supervisor can always manage meetings
+     * Co-supervisor can manage meetings only if enabled
+     * Panel members cannot manage meetings
+     */
+    public function canSupervisorManageMeetings(int $supervisorId): bool
+    {
+        // Main supervisor can always manage meetings
+        if ($this->supervisor_id === $supervisorId) {
+            return true;
+        }
+        
+        // Co-supervisor can manage meetings only if enabled
+        if ($this->co_supervisor_id === $supervisorId) {
+            return $this->co_supervisor_can_manage_meetings;
+        }
+        
+        // Panel members cannot manage meetings
+        return false;
+    }
+
+    /**
+     * Check if co-supervisor can manage meetings
+     */
+    public function coSupervisorCanManageMeetings(): bool
+    {
+        return $this->co_supervisor_can_manage_meetings;
+    }
+
+    /**
+     * Get all supervisors (main and co-supervisor) for this group
+     */
+    public function getAllSupervisors(): array
+    {
+        $supervisors = [];
+        
+        if ($this->supervisor) {
+            $supervisors['main'] = $this->supervisor;
+        }
+        
+        if ($this->coSupervisor) {
+            $supervisors['co'] = $this->coSupervisor;
+        }
+        
+        return $supervisors;
+    }
+
+    /**
+     * Scope to get groups with co-supervisors
+     */
+    public function scopeWithCoSupervisor($query)
+    {
+        return $query->whereNotNull('co_supervisor_id');
+    }
+
+    /**
+     * Scope to get groups without co-supervisors
+     */
+    public function scopeWithoutCoSupervisor($query)
+    {
+        return $query->whereNull('co_supervisor_id');
     }
 }

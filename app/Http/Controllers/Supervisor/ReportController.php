@@ -623,7 +623,39 @@ class ReportController extends Controller
             return back()->with('error', 'Failed to update report status. Please try again.');
         }
     }
+    /**
+     * View a student submission file inline
+     */
+public function viewSubmission(Report $report, StudentReportSubmission $submission)
+{
+    // Get the supervisor record for the authenticated user
+    $supervisor = Supervisor::where('email', auth()->user()->email)->first();
+    
+    if (!$supervisor) {
+        return redirect()->route('supervisor.dashboard')
+            ->with('error', 'Supervisor profile not found.');
+    }
 
+    // Verify the report belongs to a group supervised by this supervisor
+    if ($report->group->supervisor_id !== $supervisor->id) {
+        abort(403, 'Unauthorized access to this report.');
+    }
+
+    // Verify the submission belongs to this report
+    if ($submission->report_id !== $report->id) {
+        abort(403, 'Unauthorized access to this submission.');
+    }
+
+    // Check if file exists
+    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($submission->file_path)) {
+        return back()->with('error', 'File not found.');
+    }
+
+    $file = \Illuminate\Support\Facades\Storage::disk('public')->get($submission->file_path);
+    return response($file, 200)
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', 'inline; filename="' . $submission->original_filename . '"');
+}
     /**
      * Download a student submission file
      */

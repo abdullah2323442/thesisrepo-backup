@@ -81,12 +81,21 @@ class ReportController extends Controller
         // Get current student's submission for this report
         $currentSubmission = $report->submissions->first();
         
+        // Get annotation sessions for the current submission if it exists
+        $annotationSessions = collect();
+        if ($currentSubmission) {
+            $annotationSessions = \App\Models\ReportAnnotationSession::where('submission_id', $currentSubmission->id)
+                ->with('supervisor')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+        
         // Mark related notifications as read
         $user->unreadNotifications()
             ->where('data->report_id', $report->id)
             ->update(['read_at' => now()]);
         
-        return view('student.reports.show', compact('report', 'currentSubmission'));
+        return view('student.reports.show', compact('report', 'currentSubmission', 'annotationSessions'));
     }
     
     /**

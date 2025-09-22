@@ -96,7 +96,7 @@ class DashboardController extends Controller
         }
         
         // Get the group with all related information
-        $group = Group::with(['students', 'matchedAreaOfInterest', 'supervisor', 'advisor'])
+        $group = Group::with(['students', 'matchedAreaOfInterest', 'supervisor', 'coSupervisor', 'panelMembers.supervisor', 'advisor'])
                      ->find($groupStudent->group_id);
         
         if (!$group) {
@@ -142,6 +142,24 @@ class DashboardController extends Controller
                 'department' => $group->supervisor->department,
                 'thesis_limit' => $group->supervisor->thesis_limit
             ] : null,
+            'coSupervisor' => $group->coSupervisor ? [
+                'id' => $group->coSupervisor->id,
+                'name' => $group->coSupervisor->fullname,
+                'email' => $group->coSupervisor->email,
+                'designation' => $group->coSupervisor->designation,
+                'department' => $group->coSupervisor->department,
+                'thesis_limit' => $group->coSupervisor->thesis_limit
+            ] : null,
+            'panelMembers' => $group->panelMembers->map(function ($panelMember) {
+                return [
+                    'id' => $panelMember->supervisor->id,
+                    'name' => $panelMember->supervisor->fullname,
+                    'email' => $panelMember->supervisor->email,
+                    'designation' => $panelMember->supervisor->designation,
+                    'department' => $panelMember->supervisor->department,
+                    'assigned_at' => $panelMember->assigned_at,
+                ];
+            })->toArray(),
             'advisor' => $group->advisor ? [
                 'id' => $group->advisor->id,
                 'name' => $group->advisor->name,
