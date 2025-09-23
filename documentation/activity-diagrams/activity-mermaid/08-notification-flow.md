@@ -33,11 +33,11 @@ flowchart TD
     AdvisorRecipients --> BuildNotification
     PanelRecipients --> BuildNotification
     
-    BuildNotification --> SetPayload[Set Notification Payload<br/>(report_id, comment_id, session_id)]
+    BuildNotification --> SetPayload["Set Notification Payload<br/>(report_id, comment_id, session_id)"]
     SetPayload --> DeliveryChannels{Delivery Method}
     
-    DeliveryChannels -->|Database| StoreNotification[Store in notifications table<br/>(migration: 2025_09_01_172011)]
-    StoreNotification --> SetAttributes[Set id, type, notifiable_type,<br/>notifiable_id, data, read_at]
+    DeliveryChannels -->|Database| StoreNotification["Store in notifications table<br/>(migration: 2025_09_01_172011)"]
+    StoreNotification --> SetAttributes["Set id, type, notifiable_type,<br/>notifiable_id, data, read_at"]
     
     DeliveryChannels -->|Email| CheckEmailConfig{Mail Config Set?}
     CheckEmailConfig -->|Yes| QueueEmail[Queue Email Job]
@@ -47,7 +47,7 @@ flowchart TD
     CheckBroadcast -->|Yes| BroadcastEvent[Broadcast Real-time Event]
     CheckBroadcast -->|No| SkipBroadcast[Skip Real-time]
     
-    SetAttributes --> MarkUnread[Set read_at = NULL]
+    SetAttributes --> MarkUnread["Set read_at = NULL"]
     QueueEmail --> ProcessQueue[Process Queue Job]
     BroadcastEvent --> PushToClient[Push to Client via WebSocket]
     SkipEmail --> MarkUnread
@@ -57,12 +57,12 @@ flowchart TD
     ProcessQueue --> UserAccess
     PushToClient --> UserAccess
     
-    UserAccess --> LoadNotifications[Load Unread Notifications<br/>WHERE read_at IS NULL]
+    UserAccess --> LoadNotifications["Load Unread Notifications<br/>WHERE read_at IS NULL"]
     LoadNotifications --> DisplayBadge[Display Notification Count]
     DisplayBadge --> UserInteraction{User Action}
     
     UserInteraction -->|View| OpenNotification[Open Notification]
-    OpenNotification --> UpdateReadAt[UPDATE read_at = NOW()]
+    OpenNotification --> UpdateReadAt["UPDATE read_at = NOW()"]
     UpdateReadAt --> NavigateContent[Navigate to Related Content]
     
     UserInteraction -->|Mark All Read| BulkUpdate[Bulk Update read_at]

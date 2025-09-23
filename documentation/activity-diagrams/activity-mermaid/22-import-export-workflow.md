@@ -20,7 +20,7 @@ flowchart TD
     ValidateFormat -->|No| ShowFormatError[Show Format Error]
     ShowFormatError --> UploadExcel
     
-    ValidateFormat -->|Yes| ParseExcel[Parse Excel with Maatwebsite\Excel]
+    ValidateFormat -->|Yes| ParseExcel["Parse Excel with Maatwebsite\\Excel"]
     ParseExcel --> ValidateHeaders{Headers Match Template?}
     
     ValidateHeaders -->|No| ShowHeaderError[Show Header Mismatch]
@@ -43,7 +43,7 @@ flowchart TD
     CreateGroup --> CreateGroupStudent
     UpdateRecord --> CreateGroupStudent
     
-    CreateGroupStudent --> UpdateRelations[Update Relations:<br/>- Group-AreaOfInterest<br/>- Supervisor Assignment]
+    CreateGroupStudent --> UpdateRelations["Update Relations:<br/>- Group-AreaOfInterest<br/>- Supervisor Assignment"]
     UpdateRelations --> LogSuccess[Log Successful Import]
     
     LogSuccess --> ContinueNext
@@ -51,13 +51,13 @@ flowchart TD
     ContinueNext -->|No| GenerateImportReport[Generate Import Report]
     
     %% Batch Import via API
-    BatchImport --> CallBatchAPI[Call BatchApiService::import()]
+    BatchImport --> CallBatchAPI["Call BatchApiService::import()"]
     CallBatchAPI --> ProcessAPIResponse[Process API Response]
     ProcessAPIResponse --> SyncBatchModel[Sync with Batch Model]
     SyncBatchModel --> GenerateImportReport
     
     %% Student Import
-    StudentImport --> CallStudentAPI[Call StudentApiService::import()]
+    StudentImport --> CallStudentAPI["Call StudentApiService::import()"]
     CallStudentAPI --> ValidateStudentData[Validate Student Data]
     ValidateStudentData --> CreateUserRecords[Create/Update User Records]
     CreateUserRecords --> GenerateImportReport
@@ -71,7 +71,7 @@ flowchart TD
     SelectExportType -->|Supervisor Load| SupervisorExport[Supervisor Load Export]
     
     TemplateExport --> GenerateTemplate[Generate Excel Template]
-    GenerateTemplate --> AddHeaders[Add Required Headers:<br/>- Student Name<br/>- Registration<br/>- Group Name<br/>- Area of Interest]
+    GenerateTemplate --> AddHeaders["Add Required Headers:<br/>- Student Name<br/>- Registration<br/>- Group Name<br/>- Area of Interest"]
     AddHeaders --> AddSampleData[Add Sample Data Row]
     AddSampleData --> AddValidation[Add Data Validation Rules]
     AddValidation --> SaveExcel[Save as .xlsx]
@@ -89,14 +89,14 @@ flowchart TD
     CalculateLoads --> IncludeAOI[Include Area of Interests]
     IncludeAOI --> FormatExportData
     
-    FormatExportData --> GenerateExcel[Generate Excel with Maatwebsite\Excel]
+    FormatExportData --> GenerateExcel["Generate Excel with Maatwebsite\\Excel"]
     SaveExcel --> SetHeaders[Set Download Headers]
     GenerateExcel --> SetHeaders
     
     SetHeaders --> StreamDownload[Stream Download to Browser]
     StreamDownload --> LogExport[Log Export Activity]
     
-    GenerateImportReport --> ShowSummary[Show Import Summary:<br/>- Total Processed<br/>- Successful<br/>- Failed<br/>- Errors]
+    GenerateImportReport --> ShowSummary["Show Import Summary:<br/>- Total Processed<br/>- Successful<br/>- Failed<br/>- Errors"]
     LogExport --> End([Operation Complete])
     ShowSummary --> End
     
@@ -113,7 +113,7 @@ flowchart TD
 ```
 
 ## Description
-Complete import/export workflow using Laravel Excel (Maatwebsite\Excel) package.
+Complete import/export workflow using Laravel Excel (Maatwebsite\\Excel) package.
 
 ## Import Classes (app/Imports/)
 - **GroupAssignmentImport**: Imports student-group assignments from Excel

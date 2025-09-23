@@ -8,7 +8,7 @@ flowchart TD
     ServiceType -->|Student| StudentService[StudentApiService]
     ServiceType -->|Supervisor| SupervisorService[SupervisorApiService]
     
-    BatchService --> LoadConfig[Load config/external_api.php]
+    BatchService --> LoadConfig["Load config/external_api.php"]
     StudentService --> LoadConfig
     SupervisorService --> LoadConfig
     
@@ -20,13 +20,13 @@ flowchart TD
     
     CheckCache -->|Cache Miss| PrepareRequest[Prepare HTTP Request]
     
-    PrepareRequest --> SetHeaders[Set Headers:<br/>- Authorization Bearer<br/>- Content-Type<br/>- Accept]
+    PrepareRequest --> SetHeaders["Set Headers:<br/>- Authorization Bearer<br/>- Content-Type<br/>- Accept"]
     SetHeaders --> SelectEndpoint{Select API Endpoint}
     
-    SelectEndpoint -->|Batch Sync| BatchEndpoint[POST /api/batches<br/>Sync Batch Model Data]
-    SelectEndpoint -->|Student Data| StudentEndpoint[GET /api/students/{registration}<br/>Fetch Student Details]
-    SelectEndpoint -->|Supervisor Load| SupervisorEndpoint[GET /api/supervisors/{id}/load<br/>Check Supervisor Capacity]
-    SelectEndpoint -->|Assignment Sync| AssignmentEndpoint[POST /api/assignments<br/>Sync AssignmentHistory]
+    SelectEndpoint -->|Batch Sync| BatchEndpoint["POST /api/batches<br/>Sync Batch Model Data"]
+    SelectEndpoint -->|Student Data| StudentEndpoint["GET /api/students/{registration}<br/>Fetch Student Details"]
+    SelectEndpoint -->|Supervisor Load| SupervisorEndpoint["GET /api/supervisors/{id}/load<br/>Check Supervisor Capacity"]
+    SelectEndpoint -->|Assignment Sync| AssignmentEndpoint["POST /api/assignments<br/>Sync AssignmentHistory"]
     
     BatchEndpoint --> CallAPI[Execute HTTP Request]
     StudentEndpoint --> CallAPI
@@ -38,21 +38,21 @@ flowchart TD
     Response -->|200 OK| ParseResponse[Parse JSON Response]
     ParseResponse --> ValidateSchema{Validate Data Schema}
     
-    ValidateSchema -->|Valid| UpdateModels[Update Local Models:<br/>- Batch<br/>- User<br/>- Supervisor]
+    ValidateSchema -->|Valid| UpdateModels["Update Local Models:<br/>- Batch<br/>- User<br/>- Supervisor"]
     ValidateSchema -->|Invalid| LogSchemaError[Log Schema Mismatch]
     
-    UpdateModels --> CacheResponse[Cache Response<br/>(TTL from config)]
+    UpdateModels --> CacheResponse["Cache Response<br/>(TTL from config)"]
     CacheResponse --> ReturnSuccess[Return Processed Data]
     ReturnSuccess --> End1([Success])
     
     LogSchemaError --> UseFallback
     
-    Response -->|429 Rate Limited| CheckRetries{Retry Attempts < 3?}
-    CheckRetries -->|Yes| ExponentialBackoff[Wait: 2^attempt seconds]
+    Response -->|429 Rate Limited| CheckRetries{"Retry Attempts < 3?"}
+    CheckRetries -->|Yes| ExponentialBackoff["Wait: 2^attempt seconds"]
     ExponentialBackoff --> IncrementRetry[Increment Retry Counter]
     IncrementRetry --> CallAPI
     
-    CheckRetries -->|No| LogRateLimit[Log to storage/logs/api.log]
+    CheckRetries -->|No| LogRateLimit["Log to storage/logs/api.log"]
     LogRateLimit --> UseFallback[Use Database Fallback]
     
     Response -->|401 Unauthorized| RefreshToken[Attempt Token Refresh]
@@ -71,16 +71,16 @@ flowchart TD
     CheckFallback -->|Yes| UseFallback
     CheckFallback -->|No| QueueJob[Queue Laravel Job for Retry]
     
-    UseFallback --> LoadLocalData[Load from Local Models:<br/>- Batch::all()<br/>- Supervisor::with('areaOfInterests')<br/>- User::where('role', 'student')]
+    UseFallback --> LoadLocalData["Load from Local Models:<br/>- Batch::all()<br/>- Supervisor::with('areaOfInterests')<br/>- User::where('role', 'student')"]
     LoadLocalData --> ReturnDegraded[Return with Degraded Flag]
     
-    QueueJob --> DispatchJob[Dispatch to Queue:<br/>php artisan queue:work]
+    QueueJob --> DispatchJob["Dispatch to Queue:<br/>php artisan queue:work"]
     DispatchJob --> End3([Queued for Later])
     
     DisableIntegration --> End4([API Disabled])
     ReturnDegraded --> End2([Degraded Mode])
     
-    ReturnCached --> MonitorPerformance[PerformanceMonitoringService::track()]
+    ReturnCached --> MonitorPerformance["PerformanceMonitoringService::track()"]
     ReturnSuccess --> MonitorPerformance
     ReturnDegraded --> MonitorPerformance
     

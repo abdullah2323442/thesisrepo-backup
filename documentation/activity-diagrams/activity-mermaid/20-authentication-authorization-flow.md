@@ -10,7 +10,7 @@ flowchart TD
     ValidateInput -->|Invalid| ShowErrors[Show Validation Errors]
     ShowErrors --> EnterCreds
     
-    ValidateInput -->|Valid| AuthAttempt[Auth::attempt()]
+    ValidateInput -->|Valid| AuthAttempt["Auth::attempt()"]
     AuthAttempt --> CheckUser{User Exists?}
     
     CheckUser -->|No| InvalidCreds[Invalid Credentials Error]

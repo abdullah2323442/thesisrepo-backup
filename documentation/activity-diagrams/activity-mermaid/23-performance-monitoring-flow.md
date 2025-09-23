@@ -4,7 +4,7 @@
 flowchart TD
     Start([Request Initiated]) --> Middleware[Performance Middleware]
     Middleware --> StartTimer[Start Request Timer]
-    StartTimer --> RecordMetrics[Record Initial Metrics:<br/>- Memory Usage<br/>- CPU Time<br/>- Request URI]
+    StartTimer --> RecordMetrics["Record Initial Metrics:<br/>- Memory Usage<br/>- CPU Time<br/>- Request URI"]
     
     RecordMetrics --> ProcessRequest[Process Request]
     ProcessRequest --> CheckService{Uses Monitoring Service?}
@@ -14,11 +14,11 @@ flowchart TD
     
     CallMonitoring --> ServiceMethod{Service Method}
     
-    ServiceMethod -->|track()| TrackOperation[Track Custom Operation]
-    ServiceMethod -->|startTimer()| StartCustomTimer[Start Named Timer]
-    ServiceMethod -->|endTimer()| EndCustomTimer[End Named Timer]
-    ServiceMethod -->|recordMetric()| RecordCustom[Record Custom Metric]
-    ServiceMethod -->|checkThreshold()| CheckThreshold[Check Performance Threshold]
+    ServiceMethod -->|"track()"| TrackOperation[Track Custom Operation]
+    ServiceMethod -->|"startTimer()"| StartCustomTimer[Start Named Timer]
+    ServiceMethod -->|"endTimer()"| EndCustomTimer[End Named Timer]
+    ServiceMethod -->|"recordMetric()"| RecordCustom[Record Custom Metric]
+    ServiceMethod -->|"checkThreshold()"| CheckThreshold[Check Performance Threshold]
     
     TrackOperation --> LogOperation[Log to performance_metrics table]
     StartCustomTimer --> StoreStartTime[Store Start Timestamp]
@@ -42,8 +42,8 @@ flowchart TD
     ContinueProcess --> CheckDatabase{Database Query?}
     
     CheckDatabase -->|Yes| QueryMonitor[Monitor Query Performance]
-    QueryMonitor --> QueryMetrics[Record:<br/>- Query Time<br/>- Rows Examined<br/>- Query Type]
-    QueryMetrics --> SlowQuery{Slow Query?>1s}
+    QueryMonitor --> QueryMetrics["Record:<br/>- Query Time<br/>- Rows Examined<br/>- Query Type"]
+    QueryMetrics --> SlowQuery{"Slow Query >1s?"}
     
     SlowQuery -->|Yes| LogSlowQuery[Log to slow_queries table]
     SlowQuery -->|No| ContinueDB
@@ -55,14 +55,14 @@ flowchart TD
     ContinueDB --> CheckCache
     
     CheckCache -->|Yes| CacheMonitor[Monitor Cache Performance]
-    CacheMonitor --> CacheMetrics[Record:<br/>- Hit/Miss Rate<br/>- Cache Size<br/>- TTL Stats]
+    CacheMonitor --> CacheMetrics["Record:<br/>- Hit/Miss Rate<br/>- Cache Size<br/>- TTL Stats"]
     CacheMetrics --> ContinueCache[Continue]
     
     CheckCache -->|No| CheckAPI{External API Call?}
     ContinueCache --> CheckAPI
     
     CheckAPI -->|Yes| APIMonitor[Monitor API Performance]
-    APIMonitor --> APIMetrics[Record:<br/>- Response Time<br/>- Status Code<br/>- Payload Size]
+    APIMonitor --> APIMetrics["Record:<br/>- Response Time<br/>- Status Code<br/>- Payload Size"]
     APIMetrics --> APIHealth{API Healthy?}
     
     APIHealth -->|No| CircuitBreaker[Activate Circuit Breaker]
@@ -75,13 +75,13 @@ flowchart TD
     ContinueAPI --> ResponseReady
     
     ResponseReady --> EndTimer[End Request Timer]
-    EndTimer --> CalculateTotal[Calculate Total Metrics:<br/>- Total Time<br/>- Memory Peak<br/>- DB Queries Count]
+    EndTimer --> CalculateTotal["Calculate Total Metrics:<br/>- Total Time<br/>- Memory Peak<br/>- DB Queries Count"]
     
-    CalculateTotal --> StoreMetrics[Store in Database:<br/>- request_metrics<br/>- performance_summary]
+    CalculateTotal --> StoreMetrics["Store in Database:<br/>- request_metrics<br/>- performance_summary"]
     StoreMetrics --> CheckAggregation{Time for Aggregation?}
     
     CheckAggregation -->|Yes| RunAggregation[Run Aggregation Job]
-    RunAggregation --> GenerateReports[Generate Performance Reports:<br/>- Hourly<br/>- Daily<br/>- Weekly]
+    RunAggregation --> GenerateReports["Generate Performance Reports:<br/>- Hourly<br/>- Daily<br/>- Weekly"]
     GenerateReports --> UpdateDashboard[Update Monitoring Dashboard]
     
     CheckAggregation -->|No| ReturnResponse[Return Response]

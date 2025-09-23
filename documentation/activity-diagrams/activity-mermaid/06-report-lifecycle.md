@@ -24,18 +24,18 @@ flowchart TD
     UpdateReport --> NotifySupervisor[Send Notification to Supervisor]
     
     NotifySupervisor --> SupervisorReview[Supervisor Opens Report]
-    SupervisorReview --> CreateAnnotationSession[Create ReportAnnotationSession<br/>(created_by_type: supervisor)]
+    SupervisorReview --> CreateAnnotationSession["Create ReportAnnotationSession<br/>(created_by_type: supervisor)"]
     CreateAnnotationSession --> AddAnnotations[Add PDF Annotations]
     AddAnnotations --> CreateComments[Create ReportComment Entries]
     
     CreateComments --> CheckCoSupervisor{Co-Supervisor Review?}
-    CheckCoSupervisor -->|Yes| CoSupervisorAnnotation[Create ReportAnnotationSession<br/>(created_by_type: supervisor)]
+    CheckCoSupervisor -->|Yes| CoSupervisorAnnotation["Create ReportAnnotationSession<br/>(created_by_type: supervisor)"]
     CheckCoSupervisor -->|No| ProceedDecision
     CoSupervisorAnnotation --> ProceedDecision
     
     ProceedDecision[Proceed to Decision] --> StatusDecision{Review Decision}
     
-    StatusDecision -->|Needs Revision| RequestRevision[Update Report Status: revision_required]
+    StatusDecision -->|Needs Revision| RequestRevision["Update Report Status: revision_required"]
     RequestRevision --> SendRevisionNotif[Trigger NewReportComment Notification]
     SendRevisionNotif --> StudentViewAnnotations[Student Views ReportAnnotationSession]
     StudentViewAnnotations --> ReadComments[Read ReportComments]
@@ -45,11 +45,11 @@ flowchart TD
     TriggerUpdateNotif --> SupervisorReview
     
     StatusDecision -->|Panel Review| AssignPanel[Assign GroupPanelMember]
-    AssignPanel --> PanelAnnotation[Create ReportAnnotationSession<br/>(created_by_type: panel_member)]
+    AssignPanel --> PanelAnnotation["Create ReportAnnotationSession<br/>(created_by_type: panel_member)"]
     PanelAnnotation --> PanelComments[Panel ReportComments]
     PanelComments --> PanelDecision{Panel Decision}
     
-    PanelDecision -->|Approved| MarkApproved[Update Report Status: approved]
+    PanelDecision -->|Approved| MarkApproved["Update Report Status: approved"]
     PanelDecision -->|Needs Changes| RequestRevision
     
     MarkApproved --> RecordMeeting[Create Meeting Entry]
@@ -57,7 +57,7 @@ flowchart TD
     RecordAttendance --> FinalizeReport[Finalize Report]
     FinalizeReport --> End([Report Complete])
     
-    StatusDecision -->|Major Issues| RejectReport[Update Report Status: rejected]
+    StatusDecision -->|Major Issues| RejectReport["Update Report Status: rejected"]
     RejectReport --> NotifyRejection[Send Rejection Notification]
     NotifyRejection --> ConsultMeeting[Schedule Consultation Meeting]
     ConsultMeeting --> MajorRevision[Major Revision Required]

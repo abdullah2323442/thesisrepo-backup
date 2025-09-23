@@ -3,8 +3,8 @@
 ```mermaid
 flowchart TD
     Start([Start SupervisorAssignmentService]) --> LoadData[Load Groups, Supervisors, AreaOfInterests]
-    LoadData --> CheckRelations[Check Group-AreaOfInterest Relations<br/>(Many-to-Many)]
-    CheckRelations --> LoadSupervisors[Load Supervisor-AreaOfInterest Relations<br/>(Many-to-Many)]
+    LoadData --> CheckRelations["Check Group-AreaOfInterest Relations<br/>(Many-to-Many)"]
+    CheckRelations --> LoadSupervisors["Load Supervisor-AreaOfInterest Relations<br/>(Many-to-Many)"]
     
     LoadSupervisors --> SelectMode{Assignment Strategy}
     
@@ -17,7 +17,7 @@ flowchart TD
     QuerySecondary --> FilterAvailable1
     
     SelectMode -->|Ranking| RankProcess[Sort Supervisors by Designation]
-    RankProcess --> RankOrder[Professor → Associate → Assistant → Lecturer]
+    RankProcess --> RankOrder["Professor -> Associate -> Assistant -> Lecturer"]
     RankOrder --> RoundRobin[Round-Robin Assignment]
     
     SelectMode -->|Combined| CombinedProcess[Match AOI + Rank Weight]
@@ -54,9 +54,9 @@ flowchart TD
     ManualQueue --> GenerateReport[Generate Assignment Report]
     GenerateReport --> CallAPIs[Sync via External APIs]
     
-    CallAPIs --> BatchAPI[BatchApiService::syncAssignments()]
-    CallAPIs --> StudentAPI[StudentApiService::notifyAssignments()]
-    CallAPIs --> SupervisorAPI[SupervisorApiService::updateLoads()]
+    CallAPIs --> BatchAPI["BatchApiService::syncAssignments()"]
+    CallAPIs --> StudentAPI["StudentApiService::notifyAssignments()"]
+    CallAPIs --> SupervisorAPI["SupervisorApiService::updateLoads()"]
     
     BatchAPI --> SendNotifications[Trigger NewReportAssigned Notifications]
     StudentAPI --> SendNotifications
