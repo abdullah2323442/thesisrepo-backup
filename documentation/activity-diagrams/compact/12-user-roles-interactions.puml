@@ -1,0 +1,53 @@
+@startuml User_Roles_Interactions
+!theme plain
+title System User Roles & Key Actions
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam rectangleFontSize 11
+skinparam rectangle {
+  BackgroundColor #FAFAFA
+  BorderColor #9E9E9E
+}
+
+rectangle "**ADMIN**" as admin #FFCDD2 {
+  :• System Configuration
+  :• User Management
+  :• Performance Monitoring
+  :• API Synchronization
+}
+
+rectangle "**ADVISOR**" as advisor #C5CAE9 {
+  :• Create Groups
+  :• Assign Students  
+  :• Run Lottery
+  :• Manage Assignments
+}
+
+rectangle "**SUPERVISOR**" as supervisor #C8E6C9 {
+  :• Review Reports
+  :• Annotate PDFs
+  :• Schedule Meetings
+  :• Provide Feedback
+}
+
+rectangle "**STUDENT**" as student #FFE0B2 {
+  :• Submit Reports
+  :• View Feedback
+  :• Attend Meetings
+  :• Track Progress
+}
+
+rectangle "**PANEL MEMBER**" as panel #E1BEE7 {
+  :• Evaluate Thesis
+  :• Final Assessment
+  :• Grade Assignment
+}
+
+admin -down-> advisor : Creates Groups
+advisor -down-> supervisor : Assigns
+supervisor <-down-> student : Reviews/Submits
+supervisor -right-> panel : Final Review
+student -up-> panel : Defense
+
+@enduml

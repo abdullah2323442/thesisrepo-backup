@@ -1,0 +1,52 @@
+@startuml Advisor_Group_Management_Compact
+!theme plain
+title Advisor Group Creation & Assignment
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #E1F5FE
+  BorderColor #0288D1
+}
+
+start
+:Access Advisor Panel;
+
+if (Creation Method?) then (Manual)
+  :Add Groups One by One;
+  :Assign Students;
+else (Excel Import)
+  :Download Template;
+  :Fill Student Data;
+  :Upload Excel;
+  :Validate & Import;
+endif
+
+:Set Areas of Interest;
+
+if (Assignment Type?) then (Manual)
+  :Select Supervisor;
+  :Check Capacity;
+  :Assign to Group;
+else (Lottery)
+  :Select Mode;
+  note right
+  • AOI Match
+  • Rank Priority  
+  • Combined
+  end note
+  :Preview Results;
+  :Run Assignment;
+endif
+
+:Review Results;
+
+if (Unassigned Groups?) then (Yes)
+  :Handle Manually;
+else (No)
+  :Complete;
+endif
+
+stop
+
+@enduml

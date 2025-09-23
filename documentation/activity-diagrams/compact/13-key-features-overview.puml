@@ -1,0 +1,56 @@
+@startuml Key_Features_Overview
+!theme plain
+title Thesis Management System - Key Features
+skinparam packageFontSize 11
+skinparam rectangleFontSize 10
+skinparam defaultFontSize 10
+
+package "Core Features" #E3F2FD {
+  rectangle "**Group Management**" as gm #BBDEFB {
+    :Manual Creation
+    :Excel Import
+    :Student Assignment
+  }
+  
+  rectangle "**Supervisor Assignment**" as sa #90CAF9 {
+    :AOI Matching
+    :Rank Priority
+    :Lottery System
+  }
+  
+  rectangle "**Report Management**" as rm #64B5F6 {
+    :Submission
+    :PDF Annotation
+    :Feedback Cycle
+  }
+}
+
+package "Communication" #E8F5E9 {
+  rectangle "**Meetings**" as meet #A5D6A7 {
+    :Scheduling
+    :Attendance
+    :Minutes
+  }
+  
+  rectangle "**Notifications**" as notif #81C784 {
+    :In-App Alerts
+    :Email Updates
+    :Real-time Push
+  }
+}
+
+package "Integration" #FFF3E0 {
+  rectangle "**External APIs**" as api #FFE082 {
+    :Student Data
+    :Batch Sync
+    :Teacher Info
+  }
+}
+
+gm -down-> sa : Assigns
+sa -down-> rm : Supervises
+rm -right-> meet : Discusses
+meet -down-> notif : Alerts
+api -left-> gm : Populates
+
+@enduml

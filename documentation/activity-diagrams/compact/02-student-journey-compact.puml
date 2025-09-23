@@ -1,0 +1,53 @@
+@startuml Student_Journey_Compact
+!theme plain
+title Student Report Submission Journey
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #FFF3E0
+  BorderColor #F57C00
+}
+
+start
+:Login & Check Group;
+
+if (Assigned to Group?) then (Yes)
+  :View Supervisor Info;
+else (No)
+  :Wait for Assignment;
+  stop
+endif
+
+:Check Notifications;
+
+repeat :Report Submission Cycle;
+  :View Report Requirements;
+  :Prepare Document;
+  
+  if (Upload Format?) then (PowerPoint)
+    :Upload .pptx;
+  else (PDF)
+    :Upload .pdf;
+  endif
+  
+  :Submit Report;
+  :Wait for Review;
+  
+  if (Status?) then (Approved)
+    :Download Certificate;
+    break
+  elseif (Needs Revision)
+    :View Annotations;
+    :Read Feedback;
+    :Make Changes;
+  else (Rejected)
+    :Major Revision;
+  endif
+  
+repeat while (Not Approved)
+
+:Complete Thesis;
+stop
+
+@enduml

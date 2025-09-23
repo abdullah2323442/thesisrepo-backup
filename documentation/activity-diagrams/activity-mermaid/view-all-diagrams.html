@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Management System - Activity Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .subtitle {
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        .nav {
+            background: #f5f5f5;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .nav-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .nav-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .nav-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .content {
+            padding: 30px;
+        }
+        .diagram-section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .diagram-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .diagram-title {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .diagram-description {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .mermaid {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Thesis Management System</h1>
+            <div class="subtitle">Interactive Activity Diagrams</div>
+        </div>
+        
+        <div class="nav">
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showDiagram('overview')">System Overview</button>
+                <button class="nav-btn" onclick="showDiagram('student')">Student Journey</button>
+                <button class="nav-btn" onclick="showDiagram('supervisor')">Supervisor Review</button>
+                <button class="nav-btn" onclick="showDiagram('advisor')">Advisor Management</button>
+                <button class="nav-btn" onclick="showDiagram('lottery')">Lottery Algorithm</button>
+                <button class="nav-btn" onclick="showDiagram('report')">Report Lifecycle</button>
+                <button class="nav-btn" onclick="showDiagram('admin')">Admin Operations</button>
+                <button class="nav-btn" onclick="showDiagram('notification')">Notifications</button>
+                <button class="nav-btn" onclick="showDiagram('meeting')">Meetings</button>
+                <button class="nav-btn" onclick="showDiagram('api')">API Integration</button>
+                <button class="nav-btn" onclick="showDiagram('complete')">Complete Flow</button>
+                <button class="nav-btn" onclick="showDiagram('roles')">User Roles</button>
+                <button class="nav-btn" onclick="showDiagram('features')">Features</button>
+                <button class="nav-btn" onclick="showDiagram('annotation')">Annotation</button>
+                <button class="nav-btn" onclick="showDiagram('panel')">Panel Evaluation</button>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- System Overview -->
+            <div id="overview" class="diagram-section active">
+                <h2 class="diagram-title">System Overview</h2>
+                <div class="diagram-description">
+                    High-level workflow showing all system actors and their interactions throughout the thesis process.
+                </div>
+                <div class="mermaid">
+                    flowchart TD
+                        Start([Start]) --> Admin[Admin: Setup System]
+                        Admin --> AdminTasks[Configure Areas & Users]
+                        AdminTasks --> Advisor[Advisor: Create Groups]
+                        Advisor --> AssignStudents[Assign Students to Groups]
+                        AssignStudents --> SetAOI[Set Areas of Interest]
+                        SetAOI --> RunLottery[Run Supervisor Lottery]
+                        RunLottery --> Supervisor[Supervisor: Receive Groups]
+                        Supervisor --> ReviewReports[Review Reports]
+                        ReviewReports --> Meetings[Schedule Meetings]
+                        Meetings --> Feedback[Provide Feedback]
+                        Feedback --> Student[Student: Submit Reports]
+                        Student --> Attend[Attend Meetings]
+                        Attend --> ViewFeedback[View Feedback]
+                        ViewFeedback --> Revise[Revise & Resubmit]
+                        Revise --> Panel[Panel: Final Evaluation]
+                        Panel --> End([End])
+                </div>
+            </div>
+
+            <!-- Student Journey -->
+            <div id="student" class="diagram-section">
+                <h2 class="diagram-title">Student Journey</h2>
+                <div class="diagram-description">
+                    Complete student workflow from login to thesis completion, including submission and revision cycles.
+                </div>
+                <div class="mermaid">
+                    flowchart TD
+                        Start([Student Login]) --> CheckGroup{Assigned to Group?}
+                        CheckGroup -->|Yes| ViewInfo[View Supervisor Info]
+                        CheckGroup -->|No| Wait[Wait for Assignment]
+                        ViewInfo --> ViewReq[View Report Requirements]
+                        ViewReq --> PrepareDoc[Prepare Document]
+                        PrepareDoc --> Submit[Submit Report]
+                        Submit --> WaitReview[Wait for Review]
+                        WaitReview --> CheckStatus{Status?}
+                        CheckStatus -->|Approved| Complete[Complete Thesis]
+                        CheckStatus -->|Needs Revision| ViewAnnot[View Annotations]
+                        ViewAnnot --> MakeChanges[Make Changes]
+                        MakeChanges --> Submit
+                        CheckStatus -->|Rejected| MajorRev[Major Revision]
+                        MajorRev --> PrepareDoc
+                </div>
+            </div>
+
+            <!-- Supervisor Review -->
+            <div id="supervisor" class="diagram-section">
+                <h2 class="diagram-title">Supervisor Review Process</h2>
+                <div class="diagram-description">
+                    Supervisor's report review workflow with annotation capabilities and feedback mechanisms.
+                </div>
+                <div class="mermaid">
+                    flowchart TD
+                        Start([Login]) --> ViewGroups[View Groups]
+                        ViewGroups --> SelectReport[Select Report]
+                        SelectReport --> Download[Download Submission]
+                        Download --> ReviewType{Review Type?}
+                        ReviewType -->|Quick| MarkUnder[Mark Under Review]
+                        ReviewType -->|Detailed| OpenPDF[Open PDF Annotator]
+                        OpenPDF --> AddComments[Add Annotations]
+                        AddComments --> SaveAnnot[Save Annotations]
+                        MarkUnder --> WriteFeedback[Write Feedback]
+                        SaveAnnot --> WriteFeedback
+                        WriteFeedback --> Decision{Decision?}
+                        Decision -->|Approve| SetApproved[Approve]
+                        Decision -->|Revise| RequestChanges[Request Changes]
+                        Decision -->|Reject| ProvideReasons[Reject]
+                        SetApproved --> SendStudent[Send to Student]
+                        RequestChanges --> SendStudent
+                        ProvideReasons --> SendStudent
+                </div>
+            </div>
+
+            <!-- Other diagram sections would follow the same pattern -->
+            <!-- Adding remaining diagrams... -->
+
+            <!-- Advisor Management -->
+            <div id="advisor" class="diagram-section">
+                <h2 class="diagram-title">Advisor Group Management</h2>
+                <div class="diagram-description">
+                    Group creation and supervisor assignment through manual or lottery methods.
+                </div>
+                <div class="mermaid">
+                    flowchart TD
+                        Start([Advisor Panel]) --> CreateMethod{Method?}
+                        CreateMethod -->|Manual| AddGroups[Add Groups]
+                        CreateMethod -->|Excel| UploadExcel[Upload Excel]
+                        AddGroups --> SetAOI[Set Areas]
+                        UploadExcel --> SetAOI
+                        SetAOI --> AssignType{Assignment?}
+                        AssignType -->|Manual| SelectSup[Select Supervisor]
+                        AssignType -->|Lottery| RunLottery[Run Lottery]
+                        SelectSup --> Complete[Complete]
+                        RunLottery --> Complete
+                </div>
+            </div>
+
+            <!-- Add more diagram sections as needed -->
+
+        </div>
+        
+        <div class="footer">
+            <p>Thesis Management System - Activity Diagrams</p>
+            <p>Generated with Mermaid.js | View source on GitHub</p>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#7c3aed',
+                lineColor: '#5a67d8',
+                secondaryColor: '#f3f4f6',
+                tertiaryColor: '#fff'
+            }
+        });
+
+        // Function to show selected diagram
+        function showDiagram(diagramId) {
+            // Hide all diagrams
+            const diagrams = document.querySelectorAll('.diagram-section');
+            diagrams.forEach(d => d.classList.remove('active'));
+            
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.nav-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            
+            // Show selected diagram
+            const selectedDiagram = document.getElementById(diagramId);
+            if (selectedDiagram) {
+                selectedDiagram.classList.add('active');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Re-render mermaid diagrams
+            mermaid.init();
+        }
+    </script>
+</body>
+</html>

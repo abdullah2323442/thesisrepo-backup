@@ -1,0 +1,51 @@
+@startuml Complete_Thesis_Flow
+!theme plain
+title Complete Thesis Management Flow (A4 Optimized)
+skinparam activityFontSize 9
+skinparam noteFontSize 8
+skinparam defaultFontSize 9
+skinparam activity {
+  BackgroundColor #F5F5F5
+  BorderColor #424242
+  FontSize 9
+}
+skinparam partition {
+  BorderColor #757575
+  FontSize 10
+}
+
+|#FFEBEE|Admin Setup|
+start
+:Configure System;
+:Create Areas;
+:Add Supervisors;
+
+|#E3F2FD|Group Formation|
+:Advisor Creates Groups;
+:Assign Students;
+:Set Research Areas;
+
+|#F3E5F5|Assignment|
+:Run Lottery;
+note right: AOI/Rank/Combined
+:Assign Supervisors;
+
+|#E8F5E9|Supervision|
+:Schedule Meetings;
+:Create Report Tasks;
+
+|#FFF3E0|Student Work|
+repeat
+  :Submit Report;
+  :Receive Feedback;
+  :View Annotations;
+backward:Revise;
+repeat while (Not Approved?)
+
+|#E0F2F1|Evaluation|
+:Panel Review;
+:Final Grade;
+
+stop
+
+@enduml

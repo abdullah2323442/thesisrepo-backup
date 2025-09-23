@@ -1,0 +1,47 @@
+@startuml Report_Lifecycle_Compact
+!theme plain
+title Report Submission Lifecycle
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #FFF8E1
+  BorderColor #FFA000
+}
+
+|Supervisor|
+start
+:Create Report Task;
+:Assign to Group;
+
+|Student|
+:Receive Notification;
+:Upload Report;
+
+|System|
+:Validate File;
+:Store & Notify;
+
+|Supervisor|
+:Review Report;
+:Add Annotations;
+
+if (Decision?) then (Approve)
+  |Student|
+  :View Approval;
+  :Download Certificate;
+  stop
+elseif (Revise)
+  |Student|
+  :View Feedback;
+  :Make Changes;
+  :Resubmit;
+  ->Review Report;
+else (Reject)
+  |Student|
+  :Major Changes;
+  :Start Over;
+  ->Upload Report;
+endif
+
+@enduml

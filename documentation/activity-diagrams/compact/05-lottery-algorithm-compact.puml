@@ -1,0 +1,50 @@
+@startuml Lottery_Algorithm_Compact
+!theme plain
+title Supervisor Lottery Assignment Logic
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #F3E5F5
+  BorderColor #7B1FA2
+}
+
+start
+:Load Groups & Supervisors;
+
+switch (Mode?)
+case (AOI Matching)
+  :Match by Area of Interest;
+  :Try Primary Area First;
+  if (No Match?) then (Yes)
+    :Try Secondary Areas;
+  endif
+  :Random Selection in Area;
+  
+case (Rank Priority)
+  :Sort by Designation;
+  note right
+  Professor → Associate →
+  Assistant → Lecturer
+  end note
+  :Round-Robin Assignment;
+  
+case (Combined)
+  :Match Area + Rank;
+  :Fair Distribution;
+  :Prevent Overload;
+endswitch
+
+:Check Supervisor Capacity;
+
+if (Can Assign?) then (Yes)
+  :Assign to Group;
+  :Update Counts;
+else (No)
+  :Mark Unassigned;
+endif
+
+:Generate Report;
+stop
+
+@enduml

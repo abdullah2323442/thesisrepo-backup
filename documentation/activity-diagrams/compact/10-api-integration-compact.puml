@@ -1,0 +1,36 @@
+@startuml API_Integration_Compact
+!theme plain
+title External API Integration
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #E8EAF6
+  BorderColor #3F51B5
+}
+
+start
+:Check Cache;
+
+if (Cache Valid?) then (Yes)
+  :Return Cached Data;
+else (No)
+  :Call External API;
+  
+  if (Success?) then (Yes)
+    :Parse Response;
+    :Update Cache;
+    :Return Data;
+  else (No)
+    if (Rate Limited?) then (Yes)
+      :Wait & Retry;
+    else (No)
+      :Log Error;
+      :Use Fallback;
+    endif
+  endif
+endif
+
+stop
+
+@enduml

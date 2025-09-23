@@ -1,0 +1,51 @@
+@startuml Supervisor_Review_Compact
+!theme plain
+title Supervisor Report Review Process
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #E8F5E9
+  BorderColor #4CAF50
+}
+
+start
+:Login to Dashboard;
+:View Assigned Groups;
+
+fork
+  :Schedule Meetings;
+fork again
+  :Review Reports;
+end fork
+
+:Select Report;
+:Download Submission;
+
+if (Review Type?) then (Quick Review)
+  :Mark "Under Review";
+else (Detailed Review)
+  :Open PDF Annotator;
+  :Add Comments & Highlights;
+  :Save Annotations;
+endif
+
+:Write Feedback;
+
+switch (Decision?)
+case (Approve)
+  :Set as Approved;
+  :Add Final Grade;
+case (Revise)
+  :Request Changes;
+  :Set Deadline;
+case (Reject)
+  :Provide Reasons;
+endswitch
+
+:Send to Student;
+:Update Records;
+
+stop
+
+@enduml

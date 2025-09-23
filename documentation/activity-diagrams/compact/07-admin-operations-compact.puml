@@ -1,0 +1,40 @@
+@startuml Admin_Operations_Compact
+!theme plain
+title Admin System Management
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #EFEBE9
+  BorderColor #5D4037
+}
+
+start
+
+split
+  :Areas of Interest;
+  :Create/Edit/Delete;
+  :Bulk Import;
+split again
+  :Supervisors;
+  :Sync from API;
+  :Set Limits;
+  :Assign Areas;
+split again
+  :Batches;
+  :Sync & Update;
+  :Activate/Deactivate;
+split again
+  :Groups;
+  :Manage Students;
+  :Assign Roles;
+split again
+  :Performance;
+  :Monitor Metrics;
+  :Clear Cache;
+end split
+
+:Generate Reports;
+stop
+
+@enduml

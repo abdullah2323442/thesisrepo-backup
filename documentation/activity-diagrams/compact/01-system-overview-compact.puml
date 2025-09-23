@@ -1,0 +1,37 @@
+@startuml System_Overview_Compact
+!theme plain
+title Thesis Management System - Overview
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #E3F2FD
+  BorderColor #1976D2
+}
+
+|Admin|
+start
+:Setup System;
+:Manage Users & Areas;
+
+|Advisor|
+:Create Groups;
+:Assign Students;
+:Run Supervisor Lottery;
+
+|Supervisor|
+:Review Reports;
+:Schedule Meetings;
+:Provide Feedback;
+
+|Student|
+:Submit Reports;
+:Attend Meetings;
+:View Feedback;
+:Revise & Resubmit;
+
+|Panel|
+:Final Evaluation;
+stop
+
+@enduml

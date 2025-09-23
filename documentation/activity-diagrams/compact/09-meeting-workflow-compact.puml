@@ -1,0 +1,39 @@
+@startuml Meeting_Workflow_Compact
+!theme plain
+title Meeting Management Workflow
+skinparam activityFontSize 10
+skinparam noteFontSize 9
+skinparam defaultFontSize 10
+skinparam activity {
+  BackgroundColor #FCE4EC
+  BorderColor #C2185B
+}
+
+|Supervisor|
+start
+:Schedule Meeting;
+:Set Date/Time/Location;
+:Select Group;
+:Send Invites;
+
+|Students|
+:Receive Notification;
+:View Meeting Details;
+:Attend Meeting;
+
+|Supervisor|
+:Conduct Meeting;
+:Take Attendance;
+:Document Minutes;
+
+|System|
+:Save Records;
+:Generate PDF Report;
+
+|Students|
+:View Minutes;
+:Download Report;
+
+stop
+
+@enduml
