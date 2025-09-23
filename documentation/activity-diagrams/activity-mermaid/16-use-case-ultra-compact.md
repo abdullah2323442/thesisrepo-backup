@@ -39,11 +39,11 @@ mindmap
 graph LR
     TMS[Thesis Management System]
     
-    TMS --> S[Student<br/>Features]
-    TMS --> T[Supervisor<br/>Features]
-    TMS --> A[Advisor<br/>Features]
-    TMS --> D[Admin<br/>Features]
-    TMS --> P[Panel<br/>Features]
+    TMS --> S[Student Features]
+    TMS --> T[Supervisor Features]
+    TMS --> A[Advisor Features]
+    TMS --> D[Admin Features]
+    TMS --> P[Panel Features]
     
     S --> S1[Submit]
     S --> S2[View]
