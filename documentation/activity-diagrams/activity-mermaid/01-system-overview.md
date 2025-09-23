@@ -11,7 +11,7 @@ flowchart TD
     
     AdminGroups --> AssignStudents[Assign GroupStudent Memberships]
     AdvisorGroups --> AssignStudents
-    AssignStudents --> SetAOI[Set Group-AreaOfInterest Relations<br/>(Many-to-Many)]
+    AssignStudents --> SetAOI[Set Group-AreaOfInterest Relations - Many-to-Many]
     SetAOI --> RunAssignment[Execute SupervisorAssignmentService]
     RunAssignment --> History[Log to AssignmentHistory]
     
@@ -28,10 +28,10 @@ flowchart TD
     ViewFeedback --> Revise[Revise & Resubmit via StudentReportSubmission]
     
     Revise --> PanelReview[GroupPanelMember: Final Evaluation]
-    PanelReview --> FinalAnnotations[Panel Annotations<br/>(created_by_type: panel_member)]
+    PanelReview --> FinalAnnotations[Panel Annotations - created_by_type: panel_member]
     FinalAnnotations --> End([End])
     
-    RunAssignment -.->|External APIs| APIs[BatchApiService<br/>StudentApiService<br/>SupervisorApiService]
+    RunAssignment -.->|External APIs| APIs[BatchApiService / StudentApiService / SupervisorApiService]
     
     style Start fill:#4CAF50,color:#fff
     style End fill:#f44336,color:#fff
