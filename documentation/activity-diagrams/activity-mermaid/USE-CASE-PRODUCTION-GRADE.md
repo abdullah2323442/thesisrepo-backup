@@ -68,7 +68,7 @@ graph TB
         %% Group Formation & Assignment Module
         subgraph GroupModule["👥 Group Formation & Assignment"]
             UC_CreateGroups[Create Thesis Groups]
-            UC_ImportExcelData[Import Student Data (Excel)]
+            UC_ImportExcelData["Import Student Data - Excel"]
             UC_AssignStudents[Assign Students to Groups]
             UC_SetAreasOfInterest[Set Research Areas]
             UC_RunSupervisorLottery[Run Supervisor Assignment Lottery]
