@@ -1,49 +1,51 @@
-# Activity Diagrams Documentation
+# System Diagrams Documentation
 
-This directory contains comprehensive activity diagrams for the Thesis Management System, designed for production-level documentation.
+This directory contains comprehensive system diagrams (Activity, Use Case, and Data Flow) for the Thesis Management System, designed for production-level documentation.
 
 ## 📊 Diagram Overview
 
-### 1. System Overview (`01-system-overview.puml`)
+### Activity Diagrams
+
+#### 1. System Overview (`01-system-overview.puml`)
 - High-level view of all system actors and their interactions
 - Shows the complete workflow from system initialization to thesis completion
 - Includes all 5 main roles: Admin, Advisor, Supervisor, Student, Panel Member
 
-### 2. Student Workflow (`02-student-workflow.puml`)
+#### 2. Student Workflow (`02-student-workflow.puml`)
 - Detailed student journey from login to thesis completion
 - Covers group assignment, meetings, report submission, feedback cycles
 - Includes error handling and revision processes
 - Shows notification interactions
 
-### 3. Supervisor Workflow (`03-supervisor-workflow.puml`)
+#### 3. Supervisor Workflow (`03-supervisor-workflow.puml`)
 - Complete supervisor activities including group management
 - Report review and annotation processes
 - Meeting scheduling and management
 - Co-supervisor and panel member coordination
 - Report finalization workflow
 
-### 4. Advisor Workflow (`04-advisor-workflow.puml`)
+#### 4. Advisor Workflow (`04-advisor-workflow.puml`)
 - Group creation (manual and Excel import)
 - Area of interest assignment
 - Supervisor lottery assignment system
 - Post-assignment management
 - Co-supervisor and panel assignment
 
-### 5. Lottery Assignment Algorithm (`05-lottery-assignment-algorithm.puml`)
+#### 5. Lottery Assignment Algorithm (`05-lottery-assignment-algorithm.puml`)
 - Detailed algorithm flow for three assignment modes:
   - AOI (Area of Interest) matching with randomization
   - Ranking-based priority with round-robin
   - Combined intelligent mode with fair distribution
 - Shows decision logic and fallback mechanisms
 
-### 6. Report Lifecycle (`06-report-lifecycle.puml`)
+#### 6. Report Lifecycle (`06-report-lifecycle.puml`)
 - Complete report submission and review cycle
 - Annotation process details
 - Multiple review states (Under Review, Needs Revision, Approved, Rejected)
 - Co-supervisor and panel review integration
 - Revision and resubmission workflows
 
-### 7. Admin Management (`07-admin-management.puml`)
+#### 7. Admin Management (`07-admin-management.puml`)
 - System configuration and management
 - Area of Interest CRUD operations
 - Supervisor synchronization from external API
@@ -51,19 +53,63 @@ This directory contains comprehensive activity diagrams for the Thesis Managemen
 - Performance monitoring
 - User management
 
-### 8. API Integration (`08-api-integration.puml`)
+#### 8. API Integration (`08-api-integration.puml`)
 - External API integration workflows
 - Student, Batch, and Supervisor API synchronization
 - Rate limiting and error handling
 - Caching strategies
 - API monitoring and degraded mode handling
 
-### 9. Notification System (`09-notification-system.puml`)
+#### 9. Notification System (`09-notification-system.puml`)
 - Notification trigger events
 - Multi-channel delivery (In-app, Email, Real-time)
 - User interaction flows
 - Notification types and their specific workflows
 - Analytics and tracking
+
+### Use Case Diagram
+
+#### 10. Use Case Diagram (`16-use-case-diagram.puml`)
+- Complete use case diagram showing all actors
+- System features and functionalities
+- Actor-use case relationships
+- Include and extend relationships
+- System boundary definition
+
+### Data Flow Diagrams
+
+#### 11. Data Flow Diagram - Context Level (`17-data-flow-diagram.puml`)
+- Level 0 (Context) DFD
+- System as single process
+- All external entities
+- Major data flows in/out of system
+
+#### 12. Data Flow Diagram - Level 1 (`18-data-flow-diagram-level1.puml`)
+- Detailed system decomposition
+- 9 major processes
+- Data stores
+- Inter-process data flows
+- External entity interactions
+
+#### 13. Data Flow Diagram - Level 2 (`19-data-flow-diagram-level2.puml`)
+- Report Management subsystem detail
+- Submission process breakdown
+- Review process breakdown
+- Detailed data stores and flows
+
+## 📁 Directory Structure
+
+```
+activity-diagrams/
+├── *.puml                    # Full PlantUML diagrams
+├── compact/                  # A4-optimized compact versions
+│   └── *.puml
+├── activity-mermaid/         # Mermaid format diagrams
+│   ├── *.md                  # Mermaid diagrams in markdown
+│   └── view-all-diagrams.html
+└── documentation/
+    └── README files
+```
 
 ## 🛠️ How to Use These Diagrams
 
@@ -105,6 +151,9 @@ This directory contains comprehensive activity diagrams for the Thesis Managemen
 
 ## 📋 Diagram Standards Used
 
+- **Activity Diagrams**: UML 2.0 activity notation
+- **Use Case Diagrams**: Standard UML use case elements
+- **Data Flow Diagrams**: Gane-Sarson notation
 - **Swimlanes**: Separate actor responsibilities
 - **Colors**: Consistent color coding for different actors
 - **Notes**: Provide context and additional information
@@ -115,12 +164,15 @@ This directory contains comprehensive activity diagrams for the Thesis Managemen
 
 ## 🎨 Color Scheme
 
-- **Light Blue**: Primary actors/supervisors
-- **Light Green**: System processes
-- **Light Yellow**: Secondary processes
-- **Light Pink**: Student activities
-- **Light Gray**: Panel/auxiliary activities
-- **Light Cyan**: Monitoring/analytics
+- **Light Blue (#E3F2FD)**: Primary actors/supervisors
+- **Light Green (#E8F5E9)**: System processes
+- **Light Yellow (#FFF3E0)**: Secondary processes
+- **Light Pink (#FFE0B2)**: Student activities
+- **Light Gray (#EFEBE9)**: Panel/auxiliary activities
+- **Light Cyan (#E0F2F1)**: Monitoring/analytics
+- **Light Orange (#FFF8E1)**: External entities
+- **Light Purple (#E1BEE7)**: Panel members
+- **Light Beige (#FFF3E0)**: Data stores
 
 ## 📝 Customization
 
@@ -131,6 +183,8 @@ To customize these diagrams for your specific needs:
 3. **Change Flow Logic**: Modify decision conditions
 4. **Update Notes**: Edit the note content for your context
 5. **Adjust Colors**: Change the skinparam color values
+6. **Add New Use Cases**: Extend the use case diagram
+7. **Refine Data Flows**: Add more detail to DFDs
 
 ## 🔄 Keeping Diagrams Updated
 
@@ -139,12 +193,16 @@ To customize these diagrams for your specific needs:
 3. Verify accuracy during code reviews
 4. Version control all diagram files
 5. Generate new images after updates
+6. Update both PlantUML and Mermaid versions
 
 ## 📚 Additional Resources
 
 - [PlantUML Activity Diagram Guide](https://plantuml.com/activity-diagram-beta)
+- [PlantUML Use Case Diagram Guide](https://plantuml.com/use-case-diagram)
+- [PlantUML Component Diagram Guide](https://plantuml.com/component-diagram)
+- [Data Flow Diagram Tutorial](https://www.visual-paradigm.com/guide/data-flow-diagram/what-is-data-flow-diagram/)
+- [Mermaid Documentation](https://mermaid-js.github.io/mermaid/)
 - [PlantUML Themes](https://plantuml.com/theme)
-- [PlantUML Preprocessing](https://plantuml.com/preprocessing)
 
 ## ✅ Validation Checklist
 
@@ -155,7 +213,8 @@ Before using these diagrams in production documentation:
 - [ ] Ensure error paths are documented
 - [ ] Validate API endpoints and parameters
 - [ ] Confirm notification types match implementation
-- [ ] Review with stakeholders for completeness
+- [ ] Review use cases with stakeholders
+- [ ] Validate data flows with system architecture
 - [ ] Test diagram rendering in target format
 - [ ] Add version numbers and dates
 
@@ -171,9 +230,11 @@ These diagrams can be integrated into:
 6. **Code Comments** (link to diagrams)
 7. **README files**
 8. **Wiki Pages**
+9. **Requirements Documents**
+10. **Design Documents**
 
 ---
 
-*Last Updated: [Current Date]*
-*Version: 1.0*
+*Last Updated: Current Date*
+*Version: 1.1*
 *System: Thesis Management System*

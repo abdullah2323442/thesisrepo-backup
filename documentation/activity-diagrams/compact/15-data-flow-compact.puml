@@ -1,0 +1,40 @@
+@startuml Data_Flow_Compact
+!theme plain
+title Data Flow Diagram - Simplified
+skinparam rectangleFontSize 9
+skinparam databaseFontSize 9
+skinparam defaultFontSize 9
+skinparam backgroundColor #FEFEFE
+
+!define ENTITY entity
+!define PROCESS rectangle
+!define DATASTORE database
+
+' Entities
+ENTITY Student #FFE0B2
+ENTITY Supervisor #C8E6C9
+ENTITY Admin #FFCDD2
+
+' Core Processes
+PROCESS "Group\nManagement" as P1 #E3F2FD
+PROCESS "Report\nProcessing" as P2 #E8F5E9
+PROCESS "Review &\nFeedback" as P3 #FFF3E0
+PROCESS "Notification" as P4 #E0F2F1
+
+' Data Stores
+DATASTORE "Groups" as D1
+DATASTORE "Reports" as D2
+DATASTORE "Feedback" as D3
+
+' Flows
+Student --> P2 : Submit
+P2 --> D2 : Store
+D2 --> P3 : Retrieve
+Supervisor --> P3 : Review
+P3 --> D3 : Save
+P3 --> P4 : Notify
+P4 --> Student : Alert
+Admin --> P1 : Configure
+P1 --> D1 : Update
+
+@enduml

@@ -1,0 +1,92 @@
+@startuml Data_Flow_Diagram_Level_2_Report_Management
+!theme plain
+title Thesis Management System - DFD Level 2 (Report Management Subsystem)
+skinparam backgroundColor #FEFEFE
+skinparam rectangleBackgroundColor #E8F5E9
+skinparam databaseBackgroundColor #FFF3E0
+
+!define ENTITY entity
+!define PROCESS rectangle
+!define DATASTORE database
+
+' External Entities
+ENTITY Student #FFE0B2
+ENTITY Supervisor #C8E6C9
+ENTITY "Co-Supervisor" as CoSup #B2DFDB
+ENTITY "Panel Member" as Panel #E1BEE7
+ENTITY "Notification System" as NotifSys #E0F2F1
+
+' Sub-processes of Report Management
+PROCESS "4.1\nValidate\nSubmission" as P41
+PROCESS "4.2\nStore\nReport" as P42
+PROCESS "4.3\nGenerate\nSubmission ID" as P43
+PROCESS "4.4\nCheck\nDeadline" as P44
+
+PROCESS "5.1\nRetrieve\nReport" as P51
+PROCESS "5.2\nCreate\nAnnotation\nSession" as P52
+PROCESS "5.3\nAdd\nAnnotations" as P53
+PROCESS "5.4\nGenerate\nAnnotated PDF" as P54
+PROCESS "5.5\nSet Report\nStatus" as P55
+PROCESS "5.6\nWrite\nFeedback" as P56
+
+' Data Stores
+DATASTORE "D4.1: Report\nMetadata" as D41
+DATASTORE "D4.2: Report\nFiles" as D42
+DATASTORE "D4.3: Annotation\nSessions" as D43
+DATASTORE "D4.4: Feedback\nHistory" as D44
+DATASTORE "D4.5: Report\nStatus" as D45
+
+' Student submission flow
+Student --> P44 : "Submission request"
+P44 --> P41 : "Valid deadline"
+P41 --> Student : "Validation result"
+P41 --> P43 : "Valid submission"
+P43 --> P42 : "Submission ID"
+P42 --> D42 : "Store file"
+P42 --> D41 : "Store metadata"
+P42 --> NotifSys : "Submission notification"
+
+' Supervisor review flow
+Supervisor --> P51 : "Request report"
+P51 <-- D42 : "Report file"
+P51 --> Supervisor : "Report content"
+Supervisor --> P52 : "Start annotation"
+P52 --> D43 : "Create session"
+P52 --> P53 : "Session ID"
+Supervisor --> P53 : "Annotations"
+P53 --> D43 : "Store annotations"
+P53 --> P54 : "Complete annotations"
+P54 --> D42 : "Store annotated PDF"
+P54 --> Supervisor : "Annotated PDF"
+
+' Feedback flow
+Supervisor --> P56 : "Feedback text"
+P56 --> D44 : "Store feedback"
+P56 --> P55 : "Update status"
+P55 --> D45 : "New status"
+P55 --> NotifSys : "Status notification"
+
+' Co-Supervisor flow
+CoSup --> P51 : "Request report"
+P51 --> CoSup : "Report content"
+CoSup --> P52 : "Start annotation"
+CoSup --> P53 : "Annotations"
+
+' Panel review flow
+Panel --> P51 : "Request final report"
+P51 --> Panel : "Report content"
+Panel --> P56 : "Evaluation feedback"
+
+' Student retrieval flow
+Student --> P51 : "View submission"
+P51 --> Student : "Report & feedback"
+D43 --> Student : "Annotated PDF"
+D44 --> Student : "Feedback history"
+D45 --> Student : "Current status"
+
+' Inter-store relationships
+D41 <--> D42 : "File reference"
+D41 <--> D45 : "Status link"
+D43 --> D44 : "Annotation summary"
+
+@enduml

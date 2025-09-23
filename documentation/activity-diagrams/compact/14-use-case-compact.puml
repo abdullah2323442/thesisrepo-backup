@@ -1,0 +1,51 @@
+@startuml Use_Case_Compact
+!theme plain
+title Thesis Management System - Use Cases
+skinparam actorFontSize 10
+skinparam usecaseFontSize 9
+skinparam packageFontSize 10
+skinparam defaultFontSize 9
+skinparam backgroundColor #FEFEFE
+
+left to right direction
+
+' Actors
+actor Student #FFE0B2
+actor Supervisor #C8E6C9
+actor Advisor #C5CAE9
+actor Admin #FFCDD2
+actor Panel #E1BEE7
+
+' Core Use Cases
+package "Core Features" {
+  usecase "Submit Report" as Submit
+  usecase "Review Report" as Review
+  usecase "Annotate PDF" as Annotate
+  usecase "Create Groups" as Groups
+  usecase "Assign Supervisor" as Assign
+  usecase "Schedule Meeting" as Meeting
+  usecase "Evaluate Thesis" as Evaluate
+  usecase "Manage System" as Manage
+}
+
+' Relationships
+Student --> Submit
+Student --> Meeting
+
+Supervisor --> Review
+Supervisor --> Annotate
+Supervisor --> Meeting
+
+Advisor --> Groups
+Advisor --> Assign
+
+Admin --> Manage
+
+Panel --> Evaluate
+
+' Key dependencies
+Submit ..> Review : triggers
+Review ..> Annotate : includes
+Groups ..> Assign : enables
+
+@enduml

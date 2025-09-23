@@ -1,0 +1,166 @@
+@startuml Use_Case_Diagram
+!theme plain
+title Thesis Management System - Use Case Diagram
+skinparam backgroundColor #FEFEFE
+skinparam actorBackgroundColor #E3F2FD
+skinparam usecaseBackgroundColor #FFF3E0
+skinparam packageBackgroundColor #F5F5F5
+
+left to right direction
+
+' Actors
+actor "Student" as Student #FFE0B2
+actor "Supervisor" as Supervisor #C8E6C9
+actor "Co-Supervisor" as CoSupervisor #B2DFDB
+actor "Advisor" as Advisor #C5CAE9
+actor "Admin" as Admin #FFCDD2
+actor "Panel Member" as Panel #E1BEE7
+actor "External API" as API #FFF8E1
+
+' System boundary
+package "Thesis Management System" {
+  
+  ' Student Use Cases
+  package "Student Management" #FFF3E0 {
+    usecase "Login/Logout" as UC_Login
+    usecase "View Dashboard" as UC_Dashboard
+    usecase "View Group Assignment" as UC_ViewGroup
+    usecase "Submit Report" as UC_SubmitReport
+    usecase "View Feedback" as UC_ViewFeedback
+    usecase "Download Annotations" as UC_DownloadAnnot
+    usecase "Attend Meeting" as UC_AttendMeeting
+    usecase "View Notifications" as UC_ViewNotif
+    usecase "Track Progress" as UC_TrackProgress
+  }
+  
+  ' Supervisor Use Cases
+  package "Supervision" #E8F5E9 {
+    usecase "Manage Groups" as UC_ManageGroups
+    usecase "Review Reports" as UC_ReviewReports
+    usecase "Annotate PDF" as UC_Annotate
+    usecase "Provide Feedback" as UC_ProvideFeedback
+    usecase "Schedule Meeting" as UC_ScheduleMeeting
+    usecase "Record Attendance" as UC_RecordAttendance
+    usecase "Finalize Report" as UC_FinalizeReport
+    usecase "Collaborate with Co-Supervisor" as UC_Collaborate
+  }
+  
+  ' Advisor Use Cases
+  package "Group Formation" #E3F2FD {
+    usecase "Create Groups" as UC_CreateGroups
+    usecase "Import from Excel" as UC_ImportExcel
+    usecase "Assign Students" as UC_AssignStudents
+    usecase "Set Areas of Interest" as UC_SetAOI
+    usecase "Run Supervisor Lottery" as UC_RunLottery
+    usecase "Manual Assignment" as UC_ManualAssign
+    usecase "Preview Assignment" as UC_PreviewAssign
+    usecase "Handle Unassigned" as UC_HandleUnassigned
+  }
+  
+  ' Admin Use Cases
+  package "Administration" #FFEBEE {
+    usecase "Manage Users" as UC_ManageUsers
+    usecase "Configure System" as UC_ConfigSystem
+    usecase "Manage Areas of Interest" as UC_ManageAOI
+    usecase "Sync Supervisors" as UC_SyncSupervisors
+    usecase "Manage Batches" as UC_ManageBatches
+    usecase "Monitor Performance" as UC_MonitorPerf
+    usecase "Generate Reports" as UC_GenReports
+    usecase "Backup System" as UC_Backup
+  }
+  
+  ' Panel Member Use Cases
+  package "Evaluation" #F3E5F5 {
+    usecase "Review Final Reports" as UC_ReviewFinal
+    usecase "Evaluate Thesis" as UC_EvaluateThesis
+    usecase "Conduct Defense" as UC_ConductDefense
+    usecase "Assign Grades" as UC_AssignGrades
+  }
+  
+  ' Common/Shared Use Cases
+  package "Common Features" #F5F5F5 {
+    usecase "Send Notifications" as UC_SendNotif
+    usecase "Generate PDF" as UC_GenPDF
+    usecase "Export Data" as UC_ExportData
+    usecase "Search" as UC_Search
+  }
+}
+
+' Student relationships
+Student --> UC_Login
+Student --> UC_Dashboard
+Student --> UC_ViewGroup
+Student --> UC_SubmitReport
+Student --> UC_ViewFeedback
+Student --> UC_DownloadAnnot
+Student --> UC_AttendMeeting
+Student --> UC_ViewNotif
+Student --> UC_TrackProgress
+
+' Supervisor relationships
+Supervisor --> UC_ManageGroups
+Supervisor --> UC_ReviewReports
+Supervisor --> UC_Annotate
+Supervisor --> UC_ProvideFeedback
+Supervisor --> UC_ScheduleMeeting
+Supervisor --> UC_RecordAttendance
+Supervisor --> UC_FinalizeReport
+Supervisor --> UC_Collaborate
+
+' Co-Supervisor relationships
+CoSupervisor --> UC_ReviewReports
+CoSupervisor --> UC_Annotate
+CoSupervisor --> UC_ProvideFeedback
+CoSupervisor --> UC_ScheduleMeeting : "if permitted"
+CoSupervisor --> UC_Collaborate
+
+' Advisor relationships
+Advisor --> UC_CreateGroups
+Advisor --> UC_ImportExcel
+Advisor --> UC_AssignStudents
+Advisor --> UC_SetAOI
+Advisor --> UC_RunLottery
+Advisor --> UC_ManualAssign
+Advisor --> UC_PreviewAssign
+Advisor --> UC_HandleUnassigned
+
+' Admin relationships
+Admin --> UC_ManageUsers
+Admin --> UC_ConfigSystem
+Admin --> UC_ManageAOI
+Admin --> UC_SyncSupervisors
+Admin --> UC_ManageBatches
+Admin --> UC_MonitorPerf
+Admin --> UC_GenReports
+Admin --> UC_Backup
+
+' Panel Member relationships
+Panel --> UC_ReviewFinal
+Panel --> UC_EvaluateThesis
+Panel --> UC_ConductDefense
+Panel --> UC_AssignGrades
+
+' External API relationships
+API --> UC_SyncSupervisors : "provides data"
+API --> UC_ManageBatches : "provides data"
+API --> UC_Dashboard : "student info"
+
+' Include relationships
+UC_SubmitReport ..> UC_SendNotif : "<<include>>"
+UC_ProvideFeedback ..> UC_SendNotif : "<<include>>"
+UC_ScheduleMeeting ..> UC_SendNotif : "<<include>>"
+UC_FinalizeReport ..> UC_SendNotif : "<<include>>"
+UC_ReviewReports ..> UC_GenPDF : "<<include>>"
+UC_RecordAttendance ..> UC_GenPDF : "<<include>>"
+
+' Extend relationships
+UC_ImportExcel ..> UC_CreateGroups : "<<extend>>"
+UC_RunLottery ..> UC_PreviewAssign : "<<extend>>"
+UC_ManualAssign ..> UC_HandleUnassigned : "<<extend>>"
+UC_Annotate ..> UC_ReviewReports : "<<extend>>"
+UC_ConductDefense ..> UC_EvaluateThesis : "<<extend>>"
+
+' Generalization
+UC_Login <|-- UC_Dashboard : "requires"
+
+@enduml

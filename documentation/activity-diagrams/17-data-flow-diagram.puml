@@ -1,0 +1,43 @@
+@startuml Data_Flow_Diagram_Level_0
+!theme plain
+title Thesis Management System - Data Flow Diagram (Level 0 - Context)
+skinparam backgroundColor #FEFEFE
+
+!define ENTITY entity
+!define PROCESS rectangle
+!define DATASTORE database
+
+' External Entities
+ENTITY Student #FFE0B2
+ENTITY Supervisor #C8E6C9
+ENTITY Advisor #C5CAE9
+ENTITY Admin #FFCDD2
+ENTITY "Panel Member" as Panel #E1BEE7
+ENTITY "External API" as API #FFF8E1
+ENTITY "Email System" as Email #E0F2F1
+
+' Main System Process
+PROCESS "**Thesis Management System**" as TMS #E3F2FD
+
+' Data flows
+Student --> TMS : "Submit Reports\nView Feedback\nAttend Meetings"
+TMS --> Student : "Notifications\nAnnotated PDFs\nGrades"
+
+Supervisor --> TMS : "Review Reports\nProvide Feedback\nSchedule Meetings"
+TMS --> Supervisor : "Group Assignments\nStudent Submissions\nProgress Reports"
+
+Advisor --> TMS : "Create Groups\nAssign Students\nRun Lottery"
+TMS --> Advisor : "Assignment Results\nGroup Statistics"
+
+Admin --> TMS : "System Config\nUser Management\nPerformance Monitoring"
+TMS --> Admin : "System Reports\nPerformance Metrics"
+
+Panel --> TMS : "Evaluations\nGrades"
+TMS --> Panel : "Final Reports\nThesis Documents"
+
+API --> TMS : "Student Data\nBatch Info\nTeacher Data"
+TMS --> API : "Data Requests\nValidation Queries"
+
+TMS --> Email : "Notification Emails"
+
+@enduml

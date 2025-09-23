@@ -1,0 +1,105 @@
+@startuml Data_Flow_Diagram_Level_1
+!theme plain
+title Thesis Management System - Data Flow Diagram (Level 1 - Detailed)
+skinparam backgroundColor #FEFEFE
+skinparam rectangleBackgroundColor #E3F2FD
+skinparam databaseBackgroundColor #FFF3E0
+
+!define ENTITY entity
+!define PROCESS rectangle
+!define DATASTORE database
+
+' External Entities
+ENTITY Student #FFE0B2
+ENTITY Supervisor #C8E6C9
+ENTITY Advisor #C5CAE9
+ENTITY Admin #FFCDD2
+ENTITY "Panel Member" as Panel #E1BEE7
+ENTITY "External API" as ExternalAPI #FFF8E1
+
+' Processes
+PROCESS "1.0\nUser\nAuthentication" as P1
+PROCESS "2.0\nGroup\nManagement" as P2
+PROCESS "3.0\nSupervisor\nAssignment" as P3
+PROCESS "4.0\nReport\nSubmission" as P4
+PROCESS "5.0\nReport\nReview" as P5
+PROCESS "6.0\nMeeting\nManagement" as P6
+PROCESS "7.0\nNotification\nSystem" as P7
+PROCESS "8.0\nEvaluation\nProcess" as P8
+PROCESS "9.0\nSystem\nAdministration" as P9
+
+' Data Stores
+DATASTORE "D1: Users" as D1
+DATASTORE "D2: Groups" as D2
+DATASTORE "D3: Supervisors" as D3
+DATASTORE "D4: Reports" as D4
+DATASTORE "D5: Meetings" as D5
+DATASTORE "D6: Notifications" as D6
+DATASTORE "D7: Areas of Interest" as D7
+DATASTORE "D8: Evaluations" as D8
+DATASTORE "D9: System Config" as D9
+
+' Student flows
+Student --> P1 : "Login credentials"
+P1 --> Student : "Auth token"
+Student --> P4 : "Report files"
+P4 --> Student : "Submission confirmation"
+Student --> P6 : "Meeting attendance"
+
+' Supervisor flows
+Supervisor --> P1 : "Login credentials"
+P1 --> Supervisor : "Auth token"
+Supervisor --> P5 : "Review feedback"
+P5 --> Supervisor : "Student submissions"
+Supervisor --> P6 : "Meeting schedule"
+
+' Advisor flows
+Advisor --> P1 : "Login credentials"
+P1 --> Advisor : "Auth token"
+Advisor --> P2 : "Group data"
+P2 --> Advisor : "Group status"
+Advisor --> P3 : "Assignment request"
+P3 --> Advisor : "Assignment results"
+
+' Admin flows
+Admin --> P1 : "Login credentials"
+P1 --> Admin : "Auth token"
+Admin --> P9 : "System settings"
+P9 --> Admin : "System reports"
+
+' Panel flows
+Panel --> P1 : "Login credentials"
+P1 --> Panel : "Auth token"
+Panel --> P8 : "Evaluation data"
+P8 --> Panel : "Reports for review"
+
+' External API flows
+ExternalAPI --> P9 : "External data"
+P9 --> ExternalAPI : "Data requests"
+
+' Process to Data Store flows
+P1 <--> D1 : "User data"
+P2 <--> D2 : "Group data"
+P3 <--> D3 : "Supervisor data"
+P3 <--> D7 : "AOI data"
+P4 <--> D4 : "Report data"
+P5 <--> D4 : "Review data"
+P6 <--> D5 : "Meeting data"
+P7 <--> D6 : "Notification data"
+P8 <--> D8 : "Evaluation data"
+P9 <--> D9 : "Config data"
+
+' Inter-process flows
+P2 --> P3 : "Groups for assignment"
+P3 --> P7 : "Assignment notifications"
+P4 --> P5 : "Reports for review"
+P4 --> P7 : "Submission notifications"
+P5 --> P7 : "Review notifications"
+P6 --> P7 : "Meeting notifications"
+P8 --> P7 : "Grade notifications"
+
+' Data flow between stores
+D2 --> D3 : "Group assignments"
+D4 --> D8 : "Final reports"
+
+@enduml
