@@ -2,76 +2,128 @@
 
 ```mermaid
 flowchart TD
-    Start([Event Occurs]) --> EventType{Event Type}
+    Start([Event Trigger]) --> EventType{Notification Type}
     
-    EventType -->|Report| ReportEvent[Report Assigned/Updated]
-    EventType -->|Meeting| MeetingEvent[Meeting Scheduled]
-    EventType -->|Feedback| FeedbackEvent[Feedback Available]
-    EventType -->|Annotation| AnnotationEvent[New Annotation]
+    EventType -->|NewReportAssigned| ReportAssigned[New Report Assigned Event]
+    EventType -->|NewReportComment| CommentEvent[New Comment Added]
+    EventType -->|NewReportAnnotation| AnnotationEvent[New Annotation Created]
+    EventType -->|ReportUpdated| UpdateEvent[Report Updated Event]
     
-    ReportEvent --> IdentifyRecipients[Identify Recipients]
-    MeetingEvent --> IdentifyRecipients
-    FeedbackEvent --> IdentifyRecipients
-    AnnotationEvent --> IdentifyRecipients
+    ReportAssigned --> CreateReportNotif[Create NewReportAssigned Instance]
+    CommentEvent --> CreateCommentNotif[Create NewReportComment Instance]
+    AnnotationEvent --> CreateAnnotNotif[Create NewReportAnnotation Instance]
+    UpdateEvent --> CreateUpdateNotif[Create ReportUpdated Instance]
     
-    IdentifyRecipients --> CreateNotif[Create Notification Object]
-    CreateNotif --> SetData[Set Notification Data]
+    CreateReportNotif --> IdentifyRecipients[Identify User Recipients]
+    CreateCommentNotif --> IdentifyRecipients
+    CreateAnnotNotif --> IdentifyRecipients
+    CreateUpdateNotif --> IdentifyRecipients
     
-    SetData --> DeliveryChannels{Delivery Channels}
+    IdentifyRecipients --> CheckRole{User Role}
     
-    DeliveryChannels -->|Database| StoreDB[Store in Database]
-    StoreDB --> MarkUnread[Mark as Unread]
+    CheckRole -->|Student| StudentRecipients[GroupStudent Members]
+    CheckRole -->|Supervisor| SupervisorRecipients[Assigned Supervisors]
+    CheckRole -->|Co-Supervisor| CoSupervisorRecipients[Co-Supervisors]
+    CheckRole -->|Advisor| AdvisorRecipients[Group Advisors]
+    CheckRole -->|Panel| PanelRecipients[GroupPanelMember]
     
-    DeliveryChannels -->|Email| CheckEmail{Email Enabled?}
-    CheckEmail -->|Yes| SendEmail[Send Email]
-    CheckEmail -->|No| SkipEmail[Skip Email]
+    StudentRecipients --> BuildNotification[Build Notification Data]
+    SupervisorRecipients --> BuildNotification
+    CoSupervisorRecipients --> BuildNotification
+    AdvisorRecipients --> BuildNotification
+    PanelRecipients --> BuildNotification
     
-    DeliveryChannels -->|Real-time| CheckOnline{User Online?}
-    CheckOnline -->|Yes| PushUpdate[Push Real-time Update]
-    CheckOnline -->|No| WaitLogin[Wait for Login]
+    BuildNotification --> SetPayload[Set Notification Payload<br/>(report_id, comment_id, session_id)]
+    SetPayload --> DeliveryChannels{Delivery Method}
     
-    MarkUnread --> UserLogin[User Logs In]
-    SkipEmail --> UserLogin
-    SendEmail --> UserLogin
-    PushUpdate --> UserLogin
-    WaitLogin --> UserLogin
+    DeliveryChannels -->|Database| StoreNotification[Store in notifications table<br/>(migration: 2025_09_01_172011)]
+    StoreNotification --> SetAttributes[Set id, type, notifiable_type,<br/>notifiable_id, data, read_at]
     
-    UserLogin --> ShowBadge[Show Notification Badge]
-    ShowBadge --> UserClick{User Clicks?}
+    DeliveryChannels -->|Email| CheckEmailConfig{Mail Config Set?}
+    CheckEmailConfig -->|Yes| QueueEmail[Queue Email Job]
+    CheckEmailConfig -->|No| SkipEmail[Skip Email Channel]
     
-    UserClick -->|Yes| ViewNotif[View Notification]
-    ViewNotif --> MarkRead[Mark as Read]
-    MarkRead --> Navigate[Navigate to Related Page]
+    DeliveryChannels -->|Broadcast| CheckBroadcast{Broadcasting Enabled?}
+    CheckBroadcast -->|Yes| BroadcastEvent[Broadcast Real-time Event]
+    CheckBroadcast -->|No| SkipBroadcast[Skip Real-time]
     
-    UserClick -->|No| KeepBadge[Keep Badge Visible]
+    SetAttributes --> MarkUnread[Set read_at = NULL]
+    QueueEmail --> ProcessQueue[Process Queue Job]
+    BroadcastEvent --> PushToClient[Push to Client via WebSocket]
+    SkipEmail --> MarkUnread
+    SkipBroadcast --> MarkUnread
     
-    Navigate --> End([End])
-    KeepBadge --> End
+    MarkUnread --> UserAccess[User Accesses System]
+    ProcessQueue --> UserAccess
+    PushToClient --> UserAccess
+    
+    UserAccess --> LoadNotifications[Load Unread Notifications<br/>WHERE read_at IS NULL]
+    LoadNotifications --> DisplayBadge[Display Notification Count]
+    DisplayBadge --> UserInteraction{User Action}
+    
+    UserInteraction -->|View| OpenNotification[Open Notification]
+    OpenNotification --> UpdateReadAt[UPDATE read_at = NOW()]
+    UpdateReadAt --> NavigateContent[Navigate to Related Content]
+    
+    UserInteraction -->|Mark All Read| BulkUpdate[Bulk Update read_at]
+    UserInteraction -->|Ignore| KeepUnread[Keep as Unread]
+    
+    NavigateContent --> CheckContent{Content Type}
+    CheckContent -->|Report| ViewReport[Navigate to Report View]
+    CheckContent -->|Comment| ViewComments[Navigate to Comments Section]
+    CheckContent -->|Annotation| ViewAnnotations[Open Annotation Session]
+    
+    ViewReport --> End([Notification Handled])
+    ViewComments --> End
+    ViewAnnotations --> End
+    BulkUpdate --> End
+    KeepUnread --> End
     
     style Start fill:#4CAF50,color:#fff
     style End fill:#f44336,color:#fff
     style EventType fill:#FFE082
+    style CheckRole fill:#FFE082
     style DeliveryChannels fill:#FFE082
-    style CheckEmail fill:#FFE082
-    style CheckOnline fill:#FFE082
-    style UserClick fill:#FFE082
+    style CheckEmailConfig fill:#FFE082
+    style CheckBroadcast fill:#FFE082
+    style UserInteraction fill:#FFE082
+    style CheckContent fill:#FFE082
 ```
 
 ## Description
-Multi-channel notification delivery system for various system events.
+Notification system flow accurately reflecting the notification classes and database structure.
 
-## Event Types
-- **Report Events**: Assignment, status updates
-- **Meeting Events**: Scheduling, reminders
-- **Feedback Events**: New feedback available
-- **Annotation Events**: PDF annotations added
+## Notification Classes (app/Notifications/)
+- **NewReportAssigned**: Triggered when report assigned to group
+- **NewReportComment**: Triggered when comment added to report
+- **NewReportAnnotation**: Triggered when annotation session created
+- **ReportUpdated**: Triggered when report submission updated
+
+## Database Structure (notifications table)
+- **id**: UUID primary key
+- **type**: Notification class name
+- **notifiable_type**: Polymorphic model type (User)
+- **notifiable_id**: User ID
+- **data**: JSON payload with context
+- **read_at**: Timestamp when read (NULL if unread)
+- **created_at/updated_at**: Timestamps
+
+## Recipient Resolution
+- **Students**: Via GroupStudent relationship
+- **Supervisors**: Via Group supervisor assignment
+- **Co-Supervisors**: Via Group co-supervisor field
+- **Advisors**: Via Group advisor relationship
+- **Panel Members**: Via GroupPanelMember table
 
 ## Delivery Channels
-1. **Database**: Persistent storage for all notifications
-2. **Email**: Optional email notifications
-3. **Real-time**: Instant updates for online users
+1. **Database**: Always stored in notifications table
+2. **Email**: Optional via Laravel mail queue
+3. **Broadcast**: Real-time via broadcasting (if configured)
 
-## User Interaction
-- Badge display for unread notifications
-- Click to view and mark as read
-- Navigation to related content
+## Notification Lifecycle
+1. Event triggers notification creation
+2. Recipients identified based on relationships
+3. Notification stored with unread status (read_at = NULL)
+4. Optional email/broadcast delivery
+5. User views and marks as read (updates read_at)
+6. Navigation to related content based on payload

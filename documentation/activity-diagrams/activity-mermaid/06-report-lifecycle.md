@@ -2,63 +2,106 @@
 
 ```mermaid
 flowchart TD
-    Start([Supervisor Creates Report]) --> SetDetails[Set Report Details]
-    SetDetails --> AssignToGroup[Assign to Group]
-    AssignToGroup --> Publish[Publish Report]
+    Start([Report Creation]) --> CreateReport[Create Report Model Instance]
+    CreateReport --> SetGroup[Link to Group Model]
+    SetGroup --> SetRequirements[Define Requirements & Deadline]
+    SetRequirements --> Publish[Publish Report Status]
     
-    Publish --> Notify[System Sends Notifications]
-    Notify --> StudentReceive[Student Receives Notification]
+    Publish --> TriggerNotif[Trigger NewReportAssigned Notification]
+    TriggerNotif --> StudentReceive[Students in GroupStudent Receive Notification]
     
-    StudentReceive --> PrepareReport[Student Prepares Report]
-    PrepareReport --> UploadFile[Upload File]
-    UploadFile --> Validation{File Valid?}
+    StudentReceive --> PrepareSubmission[Student Prepares Document]
+    PrepareSubmission --> CreateSubmission[Create StudentReportSubmission Entry]
+    CreateSubmission --> UploadFile[Upload File to Storage]
+    UploadFile --> Validation{Validate File & Size}
     
-    Validation -->|No| ShowError[Show Error Message]
-    ShowError --> FixIssues[Fix Issues]
+    Validation -->|Invalid| ShowError[Return Validation Error]
+    ShowError --> FixIssues[Student Fixes Issues]
     FixIssues --> UploadFile
     
-    Validation -->|Yes| StoreSubmission[Store Submission]
-    StoreSubmission --> NotifySupervisor[Notify Supervisor]
+    Validation -->|Valid| StoreSubmission[Save StudentReportSubmission]
+    StoreSubmission --> UpdateReport[Update Report Status]
+    UpdateReport --> NotifySupervisor[Send Notification to Supervisor]
     
-    NotifySupervisor --> SupervisorReview[Supervisor Reviews]
-    SupervisorReview --> AddAnnotations[Add PDF Annotations]
-    AddAnnotations --> WriteFeedback[Write Feedback]
+    NotifySupervisor --> SupervisorReview[Supervisor Opens Report]
+    SupervisorReview --> CreateAnnotationSession[Create ReportAnnotationSession<br/>(created_by_type: supervisor)]
+    CreateAnnotationSession --> AddAnnotations[Add PDF Annotations]
+    AddAnnotations --> CreateComments[Create ReportComment Entries]
     
-    WriteFeedback --> StatusDecision{Status Decision}
+    CreateComments --> CheckCoSupervisor{Co-Supervisor Review?}
+    CheckCoSupervisor -->|Yes| CoSupervisorAnnotation[Create ReportAnnotationSession<br/>(created_by_type: supervisor)]
+    CheckCoSupervisor -->|No| ProceedDecision
+    CoSupervisorAnnotation --> ProceedDecision
     
-    StatusDecision -->|Approve| MarkApproved[Mark as Approved]
-    MarkApproved --> StudentViewApproval[Student Views Approval]
-    StudentViewApproval --> DownloadCert[Download Certificate]
-    DownloadCert --> End1([Complete])
+    ProceedDecision[Proceed to Decision] --> StatusDecision{Review Decision}
     
-    StatusDecision -->|Revise| RequestRevision[Request Revision]
-    RequestRevision --> StudentViewFeedback[Student Views Feedback]
-    StudentViewFeedback --> MakeChanges[Make Changes]
-    MakeChanges --> Resubmit[Resubmit Report]
-    Resubmit --> SupervisorReview
+    StatusDecision -->|Needs Revision| RequestRevision[Update Report Status: revision_required]
+    RequestRevision --> SendRevisionNotif[Trigger NewReportComment Notification]
+    SendRevisionNotif --> StudentViewAnnotations[Student Views ReportAnnotationSession]
+    StudentViewAnnotations --> ReadComments[Read ReportComments]
+    ReadComments --> MakeChanges[Revise Based on Feedback]
+    MakeChanges --> UpdateSubmission[Update StudentReportSubmission]
+    UpdateSubmission --> TriggerUpdateNotif[Trigger ReportUpdated Notification]
+    TriggerUpdateNotif --> SupervisorReview
     
-    StatusDecision -->|Reject| RejectReport[Reject Report]
-    RejectReport --> StudentViewRejection[Student Views Rejection]
-    StudentViewRejection --> MajorChanges[Major Changes Required]
-    MajorChanges --> PrepareReport
+    StatusDecision -->|Panel Review| AssignPanel[Assign GroupPanelMember]
+    AssignPanel --> PanelAnnotation[Create ReportAnnotationSession<br/>(created_by_type: panel_member)]
+    PanelAnnotation --> PanelComments[Panel ReportComments]
+    PanelComments --> PanelDecision{Panel Decision}
+    
+    PanelDecision -->|Approved| MarkApproved[Update Report Status: approved]
+    PanelDecision -->|Needs Changes| RequestRevision
+    
+    MarkApproved --> RecordMeeting[Create Meeting Entry]
+    RecordMeeting --> RecordAttendance[Log MeetingAttendance]
+    RecordAttendance --> FinalizeReport[Finalize Report]
+    FinalizeReport --> End([Report Complete])
+    
+    StatusDecision -->|Major Issues| RejectReport[Update Report Status: rejected]
+    RejectReport --> NotifyRejection[Send Rejection Notification]
+    NotifyRejection --> ConsultMeeting[Schedule Consultation Meeting]
+    ConsultMeeting --> MajorRevision[Major Revision Required]
+    MajorRevision --> PrepareSubmission
     
     style Start fill:#4CAF50,color:#fff
-    style End1 fill:#f44336,color:#fff
+    style End fill:#f44336,color:#fff
     style Validation fill:#FFE082
     style StatusDecision fill:#FFE082
+    style PanelDecision fill:#FFE082
+    style CheckCoSupervisor fill:#FFE082
+    style TriggerNotif fill:#E1F5FE
+    style SendRevisionNotif fill:#E1F5FE
+    style TriggerUpdateNotif fill:#E1F5FE
 ```
 
 ## Description
-Complete lifecycle of report submission from creation to final approval.
+Complete lifecycle of report submission accurately reflecting the Report, StudentReportSubmission, ReportAnnotationSession, and ReportComment models.
 
-## Key Stages
-1. **Creation**: Supervisor creates and assigns report
-2. **Submission**: Student uploads report
-3. **Review**: Supervisor reviews and annotates
-4. **Decision**: Approve, Revise, or Reject
-5. **Revision**: Iterative improvement cycle
+## Key Models
+- **Report**: Main report entity with status tracking
+- **StudentReportSubmission**: Individual student submissions
+- **ReportAnnotationSession**: Annotation sessions with created_by_type field
+- **ReportComment**: Specific feedback comments
+- **GroupPanelMember**: Panel members for final evaluation
+- **Meeting & MeetingAttendance**: Meeting tracking for consultations
 
-## Status Options
-- **Approved**: Report accepted, certificate issued
-- **Needs Revision**: Minor changes required
-- **Rejected**: Major rework needed
+## Annotation Types (created_by_type)
+- **supervisor**: Primary supervisor annotations
+- **advisor**: Advisor review annotations  
+- **panel_member**: Panel evaluation annotations
+
+## Report Status Flow
+1. **draft**: Initial creation
+2. **published**: Available for submission
+3. **submitted**: Student has submitted
+4. **under_review**: Being reviewed
+5. **revision_required**: Needs changes
+6. **panel_review**: Under panel evaluation
+7. **approved**: Final approval
+8. **rejected**: Major issues requiring restart
+
+## Notification Triggers
+- **NewReportAssigned**: When report is published
+- **NewReportComment**: When comments are added
+- **NewReportAnnotation**: When annotations are created
+- **ReportUpdated**: When submission is updated

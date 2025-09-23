@@ -2,55 +2,89 @@
 
 ```mermaid
 flowchart TD
-    Start([Student Login]) --> CheckGroup{Assigned to Group?}
+    Start([Student Login - User Model]) --> CheckGroup{GroupStudent Assignment?}
     
-    CheckGroup -->|Yes| ViewInfo[View Supervisor Info]
-    CheckGroup -->|No| Wait[Wait for Assignment]
-    Wait --> End1([End])
+    CheckGroup -->|Yes| ViewGroup[View Group Details<br/>Supervisor & Co-Supervisor Info]
+    CheckGroup -->|No| Wait[Wait for Advisor Assignment]
+    Wait --> CheckNotifications[Check Notifications Table]
+    CheckNotifications --> CheckGroup
     
-    ViewInfo --> CheckNotif[Check Notifications]
-    CheckNotif --> ViewReq[View Report Requirements]
+    ViewGroup --> ViewBatch[View Batch Information]
+    ViewBatch --> CheckMeetings[Check Meeting Schedule]
+    CheckMeetings --> ViewReq[View Report Requirements]
     
     ViewReq --> PrepareDoc[Prepare Document]
-    PrepareDoc --> ChooseFormat{Upload Format?}
+    PrepareDoc --> CreateSubmission[Create StudentReportSubmission]
+    CreateSubmission --> ChooseFormat{Upload Format?}
     
     ChooseFormat -->|PowerPoint| UploadPPT[Upload .pptx file]
     ChooseFormat -->|PDF| UploadPDF[Upload .pdf file]
+    ChooseFormat -->|Both| UploadBoth[Upload Multiple Files]
     
-    UploadPPT --> Submit[Submit Report]
-    UploadPDF --> Submit
+    UploadPPT --> SubmitReport[Submit via Report Model]
+    UploadPDF --> SubmitReport
+    UploadBoth --> SubmitReport
     
-    Submit --> WaitReview[Wait for Review]
-    WaitReview --> CheckStatus{Status?}
+    SubmitReport --> TriggerNotif[Trigger NewReportAssigned Notification]
+    TriggerNotif --> WaitReview[Wait for Review]
     
-    CheckStatus -->|Approved| Download[Download Certificate]
-    Download --> Complete[Complete Thesis]
-    Complete --> End2([End])
+    WaitReview --> CheckAnnotations{Check ReportAnnotationSession}
     
-    CheckStatus -->|Needs Revision| ViewAnnot[View Annotations]
-    ViewAnnot --> ReadFeedback[Read Feedback]
-    ReadFeedback --> MakeChanges[Make Changes]
-    MakeChanges --> PrepareDoc
+    CheckAnnotations -->|Has Annotations| ViewAnnot[View ReportAnnotationSession<br/>& ReportComments]
+    ViewAnnot --> CheckCreator{Annotation created_by_type?}
     
-    CheckStatus -->|Rejected| MajorRev[Major Revision Required]
-    MajorRev --> Consult[Consult Supervisor]
-    Consult --> PrepareDoc
+    CheckCreator -->|supervisor| SupervisorFeedback[Read Supervisor Feedback]
+    CheckCreator -->|advisor| AdvisorFeedback[Read Advisor Feedback]
+    CheckCreator -->|panel_member| PanelFeedback[Read Panel Feedback]
+    
+    SupervisorFeedback --> RecordAttendance[Record MeetingAttendance]
+    AdvisorFeedback --> RecordAttendance
+    PanelFeedback --> FinalEval[Final Evaluation Stage]
+    
+    RecordAttendance --> MakeChanges[Revise Based on Comments]
+    MakeChanges --> UpdateSubmission[Update StudentReportSubmission]
+    UpdateSubmission --> TriggerUpdate[Trigger ReportUpdated Notification]
+    TriggerUpdate --> PrepareDoc
+    
+    FinalEval --> CheckPanel{Panel Approval?}
+    CheckPanel -->|Approved| Complete[Mark Report Complete]
+    CheckPanel -->|Needs Revision| MakeChanges
+    
+    Complete --> End([Thesis Complete])
+    
+    CheckAnnotations -->|No Annotations Yet| WaitReview
     
     style Start fill:#4CAF50,color:#fff
-    style End1 fill:#f44336,color:#fff
-    style End2 fill:#f44336,color:#fff
+    style End fill:#f44336,color:#fff
     style CheckGroup fill:#FFE082
-    style CheckStatus fill:#FFE082
+    style CheckAnnotations fill:#FFE082
+    style CheckCreator fill:#FFE082
+    style CheckPanel fill:#FFE082
     style ChooseFormat fill:#FFE082
+    style TriggerNotif fill:#E1F5FE
+    style TriggerUpdate fill:#E1F5FE
 ```
 
 ## Description
-This diagram illustrates the complete student journey from login to thesis completion, including the submission and revision cycle.
+This diagram illustrates the complete student journey accurately reflecting the database models and notification system.
+
+## Key Models Used
+- **User**: Student authentication and profile
+- **GroupStudent**: Student-group membership
+- **Group**: Group information with supervisor assignments
+- **Batch**: Academic batch/year information
+- **Report**: Main report entity
+- **StudentReportSubmission**: Individual submission tracking
+- **ReportAnnotationSession**: Annotation sessions with created_by_type
+- **ReportComment**: Specific feedback comments
+- **Meeting & MeetingAttendance**: Meeting tracking
+- **Notifications**: NewReportAssigned, ReportUpdated, NewReportComment, NewReportAnnotation
 
 ## Key Decision Points
-- **Group Assignment**: Students must be assigned to a group to proceed
-- **Upload Format**: Choice between PowerPoint and PDF
-- **Review Status**: Approved, Needs Revision, or Rejected
+- **GroupStudent Assignment**: Students must be in GroupStudent table to proceed
+- **Upload Format**: Flexible file format support
+- **Annotation Source**: Different feedback paths based on created_by_type (supervisor/advisor/panel_member)
+- **Panel Approval**: Final evaluation by GroupPanelMember
 
 ## Revision Cycle
-Students may go through multiple revision cycles based on supervisor feedback until the report is approved.
+Students iterate through StudentReportSubmission updates based on ReportAnnotationSession feedback until panel approval.
