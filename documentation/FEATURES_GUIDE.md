@@ -1,634 +1,710 @@
 # Thesis Management System - Features Guide
 
-This document provides comprehensive documentation of all features in the Thesis Management System.
+This document catalogs all features, actors, endpoints, and rules implemented in the thesisrepo-backup application. It is derived from controllers, models, services, routes, and middleware in the codebase to serve as a comprehensive features notebook.
 
-Last Updated: January 2025
+Last Updated: September 2025
 
 ---
 
 ## Table of Contents
 
-1. [User Roles & Access](#user-roles--access)
-2. [Authentication System](#authentication-system)
-3. [Admin Features](#admin-features)
-4. [Advisor Features](#advisor-features)
-5. [Supervisor Features](#supervisor-features)
-6. [Student Features](#student-features)
-7. [Meeting Management](#meeting-management)
-8. [Group Management](#group-management)
-9. [Supervisor Assignment Algorithm](#supervisor-assignment-algorithm)
-10. [Excel Integration](#excel-integration)
-11. [Performance Monitoring](#performance-monitoring)
-12. [Security Features](#security-features)
+1. Roles and Access Model
+2. Authentication and Session
+3. Dashboards by Role
+4. Admin Features
+5. Advisor Features
+6. Supervisor Features
+7. Co‑Supervisor Features
+8. Panel Member Features
+9. Teacher Features
+10. Student Features
+11. Reports and Lifecycle
+12. Report Annotation (Feedback) System
+13. Meetings Management and PDF Export
+14. Group Management (Admin + Advisor)
+15. Supervisor Assignment Algorithm
+16. Excel Integration (Advisor)
+17. Notifications System (UI + API)
+18. Public Thesis Repository
+19. Performance Monitoring (Admin)
+20. Middleware & Access Control
+21. Rate Limiting
+22. Core Data Models (Quick Reference)
+23. Security, Storage, and Logging
+24. Support
 
 ---
 
-## User Roles & Access
+## 1) Roles and Access Model
 
-### Available Roles
+Actors and their scopes, as enforced by routes and middleware.
 
-| Role | Description | Access Level |
-|------|-------------|--------------|
-| **Admin** | System administrator | Full system control, user management, performance monitoring |
-| **Advisor** | Faculty advisor | Student groups, supervisor assignment, Excel operations |
-| **Supervisor** | Thesis supervisor | Assigned groups, meeting management, progress tracking |
-| **Student** | Thesis student | Dashboard, group info, meetings, PDF reports |
-| **Teacher** | Multi-role faculty | Can act as advisor and/or supervisor |
+- Admin
+  - Full administration of batches, supervisors, areas of interest, and groups
+  - Performance monitoring and system tests
+- Advisor (Faculty advisor)
+  - Manages their students and their advisor-created groups (capacity 3)
+  - Runs supervisor assignment (manual and lottery modes)
+  - Excel-based bulk grouping
+- Supervisor (Main supervisor)
+  - Manages assigned groups, meetings, reports, approvals
+  - Can allow/disallow co-supervisor meeting management per group
+- Co-Supervisor
+  - Access to co-supervised groups
+  - Can manage meetings if permitted by main supervisor
+  - Can review reports, annotate, and send feedback
+- Panel Member
+  - Reviewer for designated groups
+  - Can view/annotate reports and send feedback
+- Teacher
+  - Umbrella role for faculty; can access supervisor, co-supervisor, and panel member panels
+  - Can add comments on reports for groups where they are supervisor
+- Student
+  - Own dashboard, group and supervisor details
+  - Access reports, submissions, annotations, meeting history and PDFs
 
-### Role-Based Dashboards
-
-- **Admin Dashboard**: `/admin/dashboard` - System statistics, user management
-- **Advisor Dashboard**: `/advisor/dashboard` - Group management, student lists
-- **Supervisor Dashboard**: `/supervisor/dashboard` - Assigned groups, meetings
-- **Student Dashboard**: `/student/dashboard` - Group info, supervisor details
-- **Teacher Dashboard**: `/teacher/dashboard` - Multi-role access hub
-
----
-
-## Authentication System
-
-### Multi-Factor Authentication
-
-1. **Local Authentication**
-   - Email and password for admin users
-   - Secure password hashing with bcrypt
-   - Session management
-
-2. **External API Authentication**
-   - Student login via university API
-   - Teacher login via university API
-   - Automatic user creation on first login
-
-3. **Security Features**
-   - Rate limiting (5 attempts per minute)
-   - CSRF protection on all forms
-   - Secure session cookies
-   - Password reset functionality
-
-### Logout Functionality
-
-- Consistent logout buttons across all panels
-- Secure session termination
-- CSRF-protected logout forms
-- Automatic redirect to login page
+Route middleware guards:
+- auth (authenticated)
+- admin, advisor, teacher, student role gates
 
 ---
 
-## Admin Features
+## 2) Authentication and Session
 
-### 1. Group Management
-
-#### Creating Groups
-- Select batch and enter group name
-- Optional area of interest assignment
-- Optional supervisor pre-assignment
-- Support for up to 4 students per group
-- Automatic advisor detection from student assignment
-
-#### Deleting Groups
-- Single group deletion with confirmation
-- Automatic group renumbering after deletion
-- Cannot delete groups with students
-- Bulk deletion support
-- Complete audit trail
-
-#### Student Assignment
-- Assign students from any batch
-- Automatic advisor detection
-- Same-advisor validation per group
-- Remove students from groups
-- Cross-batch assignment support
-
-### 2. Area of Interest Management
-
-- Create new research areas
-- Edit existing areas
-- Bulk creation support
-- Active/inactive status management
-- Delete unused areas
-
-### 3. Supervisor Management
-
-- Sync supervisors from external API
-- Edit supervisor details (designation, rank, thesis limit)
-- Bulk update thesis limits
-- Toggle active/inactive status
-- Refresh individual supervisor data
-
-### 4. Batch Management
-
-- Sync batches from external API
-- Toggle batch status (active/inactive)
-- Bulk actions on multiple batches
-- Compare local vs API data
-- Edit batch details
-
-### 5. Performance Monitoring
-
-- System health dashboard
-- Real-time metrics
-- API performance tracking
-- Security monitoring
-- Database statistics
-- Export performance reports
+- Local authentication for admin; external API auth for students and teachers
+- Session regeneration on login, CSRF on forms, secure cookies
+- Rate limiting on login and external API–bound pages
+- Logout is CSRF-protected and terminates the session
 
 ---
 
-## Advisor Features
+## 3) Dashboards by Role
 
-### 1. Student Management
+- Admin Dashboard: /admin/dashboard
+- Advisor Dashboard: /advisor/dashboard (throttled against external API)
+- Teacher Dashboard: /teacher/dashboard
+- Supervisor Dashboard: /supervisor/dashboard
+- Co-Supervisor Dashboard: /co-supervisor/dashboard
+- Panel Member Dashboard: /panel-member/dashboard
+- Student Dashboard: /student/dashboard (throttled)
 
-- View all assigned students
-- Filter by batch and status
-- Refresh student data from API
-- View individual student details
-- Export student lists
-
-### 2. Group Creation & Management
-
-#### Manual Group Creation
-- Create multiple groups at once
-- Set group capacity (max 3 students)
-- Assign students to groups
-- Assign areas of interest
-- Remove students from groups
-
-#### Excel Upload
-- Bulk group assignment via Excel
-- Automatic group creation
-- Random group assignment for fairness
-- Download template with current students
-- Validation and error reporting
-
-### 3. Supervisor Assignment
-
-#### Manual Assignment
-- Select group and area of interest
-- Choose from available supervisors
-- View supervisor capacity
-- Unassign supervisors
-
-#### Lottery Assignment
-- Three modes: AOI-based, Ranking-based, Combined
-- Preview assignments before applying
-- Automatic fair distribution
-- Respects capacity limits
-- Comprehensive statistics
+Each dashboard aggregates quick navigation to the role’s primary features (groups, meetings, reports, monitoring, etc.).
 
 ---
 
-## Supervisor Features
+## 4) Admin Features
 
-### 1. Dashboard
+Administrative features are implemented across:
+- Admin\AreaOfInterestController
+- Admin\SupervisorController
+- Admin\BatchController
+- Admin\GroupManagementController
+- Admin\PerformanceController
 
-- View assigned thesis groups
-- Group member details
-- Meeting statistics
-- Quick actions menu
+Key capabilities:
 
-### 2. Group Management
+A) Areas of Interest (AOI)
+- List, paginate, create, edit, delete
+- Bulk creation via newline-separated entries
+- Toggle active/inactive
+- Paths:
+  - GET /admin/areas-of-interest
+  - GET /admin/areas-of-interest/create
+  - POST /admin/areas-of-interest (single)
+  - POST /admin/areas-of-interest/bulk
+  - GET /admin/areas-of-interest/{id}/edit
+  - PUT /admin/areas-of-interest/{id}
+  - DELETE /admin/areas-of-interest/{id}
 
-- View all assigned groups
-- Access student information
-- Track group progress
-- Contact group members
+B) Supervisors
+- Sync from external API (throttled)
+- Edit details: thesis_limit, is_active, AOIs
+- Bulk thesis_limit updates for subsets
+- Toggle is_active
+- Toggle AOI membership per supervisor
+- Refresh one supervisor from API (throttled)
+- Paths:
+  - GET /admin/supervisors
+  - POST /admin/supervisors/sync
+  - GET /admin/supervisors/{id}/edit
+  - PUT /admin/supervisors/{id}
+  - POST /admin/supervisors/bulk-limits
+  - POST /admin/supervisors/{id}/toggle
+  - POST /admin/supervisors/{id}/toggle-area
+  - POST /admin/supervisors/{id}/refresh
 
-### 3. Meeting Management
+C) Batches
+- Sync from external API (throttled)
+- Activate/deactivate one or many batches; activate-all/deactivate-all
+- Compare local vs API
+- Edit batch meta and status
+- Delete batch
+- Paths:
+  - GET /admin/batches
+  - POST /admin/batches/sync
+  - POST /admin/batches/{id}/toggle
+  - POST /admin/batches/bulk-action
+  - GET /admin/batches/{id}/edit
+  - PUT /admin/batches/{id}
+  - DELETE /admin/batches/{id}
+  - GET /admin/batches/compare
+  - POST /admin/batches/activate-all
+  - POST /admin/batches/deactivate-all
 
-- Schedule meetings with groups
-- Record meeting details
-- Track attendance
-- Document discussion topics
-- Record outcomes
-- Edit past meetings
-- Filter by date and group
+D) Groups (Admin-wide management)
+- View all groups in a batch across advisors
+- Create group with:
+  - name
+  - batch
+  - up to many AOIs
+  - optional pre-assigned supervisor (capacity validated)
+  - Admin-created groups support up to 4 students
+  - Advisor will be auto-detected when the first student is assigned (from external API)
+- Assign/remove students to admin-created groups
+  - Cross-batch student assignment allowed
+  - Enforces same-advisor per group (auto-detected from API)
+  - Auto-expands capacity to 4 when required
+- Assign/unassign AOIs (multi-select)
+- Assign/unassign supervisor (validates capacity)
+- Assign/unassign co-supervisor (not equal to main supervisor, capacity validated)
+- Assign/unassign panel members (no capacity constraints; reviewers only)
+- Delete one group (no students) with automatic re-numbering of Group N labels
+- Bulk delete multiple groups (no students) with re-numbering within affected batches
+- Query available supervisors, optionally filtered by AOI
+- Paths:
+  - GET /admin/groups
+  - POST /admin/groups/create
+  - POST /admin/groups/assign-student
+  - POST /admin/groups/remove-student
+  - POST /admin/groups/assign-area-of-interest
+  - POST /admin/groups/assign-supervisor
+  - POST /admin/groups/unassign-supervisor
+  - POST /admin/groups/assign-co-supervisor
+  - POST /admin/groups/unassign-co-supervisor
+  - POST /admin/groups/assign-panel-member
+  - POST /admin/groups/unassign-panel-member
+  - GET /admin/groups/available-supervisors
+  - DELETE /admin/groups/{group}
+  - POST /admin/groups/bulk-delete
 
----
-
-## Student Features
-
-### 1. Enhanced Dashboard
-
-#### Group Information
-- View assigned group name
-- See all group members
-- Current user highlighting
-- Batch information
-- Group capacity status
-
-#### Area of Interest
-- View assigned research areas
-- Multiple areas support
-- Area descriptions
-- Visual indicators
-
-#### Supervisor Details
-- Supervisor name and designation
-- Department information
-- Contact email
-- Professional profile
-
-#### Statistics Cards
-- Batch number
-- Department info
-- Group status
-- Supervisor status
-
-### 2. Meeting Features
-
-- View all group meetings
-- Check attendance records
-- Review discussion topics
-- See meeting outcomes
-- Download meetings as PDF
-- Meeting history tracking
-
-### 3. Group Notification System
-
-#### Real-time Notifications
-- **Instant Delivery**: All group members receive notifications immediately
-- **Smart Targeting**: Only relevant group members are notified
-- **Multiple Channels**: Database notifications with real-time UI updates
-
-#### Notification Types
-- **🟣 Report Assigned** (Purple icon): New reports created by supervisor
-- **🔵 Report Comment** (Blue icon): Supervisor adds comments to reports  
-- **🟠 Report Updated** (Orange icon): Supervisor modifies existing reports
-
-#### Notification Features
-- **Change Detection**: Only sends update notifications for meaningful changes
-- **Rich Content**: Includes supervisor messages, change details, and context
-- **Student ID Flexibility**: Works with both `roll` and `student_id` formats
-- **Group Coverage**: Ensures all group members receive notifications
-
-#### User Interface
-- **Notification Bell**: Real-time dropdown with unread count badge
-- **Notification Center**: Full history with pagination and filtering
-- **Mark as Read**: Individual and bulk read status management
-- **Visual Indicators**: Color-coded icons and unread highlighting
-
-#### Technical Implementation
-- **Database Storage**: Persistent notification storage
-- **Transaction Safety**: All notifications sent within database transactions
-- **Error Handling**: Graceful failure with comprehensive logging
-- **Performance**: Efficient querying and caching
-
-### 4. Report Approval Status Display
-
-#### Visual Status Indicators
-- **Approval Badges**: Green "✓ Approved" badges for approved final reports
-- **Status Integration**: Seamlessly integrated into report headers and listings
-- **Color Coding**: Consistent green color scheme for approved status
-
-#### Congratulations Section
-- **Celebration Message**: 🎉 Congratulations message for approved final reports
-- **Approval Details**: Shows approval date, time, and approving supervisor
-- **Public Access**: Direct link to public thesis page
-- **Share Functionality**: One-click copy link feature with visual feedback
-
-#### Student Experience
-- **Report Index**: Approval status visible in report listings
-- **Report Details**: Comprehensive approval information on detail pages
-- **Public Visibility**: Easy access to published thesis
-- **Achievement Recognition**: Clear acknowledgment of successful completion
-
-#### Technical Features
-- **Smart Display**: Only shows for final reports that are approved
-- **Real-time Updates**: Status updates immediately upon supervisor approval
-- **Link Generation**: Automatic public thesis URL generation
-- **Clipboard Integration**: Modern browser clipboard API for link sharing
-
-### 5. PDF Reports
-
-- Generate meeting reports
-- Professional formatting
-- Complete attendance records
-- Downloadable format
-- Print-ready layout
+E) Performance Monitoring
+- Dashboard (metrics + health)
+- AJAX endpoints for metrics, DB, API, security
+- Clear performance cache
+- Export metrics as JSON
+- On-demand component tests (db, cache, storage, external API)
+- Paths:
+  - GET /admin/performance
+  - GET /admin/performance/metrics
+  - GET /admin/performance/health
+  - GET /admin/performance/database
+  - GET /admin/performance/api
+  - GET /admin/performance/security
+  - POST /admin/performance/clear-cache
+  - GET /admin/performance/export
+  - GET /admin/performance/test
 
 ---
 
-## Meeting Management
+## 5) Advisor Features
 
-### For Supervisors
+Controllers: Advisor\DashboardController, Advisor\StudentController, Advisor\GroupController, Advisor\SupervisorAssignmentController
 
-#### Creating Meetings
-1. Select group from assigned groups
-2. Set meeting date
-3. Add discussion topics
-4. Record outcomes
-5. Mark student attendance
-6. Save meeting record
+A) Students
+- List students assigned to advisor (via external API)
+- Filter by batch; search by name or roll
+- View student profile pulled from API
+- Force data refresh (clears caches)
+- Paths:
+  - GET /advisor/students (throttled)
+  - GET /advisor/students/{student} (throttled)
+  - POST /advisor/students/refresh (throttled)
 
-#### Managing Meetings
-- Edit existing meetings
-- Update attendance
-- Modify discussion topics
-- Change outcomes
-- Filter by date range
-- Search by group
+B) Groups (Advisor-created only; capacity 3)
+- Batches showable are those where advisor has students (external API)
+- Create groups automatically for a batch (size 3; number = ceil(students/3))
+- Add additional group by name
+- Assign/unassign students to/from advisor-created groups only
+  - Prevents assigning same student to multiple groups across batches for this advisor
+  - Student list sourced from external API across advisor’s batches
+- Assign AOIs (multi-select) to groups
+- Remove all AOIs within a batch (legacy single-AOI cleanup utility)
+- Remove all advisor-created groups in a batch (and their assignments)
+- Download Excel template for batch with current students and existing group list
+- Upload Excel to bulk-assign groups
+  - Auto-detects columns and header
+  - Validates students belong to advisor and enforces group size ≤ 3
+  - Creates additional groups as needed
+  - Randomly maps Excel-defined groupings to actual group numbers to prevent bias
+- Paths:
+  - GET /advisor/groups (throttled)
+  - POST /advisor/groups/create
+  - POST /advisor/groups/add
+  - POST /advisor/groups/assign-student (throttled)
+  - POST /advisor/groups/remove-student
+  - POST /advisor/groups/assign-area-of-interest
+  - POST /advisor/groups/unassign-all-areas-of-interest
+  - POST /advisor/groups/remove-all-groups
+  - GET /advisor/groups/download-template (throttled)
+  - POST /advisor/groups/upload-excel (throttled)
 
-### For Students
-
-#### Viewing Meetings
-- Access all group meetings
-- Check personal attendance
-- Review discussion points
-- See meeting outcomes
-- Track meeting history
-
-#### PDF Reports
-- Download comprehensive reports
-- All meetings in one document
-- Attendance summary
-- Professional formatting
-- Share with advisors
-
-### Meeting Features
-
-- **Attendance Tracking**: Mark present/absent for each student
-- **Topic Documentation**: Record what was discussed
-- **Outcome Recording**: Document decisions and next steps
-- **History Preservation**: Complete meeting archive
-- **Access Control**: Only assigned supervisors can create/edit
-
----
-
-## Group Management
-
-### Admin Group Creation
-
-#### Enhanced Features
-- Create groups with pre-assigned areas
-- Auto-detect advisor from students
-- Support 4 students (vs 3 for advisors)
-- Track creation source
-- Audit trail with timestamps
-
-#### Advisor Auto-Detection
-1. Admin creates group without advisor
-2. First student assignment triggers detection
-3. System queries student's advisor from API
-4. Advisor automatically assigned to group
-5. Subsequent students must have same advisor
-
-### Group Deletion
-
-#### Automatic Renumbering
-- Groups renumbered sequentially after deletion
-- Example: Delete Group 3 → Group 4 becomes Group 3
-- Maintains clean numbering sequence
-- Works across all batches
-
-#### Safety Features
-- Cannot delete groups with students
-- Confirmation modal required
-- Transaction-safe operations
-- Complete audit logging
-
-### Multiple Areas of Interest
-
-#### Implementation
-- Groups can have multiple research areas
-- Checkbox selection interface
-- Badge display for all areas
-- Backward compatible with single area
-
-#### Benefits
-- Interdisciplinary project support
-- Better supervisor matching
-- Flexible research scope
-- Cross-domain collaboration
+C) Supervisor Assignment
+- Manual: choose eligible supervisor (matches any group AOI, has available slots, co-supervisor mismatch prevented)
+- Lottery: three modes (AOI, ranking, combined/both); optional preview
+- Unassign one or all (optional batch filter)
+- Available supervisors endpoint supports multiple AOI filters and excludes current co-supervisor
+- Paths:
+  - GET /advisor/supervisor-assignment
+  - POST /advisor/supervisor-assignment/assign-manual
+  - POST /advisor/supervisor-assignment/unassign
+  - POST /advisor/supervisor-assignment/unassign-all
+  - POST /advisor/supervisor-assignment/run-lottery
+  - GET /advisor/supervisor-assignment/preview-lottery
+  - GET /advisor/supervisor-assignment/available-supervisors (throttled)
 
 ---
 
-## Supervisor Assignment Algorithm
+## 6) Supervisor Features
 
-> **📘 For complete algorithm documentation with flowcharts, see [SUPERVISOR_ASSIGNMENT_ALGORITHM.md](SUPERVISOR_ASSIGNMENT_ALGORITHM.md)**
+Controllers: Supervisor\DashboardController, Supervisor\GroupController, Supervisor\MeetingController, Supervisor\ReportController, Supervisor\ReportAnnotationController
 
-### Overview
+A) Groups
+- View groups where user is main supervisor, co-supervisor, or panel member (for visibility)
+- Toggle permission allowing co-supervisor to manage meetings per group
+- Paths:
+  - GET /supervisor/groups
+  - POST /supervisor/groups/toggle-co-supervisor-meetings
 
-The Supervisor Assignment Algorithm is a sophisticated system that automatically assigns thesis supervisors to student groups based on various criteria including Area of Interest (AOI), academic rank, and capacity constraints.
+B) Meetings
+- Create, view, edit meetings for groups where the user can manage meetings:
+  - Main supervisor always allowed
+  - Co-supervisor allowed only when permission is enabled on the group
+- Filter meetings by group or date range
+- Return group students for attendance UI via JSON
+- Export a group’s meetings (with attendance) as PDF
+- Paths:
+  - GET /supervisor/meetings
+  - POST /supervisor/meetings
+  - GET /supervisor/meetings/students (JSON)
+  - GET /supervisor/meetings/{meeting}
+  - GET /supervisor/meetings/{meeting}/edit
+  - PUT /supervisor/meetings/{meeting}
+  - GET /supervisor/meetings/{group}/pdf
 
-### Three Assignment Modes
+C) Reports
+- Index of reports grouped by supervised groups
+- Create report for any supervised group
+  - Type: general or final
+  - Optional supervisor message and extra input
+  - AOI on report is auto-set to an intersection of supervisor AOIs and group AOIs if any
+  - Notifies all group students (database notifications)
+- View/edit/delete report (only for own groups)
+- Mark under review (requires submissions)
+- Finalize and approve final reports (sets title, abstract, keywords) → visible on public repository
+- View/inline or download student submissions (PDF/PPT/PPTX uploads by students)
+- Paths:
+  - GET /supervisor/reports
+  - GET /supervisor/reports/create
+  - POST /supervisor/reports
+  - GET /supervisor/reports/{report}
+  - GET /supervisor/reports/{report}/edit
+  - PUT /supervisor/reports/{report}
+  - DELETE /supervisor/reports/{report}
+  - POST /supervisor/reports/{report}/under-review
+  - GET /supervisor/reports/{report}/finalize (form)
+  - POST /supervisor/reports/{report}/finalize
+  - GET /supervisor/reports/{report}/submissions/{submission}/view
+  - GET /supervisor/reports/{report}/submissions/{submission}/download
 
-#### 1. AOI-Based Lottery
-- **Purpose**: Match supervisors based on research expertise
-- **Selection**: Random from matching supervisors
-- **Rotation**: Excludes last assigned if alternatives exist
-- **Result**: Different on each run (true randomization)
-
-#### 2. Ranking-Based Lottery
-- **Purpose**: Distribute by academic seniority
-- **Selection**: Round-robin by rank (Professor → Associate → Assistant → Lecturer)
-- **Fairness**: Nobody gets 2nd group until all have 1
-- **Result**: Deterministic (same input = same output)
-
-#### 3. Combined Mode
-- **Purpose**: Balance expertise with fairness
-- **Selection**: AOI match first, rank as tiebreaker
-- **Ultra-Fair**: Area-specific round-robin
-- **Smart**: Avoids consecutive assignments within AOI
-
-### Key Features
-
-- **Capacity Management**: Never exceeds supervisor thesis limits
-- **Fair Distribution**: Ensures equitable allocation
-- **Smart Rotation**: Avoids consecutive assignments when possible
-- **Preview Mode**: Test assignments without saving to database
-- **Audit Trail**: Complete assignment history tracking
-- **Transaction Safety**: All operations wrapped in database transactions
-
-### Assignment Workflow
-
-1. **Select Groups**: Choose eligible unassigned groups with areas
-2. **Choose Mode**: Select AOI, Ranking, or Combined mode
-3. **Preview** (Optional): Test assignment without persistence
-4. **Run Assignment**: Execute the lottery algorithm
-5. **Review Results**: Check statistics and unassigned groups
-
-### Visual Flowcharts
-
-The complete algorithm documentation includes detailed flowcharts for:
-- Main assignment process flow
-- AOI-based assignment logic
-- Ranking-based round-robin flow
-- Combined mode decision tree
-
-**[View Complete Algorithm Documentation →](SUPERVISOR_ASSIGNMENT_ALGORITHM.md)**
-
----
-
-## Excel Integration
-
-### Upload Features
-
-#### File Format Support
-- Excel files (.xlsx, .xls)
-- CSV files (.csv)
-- Flexible column detection
-- Auto-identifies Student ID and Group columns
-
-#### Random Group Assignment
-- Prevents bias in group numbering
-- Excel determines groupings only
-- System randomly assigns actual numbers
-- Maintains sorted display
-
-#### Validation
-- Student ID verification
-- Group capacity checks
-- Batch validation
-- Duplicate detection
-- Comprehensive error messages
-
-### Download Features
-
-#### Template Generation
-- Current student list
-- Existing group assignments
-- Proper column headers
-- Ready for editing
-
-#### Export Options
-- Student lists
-- Group assignments
-- Meeting reports
-- Performance data
+D) Report Annotation (Supervisor)
+- Annotate a PDF submission and save drafts
+- Send feedback to all group members (notification dispatch)
+- View annotation history per submission (versioned sessions)
+- Paths:
+  - GET /supervisor/reports/{report}/submissions/{submission}/annotate
+  - POST /supervisor/reports/{report}/submissions/{submission}/annotations
+  - POST /supervisor/reports/{report}/submissions/{submission}/annotations/{annotationSession}/send-feedback
+  - GET /supervisor/reports/{report}/submissions/{submission}/annotations
 
 ---
 
-## Performance Monitoring
+## 7) Co‑Supervisor Features
 
-### Dashboard Components
+Controllers: CoSupervisor\DashboardController, GroupController, MeetingController, ReportController, ReportAnnotationController
 
-#### System Health
-- Overall status indicator
-- Component health checks
-- Real-time monitoring
-- Alert thresholds
-
-#### Key Metrics
-- PHP version and configuration
-- Memory usage
-- Database performance
-- API response times
-- User statistics
-
-#### Detailed Tabs
-- **Database**: Connection, queries, table stats
-- **API**: External API performance
-- **Security**: Failed logins, rate limiting
-- **System**: Environment info, PHP settings
-- **Errors**: Error tracking and trends
-
-### Features
-
-- **Auto-Refresh**: Updates every 5 minutes
-- **Manual Refresh**: On-demand updates
-- **Export Reports**: JSON format
-- **System Tests**: Component testing
-- **Cache Management**: Clear performance cache
-
----
-
-## Security Features
-
-### Rate Limiting
-
-#### Protected Endpoints
-- Login: 5 attempts/minute
-- Student Dashboard: 60 requests/minute
-- Advisor Dashboard: 60 requests/minute
-- API Sync: 10 requests/5 minutes
-- All other endpoints configured
-
-#### Configuration
-- Environment-based limits
-- Customizable per endpoint
-- IP-based throttling
-- Automatic reset after decay
-
-### Authentication Security
-
-- **Password Hashing**: Bcrypt with salt
-- **Session Security**: Regeneration after login
-- **CSRF Protection**: All forms protected
-- **HTTPS Enforcement**: Production only
-- **Secure Cookies**: HTTPOnly, Secure flags
-
-### Access Control
-
-- **Role-Based Access**: Middleware protection
-- **Route Guards**: Authentication required
-- **API Authentication**: Token-based for external
-- **Audit Logging**: All critical actions logged
+- View co-supervised groups; visibility into reports and submissions
+- Manage meetings only when allowed by the main supervisor on that group
+  - Create/edit meetings under permission
+- Mark reports as “under review”
+- View/inline or download student submissions
+- Annotate submissions, save drafts, and send feedback (notifications)
+- Paths:
+  - GET /co-supervisor/dashboard
+  - GET /co-supervisor/groups
+  - Meetings:
+    - GET /co-supervisor/meetings
+    - POST /co-supervisor/meetings
+    - GET /co-supervisor/meetings/{meeting}
+    - GET /co-supervisor/meetings/{meeting}/edit
+    - PUT /co-supervisor/meetings/{meeting}
+  - Reports:
+    - GET /co-supervisor/reports
+    - GET /co-supervisor/reports/{report}
+    - POST /co-supervisor/reports/{report}/under-review
+    - GET /co-supervisor/reports/{report}/submissions/{submission}/view
+    - GET /co-supervisor/reports/{report}/submissions/{submission}/download
+  - Report annotations:
+    - GET /co-supervisor/reports/{report}/submissions/{submission}/annotate
+    - POST /co-supervisor/reports/{report}/submissions/{submission}/annotations
+    - POST /co-supervisor/reports/{report}/submissions/{submission}/annotations/{annotationSession}/send-feedback
+    - GET /co-supervisor/reports/{report}/submissions/{submission}/annotations
 
 ---
 
-## Additional Features
+## 8) Panel Member Features
 
-### Responsive Design
-- Mobile-optimized interfaces
-- Touch-friendly controls
-- Adaptive layouts
-- Cross-browser compatibility
+Controllers: PanelMember\DashboardController, GroupController, ReportController, ReportAnnotationController
 
-### Professional UI
-- Admin-style layouts
-- Consistent theming
-- Color-coded panels
-- Intuitive navigation
-
-### Data Integrity
-- Foreign key constraints
-- Transaction safety
-- Validation rules
-- Error handling
-
-### Audit Trail
-- User action logging
-- Timestamp tracking
-- Change history
-- Security events
+- See groups where assigned as a panel member
+- Review report details and submissions
+- Mark reports “under review”
+- Annotate submissions, save drafts, and send feedback (notifications)
+- Paths:
+  - GET /panel-member/dashboard
+  - GET /panel-member/groups
+  - Reports:
+    - GET /panel-member/reports
+    - GET /panel-member/reports/{report}
+    - POST /panel-member/reports/{report}/under-review
+    - GET /panel-member/reports/{report}/submissions/{submission}/view
+    - GET /panel-member/reports/{report}/submissions/{submission}/download
+  - Report annotations:
+    - GET /panel-member/reports/{report}/submissions/{submission}/annotate
+    - POST /panel-member/reports/{report}/submissions/{submission}/annotations
+    - POST /panel-member/reports/{report}/submissions/{submission}/annotations/{annotationSession}/send-feedback
+    - GET /panel-member/reports/{report}/submissions/{submission}/annotations
 
 ---
 
-## Future Enhancements
+## 9) Teacher Features
 
-### Planned Features
-- Thesis document management
-- Progress tracking system
-- Notification system
-- Advanced analytics
-- Mobile applications
-- API for third-party integration
+Controllers: Teacher\DashboardController, Teacher\ReportCommentController
 
-### Under Consideration
-- Video meeting integration
-- Plagiarism checking
-- Peer review system
-- Research collaboration tools
-- Publication tracking
+- Unified access for faculty to supervisor, co-supervisor, and panel member panels (when applicable)
+- Add comments to reports for groups where the teacher is the main supervisor; notifies group students
+- Paths:
+  - GET /teacher/dashboard
+  - POST /teacher/reports/{report}/comments
 
 ---
 
-## Support & Help
+## 10) Student Features
 
-### Getting Help
-- Check this documentation
-- Review error messages
-- Contact system administrator
-- Submit support tickets
+Controllers: Student\DashboardController, Student\ReportController, Student\ReportSubmissionController, Student\ReportAnnotationController
 
-### Common Issues
-- Login problems → Check credentials and API
-- Group assignment → Verify student batch
-- Excel upload → Check file format
-- Performance → Clear cache and refresh
+A) Dashboard & Meetings
+- Personalized dashboard with group membership, AOIs, supervisor details, and statistics
+- View meeting list and details for the group
+- Download group meeting report as PDF (from supervisor side)
+
+B) Reports
+- Index of group reports (creator, status, comments, approval badges for final approved)
+- Show report with:
+  - Group members
+  - Teacher comments
+  - Student’s own submission (if any)
+  - Annotation sessions for the student’s latest submission
+- Notifications: seen as dropdown and full page; can mark individually or all as read
+
+C) Submissions
+- Create one submission per report per student
+- Edit or delete own submission
+- Upload limits: PDF, PPT, PPTX up to 20MB
+- Inline view and file downloads available to students (own) and faculty as permitted
+- Paths:
+  - GET /student/reports
+  - GET /student/reports/{report}
+  - GET /student/reports/{report}/submissions/create
+  - POST /student/reports/{report}/submissions
+  - GET /student/reports/{report}/submissions/{submission}
+  - GET /student/reports/{report}/submissions/{submission}/edit
+  - PUT /student/reports/{report}/submissions/{submission}
+  - DELETE /student/reports/{report}/submissions/{submission}
+  - GET /student/reports/{report}/submissions/{submission}/download
+
+D) Annotation History (Read-only)
+- View the history of annotation sessions for own submission
+- View or download an annotated session when provided
+- Paths:
+  - GET /student/reports/{report}/submissions/{submission}/annotations
+  - GET /student/reports/{report}/submissions/{submission}/annotations/{session}
+  - GET /student/reports/{report}/submissions/{submission}/annotations/{session}/download
+
+E) Notifications (UI)
+- Pages/Endpoints:
+  - GET /student/notifications
+  - POST /student/notifications/{id}/mark-read
+  - POST /student/notifications/mark-all-read
 
 ---
 
-**Document Version**: 2.0  
-**Last Updated**: January 2025  
-**System Version**: 1.0.0
+## 11) Reports and Lifecycle
+
+Model: Report
+
+Properties and statuses
+- type: general | final
+- status: draft | submitted | under_review | approved
+- Finalization requires: type=final AND at least one student submission; on approval sets project_title, abstract_md, keywords, approved_at/by
+
+Lifecycle summary
+- Create (draft)
+- Student(s) submit file(s)
+- Mark “under review” (Supervisor, Co‑Supervisor, Panel Member)
+- Finalize & Approve (Supervisor only) → Published to Public Repository
+
+Supervisor and teacher actions generate notifications to group members:
+- NewReportAssigned (on create)
+- ReportUpdated (on update of meaningful fields)
+- NewReportComment (on teacher comment)
+- NewReportAnnotation (on sending feedback)
+
+---
+
+## 12) Report Annotation (Feedback) System
+
+Controllers: Supervisor/Co‑Supervisor/Panel Member ReportAnnotationController
+Model: ReportAnnotationSession
+
+- Role-based access checks:
+  - Supervisor: own supervised groups
+  - Co‑Supervisor: groups where assigned as co-supervisor
+  - Panel Member: groups where assigned as panel member
+- Requirements: PDF submission must exist and be accessible in storage
+- Features:
+  - Versioned sessions (auto-increment version per submission)
+  - Save draft (is_sent=false)
+  - Send feedback (dispatch notifications to all group members; sets is_sent=true and sent_at)
+  - Session metadata tracks created_by_type for co-supervisor/panel member origin
+- Student read-only access to their own session history
+
+---
+
+## 13) Meetings Management and PDF Export
+
+Models: Group, Meeting, MeetingAttendance
+
+- Supervisor Meetings:
+  - Create/edit meetings for groups user can manage (main supervisor by default; co‑supervisor with permission)
+  - Capture meeting_date, discussed_topics, outcomes, and per-student attendance
+  - List with filters (group, date range)
+  - Export group’s entire meeting history as an A4 PDF including attendance summary and metadata
+- Co‑Supervisor Meetings:
+  - Same UI workflow available only when main supervisor enables permission on that group; otherwise read-only or blocked
+
+---
+
+## 14) Group Management (Admin + Advisor)
+
+- Admin-created groups (max 4 students): cross-batch student assignment, advisor auto-detection on first student assignment, AOIs multi-select, supervisor/co-supervisor/panel members assignment, deletion with re-numbering, bulk deletes
+- Advisor-created groups (max 3 students): restricted to advisor’s own batches/students via external API, cross-batch lookup for available students, Excel bulk grouping, AOIs multi-select, utilities to clear AOIs or wipe groups in batch
+- Group AOIs:
+  - Legacy single AOI maintained for backward compatibility; multiple AOIs now supported as pivot relation
+  - Matched AOI is persisted when supervisor is assigned for traceability
+- Co‑Supervisor Permissions:
+  - Main supervisor can toggle the “co_supervisor_can_manage_meetings” flag per group to delegate meeting management
+
+---
+
+## 15) Supervisor Assignment Algorithm
+
+See documentation/SUPERVISOR_ASSIGNMENT_ALGORITHM.md for flowcharts and detailed logic.
+
+Modes (as implemented by Advisor SupervisorAssignmentController and SupervisorAssignmentService)
+- AOI-based Lottery: prioritize AOI matches; random among matches
+- Ranking Lottery: round-robin by academic rank priority
+- Combined Mode: merge AOI fairness with ranking to balance expertise and distribution
+
+Guarantees
+- Supervisor capacity respected (thesis_limit, available_slots)
+- Excludes co-supervisor as candidate for main-supervisor assignment
+- Tracks assignment metadata (is_manual_assignment, matched_area_of_interest_id, assigned_at)
+- Preview endpoint to simulate results without persistence
+
+---
+
+## 16) Excel Integration (Advisor)
+
+- Accepts xlsx, xls, csv (≤ 2MB)
+- Column auto-detection for Student ID and Group Name; header optional
+- Validates students belong to advisor in that batch; skips/flags invalid rows
+- Enforces group-size constraint (≤ 3)
+- Auto-creates missing groups and randomly maps Excel-defined groupings to actual group numbers to avoid bias
+- Template download includes current students and list of available groups for reference
+
+---
+
+## 17) Notifications System (UI + API)
+
+User-triggered events generate database notifications for group members:
+- NewReportAssigned (purple icon)
+- NewReportComment (blue icon)
+- ReportUpdated (orange icon; only when meaningful changes occur)
+- NewReportAnnotation (feedback sent for a submission)
+
+UI Features (Student)
+- Bell icon with unread badge; dropdown with recent 10
+- Full page history with pagination
+- Mark single or all as read
+
+API Endpoints (auth required; shared for all users)
+- GET /api/notifications → last 10 + unread_count + total_count
+- POST /api/notifications/{id}/mark-read
+- POST /api/notifications/mark-all-read
+- GET /api/notifications/unread-count → unread count
+
+Delivery & Safety
+- All notification sends happen within DB transactions where applicable
+- Robust logging on notification fan-out and failures
+
+---
+
+## 18) Public Thesis Repository
+
+Controller: HomeController
+
+Publicly available, read-only catalog of approved final reports:
+- Index: /
+  - Search by title/abstract
+  - Filter by year range, supervisor, and area of interest
+  - Filter by keywords (comma-separated)
+  - Sort by newest, oldest, or title
+- Detail: /reports/{report}
+  - Only accessible for approved final reports
+  - Shows group members, approver, and submission history
+- PDF View/Download for latest PDF submission
+  - GET /reports/{report}/pdf/view
+  - GET /reports/{report}/pdf/download
+
+---
+
+## 19) Performance Monitoring (Admin)
+
+- Composite metrics for system, database, API, security, and user stats
+- Health checks with an overall status
+- Auto-refresh via AJAX; manual refresh endpoints
+- Export JSON report with summary
+- Component tests:
+  - Database connectivity and query latency
+  - Cache driver read/write/delete
+  - Storage read/write/delete
+  - External API reachability and latency
+
+---
+
+## 20) Middleware & Access Control
+
+Role middleware implemented under app/Http/Middleware:
+- EnsureUserIsAdmin: protects /admin/*
+- EnsureUserIsAdvisor: protects /advisor/*
+- EnsureUserIsTeacher: protects /teacher/* and teacher-accessible supervisor/co-supervisor/panel routes
+- EnsureUserIsStudent: protects /student/*
+
+Route groups also layer auth and per-route throttles for external API usage. Access checks exist in controllers and models for finer-grained enforcement:
+- Group::canSupervisorManageMeetings(supervisorId)
+- Group::canSupervisorApprove(supervisorId)
+- Group::canSupervisorAccess(supervisorId)
+- Report::canBeApproved(), hasSubmissions()
+
+---
+
+## 21) Rate Limiting
+
+Applied via named throttles in routes:
+- Student dashboard: throttle:external_api_student_dashboard
+- Advisor: dashboard/students/groups/template/upload/available-supervisors with named throttles
+- Admin: supervisors sync/refresh and batches sync/compare throttled
+- General login attempt throttling configured in auth middleware
+
+The limits are centrally configurable; check config and middleware definitions for per-environment values.
+
+---
+
+## 22) Core Data Models (Quick Reference)
+
+Group
+- Relationships: advisor(User), students(GroupStudent), meetings, reports, supervisor, coSupervisor, panelMembers (GroupPanelMember), panelSupervisors (Supervisor many-to-many), matchedAreaOfInterest (AOI), areasOfInterest (many-to-many)
+- Flags & helpers: isFull, available_slots, hasSupervisor, isEligibleForAssignment, created_by_type (admin/advisor), advisor_auto_detected, co_supervisor_can_manage_meetings
+
+Report
+- Fields: group_id, area_of_interest_id, type (general/final), project_title, abstract_md, extra_input, supervisor_message, keywords (JSON or string), status, approved_at/by
+- Scopes: approved, final, forGroup, ofType
+- Helpers: isDraft/Submitted/UnderReview/Approved, canBeApproved, hasSubmissions, status badge helpers
+
+Meeting
+- Fields: group_id, meeting_date, discussed_topics, outcomes
+- Relationships: group, attendances; computed: present_count, total_count
+
+StudentReportSubmission
+- One per student per report; stores file path, name, size, mime, student_id (user id), report_id
+- Files stored in public disk under student-submissions/
+
+ReportAnnotationSession
+- Versioned annotation payload per submission
+- Fields: report_id, submission_id, supervisor_id (user id of sender), version, message, annotations_json, annotated_file_path, is_sent, sent_at, created_by_type
+
+Supervisor
+- Faculty profile synchronized with external API; relates to AOIs and groups
+- Rank priority used in ranking lottery
+- Capacity via thesis_limit and computed available_slots
+
+AreaOfInterest
+- Active/inactive; linked to supervisors and groups
+
+Batch
+- batch_number, is_active, display_name/description; synced via API
+
+GroupPanelMember
+- Associates a supervisor with a group as a panel member (review-only role)
+
+---
+
+## 23) Security, Storage, and Logging
+
+Security
+- CSRF protection on all forms
+- HTTPS enforced in production environment
+- Session regeneration on login
+- Passwords hashed (bcrypt)
+- Role-based route guards + per-action authorization checks in controllers/models
+
+Storage
+- Public disk for submissions and PDFs
+- Annotation sessions may persist additional generated files when applicable
+
+Logging
+- Extensive logs for:
+  - Group operations (admin/advisor)
+  - Notifications fan-out
+  - Report lifecycle events
+  - Meeting PDF generation
+  - Performance export/tests
+
+---
+
+## 24) Support
+
+- Refer to this features guide and related guides:
+  - PERFORMANCE_MONITORING_GUIDE.md
+  - SUPERVISOR_ASSIGNMENT_ALGORITHM.md
+  - PROJECT_SETUP_GUIDE.md
+- Common issues:
+  - Login: verify credentials and API availability
+  - Group assignment: confirm batch eligibility and AOIs
+  - Excel upload: validate file format, headers, and advisor’s students
+  - Performance: clear cache and refresh metrics
+
+---
+
+Document Version: 2.1
+System Version: 1.0.0
