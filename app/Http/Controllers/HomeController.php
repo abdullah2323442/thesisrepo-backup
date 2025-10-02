@@ -5,98 +5,208 @@ namespace App\Http\Controllers;
 use App\Models\Report;
 use App\Models\Supervisor;
 use App\Models\AreaOfInterest;
+use App\Models\GroupStudent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 
 class HomeController extends Controller
 {
     /**
-     * Display the public thesis repository
+     * Display the public thesis repository with advanced search
      */
     public function index(Request $request)
     {
+        // Validate and sanitize inputs
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:255',
+            'keywords' => 'nullable|string|max:500',
+            'area_of_interest' => 'nullable|integer|exists:area_of_interests,id',
+            'year_from' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
+            'supervisor' => 'nullable|integer|exists:supervisors,id',
+            'sort' => ['nullable', Rule::in(['newest', 'oldest', 'title'])],
+        ]);
+
+        // Build the query with optimized eager loading
         $query = Report::approved()
             ->final()
-            ->with(['group.students', 'group.supervisor', 'approver', 'areaOfInterest'])
+            ->with([
+                'group.students',
+                'group.supervisor',
+                'approver',
+                'areaOfInterest'
+            ])
             ->latest('approved_at');
 
-        // Search functionality
+        // Advanced search functionality
         if ($request->filled('search')) {
-            $searchTerm = $request->search;
-            $query->where(function ($q) use ($searchTerm) {
+            $searchTerm = trim($request->search);
+            $searchTerms = $this->parseSearchTerms($searchTerm);
+            
+            $query->where(function ($q) use ($searchTerm, $searchTerms) {
+                // Search in project title (highest priority)
                 $q->where('project_title', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('abstract_md', 'LIKE', "%{$searchTerm}%");
+                  // Search in abstract
+                  ->orWhere('abstract_md', 'LIKE', "%{$searchTerm}%")
+                  // Search in keywords JSON field
+                  ->orWhere('keywords', 'LIKE', "%{$searchTerm}%")
+                  // Search in extra input field
+                  ->orWhere('extra_input', 'LIKE', "%{$searchTerm}%");
+                
+                // Search by author names (student names)
+                $q->orWhereHas('group.students', function ($studentQuery) use ($searchTerm, $searchTerms) {
+                    $studentQuery->where(function ($nameQuery) use ($searchTerm, $searchTerms) {
+                        $nameQuery->where('student_name', 'LIKE', "%{$searchTerm}%")
+                                  ->orWhere('student_id', 'LIKE', "%{$searchTerm}%");
+                        
+                        // Search for individual terms in student names
+                        foreach ($searchTerms as $term) {
+                            if (strlen($term) >= 3) {
+                                $nameQuery->orWhere('student_name', 'LIKE', "%{$term}%");
+                            }
+                        }
+                    });
+                });
+                
+                // Search by supervisor name
+                $q->orWhereHas('group.supervisor', function ($supervisorQuery) use ($searchTerm, $searchTerms) {
+                    $supervisorQuery->where(function ($nameQuery) use ($searchTerm, $searchTerms) {
+                        $nameQuery->where('fullname', 'LIKE', "%{$searchTerm}%")
+                                  ->orWhere('name', 'LIKE', "%{$searchTerm}%");
+                        
+                        // Search for individual terms in supervisor names
+                        foreach ($searchTerms as $term) {
+                            if (strlen($term) >= 3) {
+                                $nameQuery->orWhere('fullname', 'LIKE', "%{$term}%");
+                            }
+                        }
+                    });
+                });
             });
         }
 
-        // Filter by keywords
+        // Filter by keywords (comma-separated)
         if ($request->filled('keywords')) {
-            $keywords = array_map('trim', explode(',', $request->keywords));
-            $query->where(function ($q) use ($keywords) {
-                foreach ($keywords as $keyword) {
-                    $q->orWhere('keywords', 'LIKE', "%{$keyword}%");
-                }
-            });
+            $keywords = $this->parseKeywords($request->keywords);
+            
+            if (!empty($keywords)) {
+                $query->where(function ($q) use ($keywords) {
+                    foreach ($keywords as $keyword) {
+                        // Search in keywords JSON field
+                        $q->orWhere('keywords', 'LIKE', "%{$keyword}%")
+                          // Also search in title and abstract for better results
+                          ->orWhere('project_title', 'LIKE', "%{$keyword}%")
+                          ->orWhere('abstract_md', 'LIKE', "%{$keyword}%");
+                    }
+                });
+            }
         }
 
-        // Filter by year range
+        // Filter by publication year
         if ($request->filled('year_from')) {
-            $query->whereRaw("strftime('%Y', approved_at) >= ?", [$request->year_from]);
-        }
-        if ($request->filled('year_to')) {
-            $query->whereRaw("strftime('%Y', approved_at) <= ?", [$request->year_to]);
+            $yearFrom = (int) $request->year_from;
+            $query->whereRaw("CAST(strftime('%Y', approved_at) AS INTEGER) >= ?", [$yearFrom]);
         }
 
         // Filter by supervisor
         if ($request->filled('supervisor')) {
-            $query->whereHas('group', function ($q) use ($request) {
-                $q->where('supervisor_id', $request->supervisor);
+            $supervisorId = (int) $request->supervisor;
+            $query->whereHas('group', function ($q) use ($supervisorId) {
+                $q->where('supervisor_id', $supervisorId);
             });
         }
 
         // Filter by area of interest
         if ($request->filled('area_of_interest')) {
-            $query->where('area_of_interest_id', $request->area_of_interest);
+            $areaId = (int) $request->area_of_interest;
+            $query->where('area_of_interest_id', $areaId);
         }
 
-        // Sorting
+        // Sorting with validation
         $sortBy = $request->get('sort', 'newest');
         switch ($sortBy) {
             case 'oldest':
                 $query->oldest('approved_at');
                 break;
             case 'title':
-                $query->orderBy('project_title');
+                $query->orderBy('project_title', 'asc');
                 break;
+            case 'newest':
             default:
                 $query->latest('approved_at');
+                break;
         }
 
+        // Paginate results with query string preservation
         $reports = $query->paginate(12)->withQueryString();
 
-        // Get all active supervisors
-        $supervisors = Supervisor::where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        // Cache static data for better performance (5 minutes cache)
+        $supervisors = Cache::remember('active_supervisors', 300, function () {
+            return Supervisor::where('is_active', true)
+                ->orderBy('fullname')
+                ->get(['id', 'fullname', 'name']);
+        });
 
-        $availableYears = Report::approved()
-            ->final()
-            ->selectRaw("strftime('%Y', approved_at) as year")
-            ->distinct()
-            ->orderBy('year', 'desc')
-            ->pluck('year');
+        $availableYears = Cache::remember('available_report_years', 300, function () {
+            return Report::approved()
+                ->final()
+                ->selectRaw("CAST(strftime('%Y', approved_at) AS INTEGER) as year")
+                ->distinct()
+                ->orderByRaw('year DESC')
+                ->pluck('year')
+                ->filter();
+        });
 
-        // Get all active areas of interest
-        $areasOfInterest = AreaOfInterest::where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $areasOfInterest = Cache::remember('active_areas_of_interest', 300, function () {
+            return AreaOfInterest::where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        });
 
-        // Get popular keywords
+        // Get popular keywords (cached for 10 minutes)
         $popularKeywords = $this->getPopularKeywords();
 
-        return view('home', compact('reports', 'supervisors', 'availableYears', 'areasOfInterest', 'popularKeywords'));
+        return view('home', compact(
+            'reports',
+            'supervisors',
+            'availableYears',
+            'areasOfInterest',
+            'popularKeywords'
+        ));
+    }
+
+    /**
+     * Parse search terms into individual words for better matching
+     */
+    private function parseSearchTerms(string $searchTerm): array
+    {
+        // Remove special characters and split by spaces
+        $searchTerm = preg_replace('/[^\w\s-]/u', ' ', $searchTerm);
+        $terms = array_filter(array_map('trim', explode(' ', $searchTerm)));
+        
+        // Remove very short terms (less than 2 characters)
+        return array_filter($terms, function($term) {
+            return strlen($term) >= 2;
+        });
+    }
+
+    /**
+     * Parse and sanitize keywords from comma-separated string
+     */
+    private function parseKeywords(string $keywordsString): array
+    {
+        $keywords = array_map('trim', explode(',', $keywordsString));
+        
+        // Filter out empty keywords and sanitize
+        $keywords = array_filter($keywords, function($keyword) {
+            return !empty($keyword) && strlen($keyword) >= 2;
+        });
+        
+        // Limit to 10 keywords to prevent abuse
+        return array_slice($keywords, 0, 10);
     }
 
     /**
@@ -174,33 +284,34 @@ class HomeController extends Controller
         return Storage::disk('public')->download($submission->file_path, $submission->original_filename);
     }
 
-    
     /**
-     * Get popular keywords from approved reports
+     * Get popular keywords from approved reports with caching
      */
     private function getPopularKeywords()
     {
-        $keywordCounts = [];
-        
-        $reports = Report::approved()
-            ->final()
-            ->whereNotNull('keywords')
-            ->get(['keywords']);
+        return Cache::remember('popular_keywords', 600, function () {
+            $keywordCounts = [];
+            
+            $reports = Report::approved()
+                ->final()
+                ->whereNotNull('keywords')
+                ->get(['keywords']);
 
-        foreach ($reports as $report) {
-            $keywords = json_decode($report->keywords, true);
-            if (is_array($keywords)) {
-                foreach ($keywords as $keyword) {
-                    $keyword = trim(strtolower($keyword));
-                    if (!empty($keyword)) {
-                        $keywordCounts[$keyword] = ($keywordCounts[$keyword] ?? 0) + 1;
+            foreach ($reports as $report) {
+                $keywords = json_decode($report->keywords, true);
+                if (is_array($keywords)) {
+                    foreach ($keywords as $keyword) {
+                        $keyword = trim(strtolower($keyword));
+                        if (!empty($keyword) && strlen($keyword) >= 2) {
+                            $keywordCounts[$keyword] = ($keywordCounts[$keyword] ?? 0) + 1;
+                        }
                     }
                 }
             }
-        }
 
-        // Sort by count and get top 20
-        arsort($keywordCounts);
-        return array_slice($keywordCounts, 0, 20, true);
+            // Sort by count and get top 20
+            arsort($keywordCounts);
+            return array_slice($keywordCounts, 0, 20, true);
+        });
     }
 }
