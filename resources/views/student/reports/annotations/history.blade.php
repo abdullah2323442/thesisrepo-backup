@@ -69,23 +69,6 @@
                                 <span><strong>Annotations:</strong> {{ count($session->annotations_json ?? []) }}</span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <a href="{{ route('student.reports.submissions.annotations.view', [$report, $submission, $session]) }}"
-                                class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                View
-                            </a>
-                            <a href="{{ route('student.reports.submissions.annotations.download', [$report, $submission, $session]) }}"
-                                class="inline-flex items-center px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                Download
-                            </a>
-                        </div>
                     </div>
 
                     <!-- General Feedback -->
@@ -181,7 +164,7 @@
                                 <div class="group relative">
                                     <!-- Page Card -->
                                     <div class="bg-white rounded-lg border-2 border-indigo-200 hover:border-indigo-400 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md transform hover:-translate-y-1"
-                                         onclick="jumpToPage{{ $session->id }}({{ $pageNum }})">
+                                         onclick="event.preventDefault(); event.stopPropagation(); jumpToPage{{ $session->id }}({{ $pageNum }}); return false;">
                                         <!-- Page Header -->
                                         <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-2 rounded-t-lg">
                                             <div class="flex items-center justify-between">
@@ -270,18 +253,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Show PDF Button -->
-                    <div class="text-center mb-4">
-                        <button onclick="togglePDFViewer{{ $session->id }}()" id="showPdfBtn{{ $session->id }}" 
-                            class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                            </svg>
-                            Show Annotated PDF
-                        </button>
                     </div>
 
                     <!-- PDF Viewer with Annotations (Hidden by default) -->
@@ -391,10 +362,10 @@
             <div>
                 <h4 class="font-medium mb-2">How to Use:</h4>
                 <ul class="space-y-1">
-                    <li>• Click "View" to see annotations on the PDF</li>
-                    <li>• Click "Download" to get the annotated PDF file</li>
-                    <li>• Click comment icons (💬) to read specific feedback</li>
-                    <li>• Use the annotation summary to understand feedback</li>
+                    <li>• Click "View Annotations" to see detailed feedback</li>
+                    <li>• Review the page overview to see which pages have feedback</li>
+                    <li>• Read comment previews to understand key feedback points</li>
+                    <li>• Use the annotation summary to track feedback types</li>
                 </ul>
             </div>
         </div>
@@ -623,19 +594,10 @@ class PDFAnnotationHistoryViewer {
 // Session {{ $session->id }} functions
 function togglePDFViewer{{ $session->id }}() {
     const pdfViewer = document.getElementById('pdfViewer{{ $session->id }}');
-    const showBtn = document.getElementById('showPdfBtn{{ $session->id }}');
     
     if (pdfViewer.classList.contains('hidden')) {
         // Show PDF viewer
         pdfViewer.classList.remove('hidden');
-        showBtn.innerHTML = `
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-            </svg>
-            Hide Annotated PDF
-        `;
-        showBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-        showBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
         
         // Initialize PDF viewer if not already done
         if (!pdfViewers[{{ $session->id }}]) {
@@ -644,15 +606,6 @@ function togglePDFViewer{{ $session->id }}() {
     } else {
         // Hide PDF viewer
         pdfViewer.classList.add('hidden');
-        showBtn.innerHTML = `
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-            </svg>
-            Show Annotated PDF
-        `;
-        showBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
-        showBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
     }
 }
 
@@ -690,10 +643,9 @@ function showComment{{ $session->id }}(comment) {
 }
 
 function jumpToPage{{ $session->id }}(pageNum) {
-    // First, show the PDF viewer if it's hidden
     const pdfViewer = document.getElementById('pdfViewer{{ $session->id }}');
-    const showBtn = document.getElementById('showPdfBtn{{ $session->id }}');
     
+    // If PDF viewer is hidden, show it first using the same function as the button
     if (pdfViewer.classList.contains('hidden')) {
         togglePDFViewer{{ $session->id }}();
         

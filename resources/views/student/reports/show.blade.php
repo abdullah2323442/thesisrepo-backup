@@ -469,11 +469,11 @@
                 @if($currentSubmission)
                     <div class="mt-8 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200">
                         <div class="flex justify-between items-center">
-                            <div>
+                            <!-- <div>
                                 <h4 class="text-sm font-semibold text-gray-800 mb-1">Need to review feedback in detail?</h4>
                                 <p class="text-xs text-gray-600">View all annotations with interactive PDF viewer and detailed comment modals.</p>
-                            </div>
-                            <div class="flex items-center gap-3">
+                            </div> -->
+                            <!-- <div class="flex items-center gap-3">
                                 @if($annotationSessions->count() > 0)
                                     <a href="{{ route('student.reports.submissions.annotations.history', [$report, $currentSubmission]) }}" 
                                        class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors shadow-sm">
@@ -491,7 +491,7 @@
                                     </svg>
                                     Download PDF
                                 </a>
-                            </div>
+                            </div> -->
                         </div>
                     </div>
                 @endif
