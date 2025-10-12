@@ -977,32 +977,32 @@ sequenceDiagram
 ## System Architecture Overview
 
 ```mermaid
-graph TB
-    subgraph "Presentation Layer"
+flowchart TB
+    subgraph Presentation["Presentation Layer"]
         Browser[Web Browser]
         Views[Blade Views]
     end
     
-    subgraph "Application Layer"
+    subgraph Application["Application Layer"]
         Routes[Routes]
         Middleware[Middleware]
         Controllers[Controllers]
         Requests[Form Requests]
     end
     
-    subgraph "Business Logic Layer"
+    subgraph Business["Business Logic Layer"]
         Services[Services]
         Models[Eloquent Models]
         Notifications[Notifications]
     end
     
-    subgraph "Data Layer"
+    subgraph Data["Data Layer"]
         Database[(SQLite Database)]
         Cache[(Cache)]
         Storage[File Storage]
     end
     
-    subgraph "External Layer"
+    subgraph External["External Layer"]
         ExternalAPI[External API]
     end
     
