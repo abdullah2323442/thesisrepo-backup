@@ -465,26 +465,20 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant System
-    participant Cache
     participant ExternalAPI
     participant Database
 
-    System->>Cache: Check Cache
+    System->>ExternalAPI: Request Data
     
-    alt Data in Cache
-        Cache-->>System: Return Cached Data
-    else No Cache
-        System->>ExternalAPI: Request Data
-        
-        alt API Success
-            ExternalAPI-->>System: Return Data
-            System->>Cache: Store in Cache
-            System->>Database: Save to Database
-        else API Fails
-            System->>Database: Use Local Data
-            Database-->>System: Return Fallback Data
-        end
+    alt API Success
+        ExternalAPI-->>System: Return Data
+        System->>Database: Save Data
+    else API Fails
+        System->>Database: Use Local Data
+        Database-->>System: Fallback Data
     end
+    
+    System->>System: Return Data to User
 ```
 
 ---
