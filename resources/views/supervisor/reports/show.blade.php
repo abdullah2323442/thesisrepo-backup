@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('supervisor.reports.edit', $report) }}"
+                    <!-- <a href="{{ route('supervisor.reports.edit', $report) }}"
                         class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -51,7 +51,7 @@
                             </path>
                         </svg>
                         Edit Report
-                    </a>
+                    </a> -->
                     <form action="{{ route('supervisor.reports.destroy', $report) }}" method="POST" class="inline-block"
                         onsubmit="return confirm('Are you sure you want to delete this report? This action cannot be undone and will also delete all comments.')">
                         @csrf
