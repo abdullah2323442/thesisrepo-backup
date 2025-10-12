@@ -469,28 +469,21 @@ sequenceDiagram
     participant ExternalAPI
     participant Database
 
-    System->>System: Check Rate Limit
+    System->>Cache: Check Cache
     
-    alt Rate Limit OK
-        System->>Cache: Check Cache
+    alt Data in Cache
+        Cache-->>System: Return Cached Data
+    else No Cache
+        System->>ExternalAPI: Request Data
         
-        alt Cache Hit
-            Cache-->>System: Return Cached Data
-        else Cache Miss
-            System->>ExternalAPI: HTTP Request
-            
-            alt API Success
-                ExternalAPI-->>System: Return Data
-                System->>Cache: Store in Cache
-                System->>Database: Sync to Database
-            else API Error
-                ExternalAPI-->>System: Error
-                System->>Database: Get Fallback Data
-                Database-->>System: Local Data
-            end
+        alt API Success
+            ExternalAPI-->>System: Return Data
+            System->>Cache: Store in Cache
+            System->>Database: Save to Database
+        else API Fails
+            System->>Database: Use Local Data
+            Database-->>System: Return Fallback Data
         end
-    else Rate Limit Exceeded
-        System->>System: Return Error (429)
     end
 ```
 
