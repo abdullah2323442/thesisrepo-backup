@@ -19,7 +19,7 @@ Teacher is NOT a role with inherent features in the ThesisRepo system. It's mere
 ```mermaid
 graph TB
     %% Actors
-    Teacher[("👤 Teacher<br/>(Login Type)")]
+    Teacher[("👤 Teacher<br/>Login Type")]
     
     %% System Boundary
     subgraph System["ThesisRepo - Teacher Access System"]
@@ -27,7 +27,7 @@ graph TB
         subgraph BasicAccess["Basic Teacher Access"]
             UC1["Login to System"]
             UC2["View Teacher Dashboard"]
-            UC3["See Available Panels<br/>(Based on Assignments)"]
+            UC3["See Available Panels<br/>Based on Assignments"]
             UC4["View Profile Information"]
         end
         
@@ -40,14 +40,14 @@ graph TB
                 UC7["Manage Meetings"]
                 UC8["Create/Edit/Delete Reports"]
                 UC9["Approve Thesis"]
-                UC10["Add Comments on Reports<br/>(ONLY for supervised groups)"]
+                UC10["Add Comments on Reports<br/>ONLY for supervised groups"]
             end
             
             %% Co-Supervisor Access
             subgraph CoSupervisorAccess["IF Assigned as Co-Supervisor"]
                 UC11["Access Co-Supervisor Panel"]
                 UC12["View Co-Supervised Groups"]
-                UC13["Conditional Meeting Management<br/>(if permission granted)"]
+                UC13["Conditional Meeting Management<br/>if permission granted"]
                 UC14["Review Reports"]
                 UC15["Annotate Submissions"]
             end
@@ -62,7 +62,7 @@ graph TB
             
             %% Advisor Access
             subgraph AdvisorAccess["IF Has Teacher Role"]
-                UC20["Access Advisor Panel<br/>(But needs student assignments)"]
+                UC20["Access Advisor Panel<br/>But needs student assignments"]
             end
             
             %% Admin Access
@@ -76,8 +76,8 @@ graph TB
         
         %% No Assignment State
         subgraph NoAssignment["If No Assignments"]
-            UC25["View Dashboard Only<br/>(No functional access)"]
-            UC26["See 'No groups assigned' messages"]
+            UC25["View Dashboard Only<br/>No functional access"]
+            UC26["See No groups assigned messages"]
         end
     end
     
@@ -144,14 +144,14 @@ graph LR
         Check{Check Assignments<br/>in Database}
         
         %% Possible Outcomes
-        NoAccess[❌ No Access<br/>"No groups assigned"]
-        SupervisorPanel[✓ Supervisor Panel<br/>Full Features]
-        CoSupervisorPanel[✓ Co-Supervisor Panel<br/>Limited Features]
-        PanelMemberPanel[✓ Panel Member Panel<br/>Review Only]
-        AdminPanel[✓ Admin Panel<br/>System Management]
+        NoAccess[No Access<br/>No groups assigned]
+        SupervisorPanel[Supervisor Panel<br/>Full Features]
+        CoSupervisorPanel[Co-Supervisor Panel<br/>Limited Features]
+        PanelMemberPanel[Panel Member Panel<br/>Review Only]
+        AdminPanel[Admin Panel<br/>System Management]
         
         %% Empty Panels
-        EmptyAdvisor[Advisor Panel<br/>(Empty - No Students)]
+        EmptyAdvisor[Advisor Panel<br/>Empty - No Students]
     end
     
     Teacher --> Dashboard
@@ -325,12 +325,12 @@ if (!$supervisor || $report->group->supervisor_id !== $supervisor->id) {
 
 | Feature | Requirement | Without Assignment |
 |---------|------------|-------------------|
-| Login | Teacher credentials | ✓ Can login |
-| View Dashboard | Authenticated as teacher | ✓ Can view |
+| Login | Teacher credentials | ✅ Can login |
+| View Dashboard | Authenticated as teacher | ✅ Can view |
 | Supervisor Panel | supervisor_id in groups table | ❌ No access/Empty |
 | Co-Supervisor Panel | co_supervisor_id in groups table | ❌ No access/Empty |
 | Panel Member Panel | supervisor_id in group_panel_members | ❌ No access/Empty |
-| Advisor Panel | Has teacher role | ✓ Can access but empty |
+| Advisor Panel | Has teacher role | ✅ Can access but empty |
 | Admin Panel | type_id includes '1' | ❌ No access |
 | Comment on Reports | Must be supervisor of that group | ❌ Cannot comment |
 
