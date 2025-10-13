@@ -216,23 +216,106 @@ sequenceDiagram
     System-->>Advisor: Display results
 ```
 
-#### 4.2.2 Assignment Strategies
+#### 4.2.2 Area of Interest Based Assignment
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Strategy: Match groups with supervisor expertise
+    
+    Advisor->>System: Select AOI-based assignment
+    System->>Database: Retrieve unassigned groups
+    System->>Database: Retrieve supervisors with expertise areas
+    
+    loop For each group
+        System->>System: Identify group's area of interest
+        System->>System: Find matching supervisors
+        System->>System: Random selection from matches
+        System->>Database: Assign supervisor to group
+    end
+    
+    System-->>Advisor: Display assignment results
+    
+    Note over System: Ensures expertise alignment<br/>May result in uneven distribution
+```
+
+#### 4.2.3 Ranking Based Assignment
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Strategy: Fair distribution by designation rank
+    
+    Advisor->>System: Select ranking-based assignment
+    System->>Database: Retrieve unassigned groups
+    System->>Database: Retrieve supervisors by designation
+    System->>System: Sort by rank (Professor to Lecturer)
+    
+    loop Round-robin assignment
+        System->>System: Select next supervisor in rotation
+        System->>System: Verify supervisor capacity
+        System->>Database: Assign supervisor to group
+        System->>System: Move to next supervisor
+        
+        Note over System: Each supervisor gets one group<br/>before anyone gets second
+    end
+    
+    System-->>Advisor: Display assignment results
+    
+    Note over System: Ensures equal distribution<br/>Ignores expertise matching
+```
+
+#### 4.2.4 Hybrid Assignment Strategy
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Strategy: Balance expertise and fair distribution
+    
+    Advisor->>System: Select hybrid assignment
+    System->>Database: Retrieve unassigned groups
+    System->>Database: Retrieve supervisors with expertise
+    
+    loop For each group
+        System->>System: Find area-matching supervisors
+        System->>System: Check assignment counts
+        System->>System: Select supervisor with minimum load
+        
+        alt Multiple candidates with same load
+            System->>System: Apply rank-based selection
+        end
+        
+        System->>Database: Assign supervisor to group
+    end
+    
+    System-->>Advisor: Display assignment results
+    
+    Note over System: Optimizes both expertise match<br/>and workload distribution
+```
+
+#### 4.2.5 Assignment Strategy Comparison
 ```mermaid
 graph TD
-    Start[Assignment Initiation]
+    Start[Assignment Strategy Selection]
     
-    Start --> Strategy{Select Strategy}
-    Strategy --> AOI[Area-Based]
-    Strategy --> Rank[Ranking-Based]
-    Strategy --> Combined[Hybrid Approach]
+    Start --> AOI[Area-Based Strategy]
+    Start --> Rank[Ranking-Based Strategy]
+    Start --> Hybrid[Hybrid Strategy]
     
-    AOI --> AOIProcess[Match expertise areas]
-    Rank --> RankProcess[Distribute by seniority]
-    Combined --> CombinedProcess[Balance expertise and load]
+    AOI --> AOIResult[Expertise-focused<br/>Random within matches<br/>Possible uneven load]
+    Rank --> RankResult[Equal distribution<br/>Round-robin assignment<br/>Ignores expertise]
+    Hybrid --> HybridResult[Balanced approach<br/>Expertise with fairness<br/>Optimal distribution]
     
-    AOIProcess --> Result[Assignment Complete]
-    RankProcess --> Result
-    CombinedProcess --> Result
+    style Start fill:#f9f,stroke:#333,stroke-width:2px
+    style AOIResult fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
+    style RankResult fill:#e3f2fd,stroke:#2196f3,stroke-width:1px
+    style HybridResult fill:#fff3e0,stroke:#ff9800,stroke-width:1px
 ```
 
 ### 4.3 Data Import/Export
