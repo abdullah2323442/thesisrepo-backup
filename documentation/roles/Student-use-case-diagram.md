@@ -136,11 +136,11 @@ graph LR
     %% System Boundary
     subgraph System["Student Portal"]
         %% Core Use Cases
-        UC1[View Dashboard<br/>- Group Info<br/>- Members<br/>- Supervisor Details]
-        UC2[Manage Submissions<br/>- Upload Documents<br/>- Edit/Delete<br/>- Download Files]
-        UC3[Track Progress<br/>- View Reports<br/>- Check Status<br/>- Read Comments]
-        UC4[View Annotations<br/>- Feedback History<br/>- Download Sessions]
-        UC5[Notifications<br/>- Updates<br/>- Mark as Read<br/>- View History]
+        UC1["View Dashboard - Group Info, Members, Supervisor Details"]
+        UC2["Manage Submissions - Upload Documents, Edit/Delete, Download Files"]
+        UC3["Track Progress - View Reports, Check Status, Read Comments"]
+        UC4["View Annotations - Feedback History, Download Sessions"]
+        UC5["Notifications - Updates, Mark as Read, View History"]
     end
     
     %% Connections

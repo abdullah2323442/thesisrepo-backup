@@ -158,11 +158,11 @@ graph LR
     %% System Boundary
     subgraph System["Admin Management System"]
         %% Core Use Cases
-        UC1[Manage Areas of Interest<br/>- CRUD Operations<br/>- Bulk Create<br/>- Toggle Status]
-        UC2[Manage Supervisors<br/>- Sync from API<br/>- Edit Limits<br/>- AOI Assignments]
-        UC3[Manage Batches<br/>- Sync from API<br/>- Activate/Deactivate<br/>- Compare & Edit]
-        UC4[Manage Global Groups<br/>- Create/Delete<br/>- Assign Members<br/>- Assign AOIs]
-        UC5[Monitor Performance<br/>- View Metrics<br/>- System Health<br/>- Run Tests]
+        UC1["Manage Areas of Interest - CRUD Operations, Bulk Create, Toggle Status"]
+        UC2["Manage Supervisors - Sync from API, Edit Limits, AOI Assignments"]
+        UC3["Manage Batches - Sync from API, Activate/Deactivate, Compare & Edit"]
+        UC4["Manage Global Groups - Create/Delete, Assign Members, Assign AOIs"]
+        UC5["Monitor Performance - View Metrics, System Health, Run Tests"]
     end
     
     %% Connections

@@ -156,11 +156,11 @@ graph LR
     %% System Boundary
     subgraph System["Advisor Management System"]
         %% Core Use Cases
-        UC1[Manage Students<br/>- List/Search<br/>- View Details<br/>- Refresh Data]
-        UC2[Create Groups<br/>- Auto/Manual<br/>- Assign Students<br/>- Set AOIs]
-        UC3[Assign Supervisors<br/>- Manual/Lottery<br/>- Check Capacity<br/>- Preview]
-        UC4[Excel Operations<br/>- Download Template<br/>- Bulk Upload<br/>- Validate]
-        UC5[Query System<br/>- Available Supervisors<br/>- Filter by AOI<br/>- Check Capacity]
+        UC1["Manage Students - List/Search, View Details, Refresh Data"]
+        UC2["Create Groups - Auto/Manual, Assign Students, Set AOIs"]
+        UC3["Assign Supervisors - Manual/Lottery, Check Capacity, Preview"]
+        UC4["Excel Operations - Download Template, Bulk Upload, Validate"]
+        UC5["Query System - Available Supervisors, Filter by AOI, Check Capacity"]
     end
     
     %% Connections
@@ -191,7 +191,7 @@ graph TD
         subgraph GroupFormation["Group Formation Process"]
             GetStudents[Get Students from API]
             CreateGroup[Create Group]
-            AssignStudents[Assign Students<br/>(Max 3)]
+            AssignStudents["Assign Students (Max 3)"]
             SetAOI[Set Areas of Interest]
             ValidateGroup[Validate Group]
             
@@ -282,10 +282,10 @@ graph LR
         Input[Student Groups]
         
         subgraph Methods["Assignment Methods"]
-            Manual[Manual<br/>- Direct Selection<br/>- Capacity Check]
-            AOI[AOI Lottery<br/>- Match Interests<br/>- Random Selection]
-            Ranking[Ranking Lottery<br/>- Priority Based<br/>- Weighted Random]
-            Combined[Combined<br/>- AOI + Ranking<br/>- Balanced]
+            Manual["Manual - Direct Selection, Capacity Check"]
+            AOI["AOI Lottery - Match Interests, Random Selection"]
+            Ranking["Ranking Lottery - Priority Based, Weighted Random"]
+            Combined["Combined - AOI + Ranking, Balanced"]
         end
         
         Output[Assigned Supervisors]

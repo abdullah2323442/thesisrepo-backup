@@ -108,9 +108,9 @@ graph LR
     %% System Boundary
     subgraph System["Panel Member Portal"]
         %% Core Use Cases
-        UC1[View Groups<br/>- Assigned Groups<br/>- Student Details]
-        UC2[Review Reports<br/>- View Submissions<br/>- Mark Status<br/>- Download Files]
-        UC3[Provide Feedback<br/>- Annotate PDFs<br/>- Send Comments<br/>- View History]
+        UC1["View Groups - Assigned Groups, Student Details"]
+        UC2["Review Reports - View Submissions, Mark Status, Download Files"]
+        UC3["Provide Feedback - Annotate PDFs, Send Comments, View History"]
     end
     
     %% Connections

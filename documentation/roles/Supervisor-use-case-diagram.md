@@ -151,11 +151,11 @@ graph LR
     %% System Boundary
     subgraph System["Supervisor Management System"]
         %% Core Use Cases
-        UC1[Manage Groups<br/>- View Assignments<br/>- Set Permissions<br/>- Track Roles]
-        UC2[Conduct Meetings<br/>- Schedule<br/>- Track Attendance<br/>- Export PDF]
-        UC3[Manage Reports<br/>- Create/Edit<br/>- Review Status<br/>- Final Approval]
-        UC4[Review Submissions<br/>- View/Download<br/>- Annotate PDFs<br/>- Send Feedback]
-        UC5[Thesis Approval<br/>- Finalize<br/>- Approve<br/>- Publish]
+        UC1["Manage Groups - View Assignments, Set Permissions, Track Roles"]
+        UC2["Conduct Meetings - Schedule, Track Attendance, Export PDF"]
+        UC3["Manage Reports - Create/Edit, Review Status, Final Approval"]
+        UC4["Review Submissions - View/Download, Annotate PDFs, Send Feedback"]
+        UC5["Thesis Approval - Finalize, Approve, Publish"]
     end
     
     %% Connections

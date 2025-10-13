@@ -50,8 +50,8 @@ graph TB
         
         %% Meeting Management (Conditional)
         subgraph Meetings["Meeting Management*"]
-            UC5["Create Meeting<br/>(if permitted)"]
-            UC6["Edit Meeting<br/>(if permitted)"]
+            UC5["Create Meeting (if permitted)"]
+            UC6["Edit Meeting (if permitted)"]
             UC7["View All Meetings"]
             UC8["Check Permission Status"]
         end
@@ -127,10 +127,10 @@ graph LR
     %% System Boundary
     subgraph System["Co-Supervisor Portal"]
         %% Core Use Cases
-        UC1[View Groups<br/>- Assigned Groups<br/>- Permissions<br/>- Student Info]
-        UC2[Meetings*<br/>- Create/Edit<br/>- View All<br/>- Check Permission]
-        UC3[Review Reports<br/>- View Details<br/>- Mark Status<br/>- Download]
-        UC4[Annotate<br/>- PDF Markup<br/>- Send Feedback<br/>- View History]
+        UC1["View Groups - Assigned Groups, Permissions, Student Info"]
+        UC2["Meetings* - Create/Edit, View All, Check Permission"]
+        UC3["Review Reports - View Details, Mark Status, Download"]
+        UC4["Annotate - PDF Markup, Send Feedback, View History"]
     end
     
     %% Connections
@@ -140,7 +140,7 @@ graph LR
     CoSupervisor --> UC4
     
     %% Note
-    UC2 -.-> Note[*Requires Permission<br/>from Main Supervisor]
+    UC2 -.-> Note["*Requires Permission from Main Supervisor"]
     
     %% Styling
     classDef actor fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
@@ -161,7 +161,7 @@ graph TD
     
     %% Permission Check Flow
     subgraph PermissionFlow["Permission-Based Access"]
-        CheckPerm{Permission<br/>Granted?}
+        CheckPerm{"Permission Granted?"}
         
         %% With Permission
         subgraph WithPerm["With Permission"]
