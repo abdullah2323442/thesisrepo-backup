@@ -1,941 +1,345 @@
-# ThesisRepo System - Sequence Diagrams
+# Sequence Diagrams - Thesis Repository Management System
 
 ## Table of Contents
-1. [Authentication & Authorization](#1-authentication--authorization)
-2. [Student Workflows](#2-student-workflows)
-3. [Supervisor Workflows](#3-supervisor-workflows)
-4. [Co-Supervisor Workflows](#4-co-supervisor-workflows)
-5. [Panel Member Workflows](#5-panel-member-workflows)
-6. [Advisor Workflows](#6-advisor-workflows)
-7. [Admin Workflows](#7-admin-workflows)
-8. [Report Management](#8-report-management)
-9. [Meeting Management](#9-meeting-management)
-10. [Notification System](#10-notification-system)
+1. [System Authentication](#1-system-authentication)
+2. [Student Operations](#2-student-operations)
+3. [Supervisor Operations](#3-supervisor-operations)
+4. [Advisor Operations](#4-advisor-operations)
+5. [Administrative Functions](#5-administrative-functions)
+6. [System Architecture](#6-system-architecture)
 
 ---
 
-## 1. Authentication & Authorization
+## 1. System Authentication
 
-### 1.1 User Login Flow
+### 1.1 User Authentication Process
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant L as Login Page
-    participant AC as AuthController
-    participant API as External API
-    participant DB as Database
-    participant S as Session
-    participant D as Dashboard
+    participant User
+    participant System
+    participant External API
+    participant Database
 
-    U->>L: Access login page
-    L->>U: Show login form
-    U->>L: Enter credentials
-    L->>AC: Submit (user, pass)
-    AC->>AC: Detect login type
+    User->>System: Submit credentials
+    System->>System: Identify user type
     
-    alt Teacher Login
-        AC->>API: POST teacher login API
-        API-->>AC: Return user data + TypeId
-        AC->>AC: Parse TypeId array
-        AC->>DB: Create/Update User record
-    else Student Login
-        AC->>API: POST student login API
-        API-->>AC: Return student data
-        AC->>DB: Create/Update User record
+    alt Faculty authentication
+        System->>External API: Validate faculty credentials
+        External API-->>System: Return user profile
+    else Student authentication
+        System->>External API: Validate student credentials
+        External API-->>System: Return student data
     end
     
-    AC->>S: Store session data
-    AC->>D: Redirect to dashboard
-    D->>DB: Check user roles
-    D-->>U: Display role-based dashboard
+    System->>Database: Store/Update user record
+    System->>System: Create session
+    System-->>User: Redirect to dashboard
 ```
 
 ### 1.2 Role-Based Access Control
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant R as Route
-    participant M as Middleware
-    participant DB as Database
-    participant C as Controller
-    participant V as View
+    participant User
+    participant System
+    participant Database
 
-    U->>R: Request protected route
-    R->>M: Check middleware
-    M->>DB: Verify user role
+    User->>System: Request resource
+    System->>Database: Verify user permissions
     
-    alt Has Required Role
-        M->>C: Allow access
-        C->>DB: Fetch role-specific data
-        C->>V: Render view
-        V-->>U: Display content
-    else No Required Role
-        M-->>U: 403 Forbidden
+    alt Authorized
+        Database-->>System: Permission granted
+        System-->>User: Display resource
+    else Unauthorized
+        Database-->>System: Permission denied
+        System-->>User: Access denied message
     end
 ```
 
 ---
 
-## 2. Student Workflows
+## 2. Student Operations
 
-### 2.1 Student Dashboard
+### 2.1 Report Submission Process
 ```mermaid
 sequenceDiagram
-    participant S as Student
-    participant DC as DashboardController
-    participant API as Student API
-    participant DB as Database
-    participant V as View
+    participant Student
+    participant System
+    participant Database
+    participant Supervisor
 
-    S->>DC: Access dashboard
-    DC->>DB: Get user info
-    DC->>API: Fetch student details
-    DC->>DB: Get group info
-    DC->>DB: Get supervisor info
-    DC->>DB: Get reports
-    DC->>DB: Get meetings
-    DC->>V: Compile dashboard data
-    V-->>S: Display dashboard
+    Student->>System: Upload report document
+    System->>System: Validate document format
+    System->>Database: Store submission
+    System->>Supervisor: Send notification
+    System-->>Student: Confirmation message
 ```
 
-### 2.2 Report Submission
+### 2.2 View Feedback and Annotations
 ```mermaid
 sequenceDiagram
-    participant S as Student
-    participant RC as ReportController
-    participant DB as Database
-    participant FS as File Storage
-    participant N as Notification
+    participant Student
+    participant System
+    participant Database
 
-    S->>RC: Access submission form
-    RC->>DB: Check report status
-    RC-->>S: Show upload form
-    S->>RC: Upload PDF file
-    RC->>RC: Validate file
-    RC->>FS: Store PDF
-    RC->>DB: Create submission record
-    RC->>N: Notify supervisor
-    RC-->>S: Submission successful
-```
-
-### 2.3 View Annotations
-```mermaid
-sequenceDiagram
-    participant S as Student
-    participant AC as AnnotationController
-    participant DB as Database
-    participant FS as File Storage
-
-    S->>AC: View annotations
-    AC->>DB: Get annotation sessions
-    AC->>DB: Get annotated files
-    AC->>FS: Retrieve PDF
-    AC-->>S: Display annotations
+    Student->>System: Request feedback
+    System->>Database: Retrieve annotations
+    Database-->>System: Return feedback data
+    System-->>Student: Display annotated document
 ```
 
 ---
 
-## 3. Supervisor Workflows
+## 3. Supervisor Operations
 
-### 3.1 Group Management
+### 3.1 Report Management
 ```mermaid
 sequenceDiagram
-    participant Su as Supervisor
-    participant GC as GroupController
-    participant DB as Database
-    participant V as View
+    participant Supervisor
+    participant System
+    participant Database
+    participant Student
 
-    Su->>GC: Access groups
-    GC->>DB: Get supervisor record
-    GC->>DB: Get assigned groups
-    GC->>DB: Get group students
-    GC->>DB: Get co-supervisor info
-    GC->>V: Prepare group data
-    V-->>Su: Display groups
+    Supervisor->>System: Create report assignment
+    System->>Database: Store report details
+    System->>Student: Notify of new assignment
+    System-->>Supervisor: Confirmation
 ```
 
-### 3.2 Report Creation
+### 3.2 Document Annotation Process
 ```mermaid
 sequenceDiagram
-    participant Su as Supervisor
-    participant RC as ReportController
-    participant DB as Database
-    participant N as NotificationService
+    participant Supervisor
+    participant System
+    participant Database
+    participant Student
 
-    Su->>RC: Create new report
-    RC->>DB: Verify supervisor
-    RC->>DB: Get group info
-    RC-->>Su: Show report form
-    Su->>RC: Submit report details
-    RC->>DB: Create report record
-    RC->>N: Notify students
-    RC-->>Su: Report created
+    Supervisor->>System: Open student submission
+    System->>Database: Retrieve document
+    Supervisor->>System: Add annotations
+    System->>Database: Save annotated version
+    System->>Student: Send notification
+    System-->>Supervisor: Save confirmation
 ```
 
-### 3.3 Meeting Record Management
+### 3.3 Meeting Documentation
 ```mermaid
 sequenceDiagram
-    participant Su as Supervisor
-    participant MC as MeetingController
-    participant DB as Database
-    participant PDF as PDF Service
+    participant Supervisor
+    participant System
+    participant Database
 
-    Su->>MC: Record meeting
-    MC->>DB: Get group students
-    MC-->>Su: Show meeting form
-    Su->>MC: Submit meeting record
-    Note over Su,MC: • Meeting date<br/>• Discussed topics<br/>• Outcomes<br/>• Attendance
-    MC->>DB: Save meeting record
-    MC->>DB: Save attendance records
+    Supervisor->>System: Record meeting details
+    System->>System: Process attendance data
+    System->>Database: Store meeting record
     
-    alt Generate Report
-        Su->>MC: Request PDF report
-        MC->>DB: Get all meetings
-        MC->>PDF: Generate report
-        PDF-->>Su: Download PDF
+    alt Generate report
+        Supervisor->>System: Request meeting report
+        System->>Database: Compile meeting history
+        System-->>Supervisor: Generate PDF report
     end
-    
-    MC-->>Su: Meeting recorded
-```
-
-### 3.4 Report Annotation
-```mermaid
-sequenceDiagram
-    participant Su as Supervisor
-    participant AC as AnnotationController
-    participant DB as Database
-    participant FS as File Storage
-    participant PDF as PDF Service
-
-    Su->>AC: Open submission
-    AC->>DB: Get submission
-    AC->>FS: Retrieve PDF
-    AC-->>Su: Display PDF viewer
-    Su->>AC: Add annotations
-    AC->>PDF: Process annotations
-    AC->>FS: Save annotated PDF
-    AC->>DB: Create annotation session
-    AC-->>Su: Annotations saved
 ```
 
 ---
 
-## 4. Co-Supervisor Workflows
+## 4. Advisor Operations
 
-### 4.1 Conditional Meeting Management
+### 4.1 Group Formation
 ```mermaid
 sequenceDiagram
-    participant CS as Co-Supervisor
-    participant MC as MeetingController
-    participant DB as Database
+    participant Advisor
+    participant System
+    participant External API
+    participant Database
 
-    CS->>MC: Access meetings
-    MC->>DB: Check co-supervisor
-    MC->>DB: Check meeting permission
-    
-    alt Has Permission
-        MC->>DB: Get meetings
-        MC-->>CS: Show meeting management
-        CS->>MC: Create/Edit meeting
-        MC->>DB: Update meeting
-        MC-->>CS: Meeting updated
-    else No Permission
-        MC-->>CS: View-only access
-    end
+    Advisor->>System: Request student list
+    System->>External API: Fetch batch students
+    External API-->>System: Return student data
+    System-->>Advisor: Display available students
+    Advisor->>System: Create groups
+    System->>Database: Store group assignments
+    System-->>Advisor: Confirmation
 ```
 
-### 4.2 Report Review
+### 4.2 Supervisor Assignment System
+
+#### 4.2.1 Automated Assignment Process
 ```mermaid
 sequenceDiagram
-    participant CS as Co-Supervisor
-    participant RC as ReportController
-    participant DB as Database
+    participant Advisor
+    participant System
+    participant Database
 
-    CS->>RC: Access reports
-    RC->>DB: Get co-supervised groups
-    RC->>DB: Get group reports
-    RC-->>CS: Display reports
-    CS->>RC: Review report
-    RC->>DB: Mark as reviewed
-    RC-->>CS: Review recorded
+    Advisor->>System: Initiate assignment process
+    System->>System: Select assignment strategy
+    System->>Database: Retrieve eligible groups
+    System->>Database: Retrieve available supervisors
+    System->>System: Execute assignment algorithm
+    System->>Database: Store assignments
+    System-->>Advisor: Display results
 ```
 
----
-
-## 5. Panel Member Workflows
-
-### 5.1 Report Evaluation
-```mermaid
-sequenceDiagram
-    participant PM as Panel Member
-    participant RC as ReportController
-    participant DB as Database
-    participant AC as AnnotationController
-
-    PM->>RC: Access assigned reports
-    RC->>DB: Get panel assignments
-    RC->>DB: Get reports
-    RC-->>PM: Show reports
-    PM->>AC: Annotate report
-    AC->>DB: Save annotations
-    AC-->>PM: Feedback saved
-```
-
----
-
-## 6. Advisor Workflows
-
-### 6.1 Student Group Creation
-```mermaid
-sequenceDiagram
-    participant Ad as Advisor
-    participant GC as GroupController
-    participant API as Student API
-    participant DB as Database
-
-    Ad->>GC: Create groups
-    GC->>API: Fetch batch students
-    GC-->>Ad: Show student list
-    Ad->>GC: Select students
-    Ad->>GC: Assign to groups
-    GC->>DB: Create group records
-    GC->>DB: Create group_students
-    GC-->>Ad: Groups created
-```
-
-### 6.2 Supervisor Assignment Lottery System
-
-#### 6.2.1 Complete Lottery Flow with Mode Selection
-```mermaid
-sequenceDiagram
-    participant Ad as Advisor
-    participant SAC as Controller
-    participant SAS as AssignmentService
-    participant DB as Database
-    participant AH as AssignmentHistory
-
-    Ad->>SAC: Select lottery criteria
-    Note over Ad,SAC: • Use AOI checkbox<br/>• Use Ranking checkbox<br/>• Batch filter (optional)
-    
-    SAC->>SAC: Determine mode
-    alt AOI + Ranking checked
-        SAC->>SAC: mode = 'both'
-    else Only AOI checked
-        SAC->>SAC: mode = 'aoi'
-    else Only Ranking checked
-        SAC->>SAC: mode = 'ranking'
-    end
-    
-    SAC->>DB: Get eligible groups
-    Note over DB: WHERE supervisor_id IS NULL<br/>AND is_manual_assignment = false<br/>AND has students<br/>AND (AOI required for 'aoi' mode)
-    
-    SAC->>DB: Begin transaction
-    SAC->>SAS: runLotteryAssignment(groups, mode)
-    
-    alt Assignment successful
-        SAS-->>SAC: Results array
-        SAC->>DB: Commit transaction
-        SAC-->>Ad: Success message with stats
-    else Assignment failed
-        SAS-->>SAC: Exception
-        SAC->>DB: Rollback transaction
-        SAC-->>Ad: Error message
-    end
-```
-
-#### 6.2.2 AOI-Based Lottery Algorithm (Mode: 'aoi')
-```mermaid
-sequenceDiagram
-    participant SAS as AssignmentService
-    participant DB as Database
-    participant AH as AssignmentHistory
-    participant P as Pools
-
-    SAS->>SAS: sortGroupsByNumber()
-    SAS->>SAS: Collect all unique AOI IDs
-    SAS->>DB: Get active supervisors with AOIs
-    SAS->>P: buildAOIPoolsWithRandomization()
-    
-    Note over P: Structure:<br/>pools[aoiId][rank] = {<br/>  supervisors: [...],<br/>  shuffled: true<br/>}
-    
-    loop For each group
-        SAS->>SAS: Get group AOI IDs (primary + fallback)
-        
-        loop For each AOI (priority order)
-            SAS->>P: Get supervisor pool for AOI
-            
-            alt Pool exists
-                SAS->>AH: Get last assigned supervisor
-                SAS->>SAS: Collect all candidates
-                Note over SAS: Exclude last assigned<br/>if others available
-                
-                SAS->>SAS: array_rand() selection
-                SAS->>DB: Update group record
-                Note over DB: SET supervisor_id,<br/>matched_area_of_interest_id,<br/>assigned_at, assignment_priority
-                
-                SAS->>AH: recordAssignment()
-                SAS->>SAS: Update capacity & counts
-                SAS-->>SAS: Break (assigned)
-            else No pool for AOI
-                SAS-->>SAS: Try next AOI
-            end
-        end
-        
-        alt Not assigned
-            SAS->>SAS: Categorize as unassigned/no_matches
-        end
-    end
-    
-    SAS-->>SAS: Return results with statistics
-```
-
-#### 6.2.3 Ranking-Based Lottery Algorithm (Mode: 'ranking')
-```mermaid
-sequenceDiagram
-    participant SAS as AssignmentService
-    participant DB as Database
-    participant RR as RoundRobin
-
-    SAS->>SAS: sortGroupsByNumber()
-    SAS->>DB: Get all active supervisors
-    SAS->>SAS: Filter by available_slots > 0
-    SAS->>SAS: Sort by rank_priority, then name
-    
-    Note over SAS: Rank Priority:<br/>1=Professor<br/>2=Associate Prof<br/>3=Assistant Prof<br/>4=Lecturer
-    
-    SAS->>RR: Initialize round-robin state
-    Note over RR: currentRound = 0<br/>supervisorIndex = 0<br/>assignmentCounts[]
-    
-    loop For each group
-        RR->>RR: attempts = 0
-        
-        loop Until assigned or max attempts
-            RR->>RR: Get supervisor at index
-            
-            alt Supervisor eligible
-                Note over RR: assigned_count <= currentRound<br/>AND < available_slots
-                
-                SAS->>DB: Assign supervisor
-                RR->>RR: assignmentCounts[id]++
-                RR->>RR: assigned = true
-            else Not eligible
-                RR->>RR: Skip to next
-            end
-            
-            RR->>RR: supervisorIndex++
-            alt Full cycle completed
-                RR->>RR: currentRound++
-                RR->>RR: supervisorIndex = 0
-            end
-        end
-        
-        alt Not assigned
-            SAS->>SAS: Mark as unassigned
-        end
-    end
-    
-    SAS-->>SAS: Return results
-```
-
-#### 6.2.4 Combined Lottery Algorithm (Mode: 'both')
-```mermaid
-sequenceDiagram
-    participant SAS as AssignmentService
-    participant DB as Database
-    participant IR as IntelligentRoundRobin
-
-    SAS->>SAS: sortGroupsByNumber()
-    SAS->>DB: Get supervisors with AOIs
-    SAS->>SAS: buildAOIPoolsWithoutRandomization()
-    Note over SAS: Pools sorted by load<br/>No shuffling
-    
-    SAS->>IR: Initialize tracking
-    Note over IR: globalAssignmentCounts[]<br/>lastAssignedPerArea[]
-    
-    loop For each group
-        SAS->>SAS: Get group AOI IDs
-        
-        loop For each AOI
-            IR->>IR: Get all supervisors for AOI
-            IR->>IR: Find minimum assignment count
-            
-            Note over IR: FAIRNESS RULE:<br/>No one gets 2 before<br/>everyone gets 1<br/>within same AOI
-            
-            IR->>IR: Filter to min count only
-            
-            alt Multiple candidates
-                IR->>IR: Sort by rank priority
-                IR->>IR: Avoid consecutive assignments
-                IR->>IR: Select best candidate
-            else Single candidate
-                IR->>IR: Select candidate
-            end
-            
-            alt Supervisor found
-                SAS->>DB: Assign with matched AOI
-                IR->>IR: Update global counts
-                IR->>IR: Track last assigned per area
-                SAS-->>SAS: Break (assigned)
-            end
-        end
-    end
-    
-    SAS-->>SAS: Return results
-```
-
-#### 6.2.5 Preview Mode (Non-destructive)
-```mermaid
-sequenceDiagram
-    participant Ad as Advisor
-    participant SAC as Controller
-    participant SAS as AssignmentService
-
-    Ad->>SAC: Request preview
-    SAC->>SAS: previewLotteryAssignment(groups, mode)
-    
-    Note over SAS: Simulates assignment<br/>without DB updates
-    
-    SAS->>SAS: Run algorithm simulation
-    SAS->>SAS: Build preview data
-    
-    SAS-->>SAC: Preview results
-    Note over SAC: {<br/>  assignments: [...],<br/>  unassigned: [...],<br/>  stats: {...}<br/>}
-    
-    SAC-->>Ad: JSON response
-    Ad->>Ad: Display preview modal
-```
-
-#### 6.2.6 Manual Assignment & Validation
-```mermaid
-sequenceDiagram
-    participant Ad as Advisor
-    participant SAC as Controller
-    participant DB as Database
-
-    Ad->>SAC: Select supervisor for group
-    SAC->>DB: Validate assignment
-    
-    alt Check co-supervisor conflict
-        DB-->>SAC: Same as co-supervisor
-        SAC-->>Ad: Error: Already co-supervisor
-    else Check capacity
-        DB-->>SAC: No available slots
-        SAC-->>Ad: Error: No capacity
-    else Check AOI match
-        DB-->>SAC: No AOI match
-        SAC-->>Ad: Error: AOI mismatch
-    else Valid assignment
-        SAC->>DB: Update group
-        Note over DB: is_manual_assignment = true
-        SAC-->>Ad: Success
-    end
-```
-
-#### 6.2.7 Algorithm Comparison Matrix
+#### 4.2.2 Assignment Strategies
 ```mermaid
 graph TD
-    subgraph "AOI Mode"
-        A1[Pure Random Selection]
-        A2[Within AOI Match]
-        A3[Tries Fallback AOIs]
-        A4[Excludes Last Assigned]
-        A5[Ignores Rank]
-    end
+    Start[Assignment Initiation]
     
-    subgraph "Ranking Mode"
-        B1[Round-Robin Distribution]
-        B2[Rank Priority Order]
-        B3[Fair Load Balancing]
-        B4[Ignores AOI Completely]
-        B5[Everyone Gets 1 Before 2]
-    end
+    Start --> Strategy{Select Strategy}
+    Strategy --> AOI[Area-Based]
+    Strategy --> Rank[Ranking-Based]
+    Strategy --> Combined[Hybrid Approach]
     
-    subgraph "Combined Mode"
-        C1[AOI Match Required]
-        C2[Fair Within Each AOI]
-        C3[Rank as Tiebreaker]
-        C4[Intelligent Round-Robin]
-        C5[Prevents Senior Monopoly]
-    end
+    AOI --> AOIProcess[Match expertise areas]
+    Rank --> RankProcess[Distribute by seniority]
+    Combined --> CombinedProcess[Balance expertise and load]
     
-    A1 --> Result1[Best for: Expertise Priority]
-    B5 --> Result2[Best for: Equal Distribution]
-    C5 --> Result3[Best for: Balanced Approach]
+    AOIProcess --> Result[Assignment Complete]
+    RankProcess --> Result
+    CombinedProcess --> Result
 ```
 
-### 6.3 Excel Import/Export
+### 4.3 Data Import/Export
 ```mermaid
 sequenceDiagram
-    participant Ad as Advisor
-    participant GC as GroupController
-    participant EX as Excel Service
-    participant DB as Database
+    participant Advisor
+    participant System
+    participant Database
 
-    alt Import
-        Ad->>GC: Upload Excel
-        GC->>EX: Parse Excel
-        EX->>DB: Validate students
-        EX->>DB: Create groups
-        GC-->>Ad: Import successful
-    else Export
-        Ad->>GC: Download template
-        GC->>DB: Get group data
-        GC->>EX: Generate Excel
-        EX-->>Ad: Download file
+    alt Import Process
+        Advisor->>System: Upload spreadsheet
+        System->>System: Validate data format
+        System->>Database: Store group data
+        System-->>Advisor: Import confirmation
+    else Export Process
+        Advisor->>System: Request template
+        System->>Database: Retrieve group data
+        System->>System: Generate spreadsheet
+        System-->>Advisor: Download file
     end
 ```
 
 ---
 
-## 7. Admin Workflows
+## 5. Administrative Functions
 
-### 7.1 API Synchronization
+### 5.1 External Data Synchronization
 ```mermaid
 sequenceDiagram
-    participant A as Admin
-    participant SC as SupervisorController
-    participant API as External API
-    participant DB as Database
+    participant Administrator
+    participant System
+    participant External API
+    participant Database
 
-    A->>SC: Sync supervisors
-    SC->>API: Fetch supervisor list
-    API-->>SC: Return data
-    
-    loop For each supervisor
-        SC->>DB: Check existing
-        SC->>DB: Create/Update record
-        SC->>DB: Sync AOIs
-    end
-    
-    SC-->>A: Sync complete
+    Administrator->>System: Initiate synchronization
+    System->>External API: Request updated data
+    External API-->>System: Return data
+    System->>System: Process updates
+    System->>Database: Update records
+    System-->>Administrator: Synchronization report
 ```
 
-### 7.2 Batch Management
+### 5.2 System Monitoring
 ```mermaid
 sequenceDiagram
-    participant A as Admin
-    participant BC as BatchController
-    participant API as Batch API
-    participant DB as Database
+    participant Administrator
+    participant System
+    participant Database
 
-    A->>BC: Sync batches
-    BC->>API: Fetch batch list
-    API-->>BC: Return batches
-    BC->>DB: Compare local/remote
-    BC->>DB: Update batches
-    BC->>DB: Set active status
-    BC-->>A: Batches synced
-```
-
-### 7.3 Performance Monitoring
-```mermaid
-sequenceDiagram
-    participant A as Admin
-    participant PC as PerformanceController
-    participant PMS as MonitoringService
-    participant DB as Database
-
-    A->>PC: View metrics
-    PC->>PMS: Collect metrics
-    PMS->>DB: Query performance
-    PMS->>PMS: Calculate stats
-    PMS-->>PC: Return metrics
-    PC-->>A: Display dashboard
-```
-
-### 7.4 Global Group Management
-```mermaid
-sequenceDiagram
-    participant A as Admin
-    participant GMC as GroupManagementController
-    participant DB as Database
-
-    A->>GMC: Manage groups
-    GMC->>DB: Get all groups
-    GMC-->>A: Show groups
-    
-    alt Assign Supervisor
-        A->>GMC: Select supervisor
-        GMC->>DB: Check capacity
-        GMC->>DB: Update assignment
-    else Assign Students
-        A->>GMC: Add students
-        GMC->>DB: Create associations
-    else Delete Group
-        A->>GMC: Delete empty group
-        GMC->>DB: Check if empty
-        GMC->>DB: Delete record
-    end
-    
-    GMC-->>A: Operation complete
+    Administrator->>System: Request system metrics
+    System->>Database: Query performance data
+    Database-->>System: Return statistics
+    System->>System: Calculate metrics
+    System-->>Administrator: Display dashboard
 ```
 
 ---
 
-## 8. Report Management
+## 6. System Architecture
 
-### 8.1 Report Lifecycle
+### 6.1 Request Processing Flow
 ```mermaid
 sequenceDiagram
-    participant Su as Supervisor
-    participant R as Report
-    participant St as Student
-    participant PM as Panel Member
-    participant DB as Database
+    participant Client
+    participant Web Server
+    participant Application
+    participant Database
 
-    Su->>DB: Create report (draft)
-    DB->>St: Notify students
-    St->>DB: Submit PDF
-    Su->>DB: Review submission
-    Su->>DB: Add annotations
-    PM->>DB: Review & annotate
-    Su->>DB: Approve report
-    DB->>DB: Update status (approved)
-    DB->>St: Notify completion
+    Client->>Web Server: HTTP Request
+    Web Server->>Application: Route request
+    Application->>Application: Process business logic
+    Application->>Database: Data operation
+    Database-->>Application: Return data
+    Application-->>Web Server: Generate response
+    Web Server-->>Client: HTTP Response
 ```
 
-### 8.2 Comment System
+### 6.2 Notification System
 ```mermaid
 sequenceDiagram
-    participant T as Teacher
-    participant CC as CommentController
-    participant DB as Database
-    participant N as NotificationService
+    participant System
+    participant Notification Service
+    participant Database
+    participant User
 
-    T->>CC: Add comment
-    CC->>DB: Verify supervisor
+    System->>Notification Service: Trigger event
+    Notification Service->>Database: Store notification
     
-    alt Is Supervisor
-        CC->>DB: Save comment
-        CC->>N: Notify students
-        CC-->>T: Comment added
-    else Not Supervisor
-        CC-->>T: Access denied
+    alt Email delivery
+        Notification Service->>User: Send email
+    else In-app notification
+        User->>System: Check notifications
+        System->>Database: Retrieve notifications
+        Database-->>System: Return data
+        System-->>User: Display notifications
+    end
+```
+
+### 6.3 File Management
+```mermaid
+sequenceDiagram
+    participant User
+    participant System
+    participant Storage
+    participant Database
+
+    User->>System: Upload file
+    System->>System: Validate file
+    
+    alt Valid file
+        System->>Storage: Store file
+        System->>Database: Save metadata
+        System-->>User: Upload successful
+    else Invalid file
+        System-->>User: Validation error
     end
 ```
 
 ---
 
-## 9. Meeting Management
+## System Components Description
 
-### 9.1 Meeting Attendance
-```mermaid
-sequenceDiagram
-    participant Su as Supervisor
-    participant MC as MeetingController
-    participant DB as Database
-    participant PDF as PDF Service
+### Core Components
+- **Client**: End-user interface (web browser)
+- **System**: Application server handling business logic
+- **Database**: Persistent data storage
+- **External API**: University information systems
+- **Storage**: File storage service
 
-    Su->>MC: View meeting
-    MC->>DB: Get meeting details
-    MC->>DB: Get attendances
-    MC-->>Su: Show attendance
-    Su->>MC: Mark attendance
-    MC->>DB: Update records
-    Su->>MC: Generate report
-    MC->>PDF: Create PDF
-    PDF-->>Su: Download report
-```
+### User Roles
+- **Student**: Thesis/project students
+- **Supervisor**: Faculty members supervising groups
+- **Advisor**: Faculty coordinating student groups
+- **Administrator**: System administrators
 
----
-
-## 10. Notification System
-
-### 10.1 Notification Flow
-```mermaid
-sequenceDiagram
-    participant S as System
-    participant E as Event
-    participant N as NotificationService
-    participant DB as Database
-    participant U as User
-
-    S->>E: Trigger event
-    E->>N: Create notification
-    N->>DB: Store notification
-    N->>U: Send notification
-    
-    alt Email Channel
-        N->>U: Send email
-    else Database Channel
-        N->>DB: Store in DB
-        U->>DB: Fetch notifications
-    end
-    
-    U->>N: Mark as read
-    N->>DB: Update status
-```
-
-### 10.2 Real-time Notifications
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant API as API Endpoint
-    participant NC as NotificationController
-    participant DB as Database
-
-    loop Polling
-        C->>API: Check notifications
-        API->>NC: Get unread count
-        NC->>DB: Query notifications
-        NC-->>API: Return count
-        API-->>C: Update badge
-    end
-    
-    C->>API: Get notifications
-    API->>NC: Fetch all
-    NC->>DB: Get notifications
-    NC-->>C: Display list
-```
-
----
-
-## System Architecture Overview
-
-### Complete Request Flow
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant MW as Middleware Stack
-    participant R as Router
-    participant C as Controller
-    participant S as Service Layer
-    participant M as Model
-    participant DB as Database
-    participant V as View
-
-    U->>MW: HTTP Request
-    MW->>MW: Auth Check
-    MW->>MW: Role Check
-    MW->>R: Route Request
-    R->>C: Dispatch to Controller
-    C->>S: Business Logic
-    S->>M: Data Operations
-    M->>DB: Database Query
-    DB-->>M: Return Data
-    M-->>S: Model Instances
-    S-->>C: Processed Data
-    C->>V: Render View
-    V-->>U: HTTP Response
-```
-
----
-
-## Key Integration Points
-
-### External API Integration
-```mermaid
-sequenceDiagram
-    participant S as System
-    participant AS as API Service
-    participant API as External API
-    participant DB as Database
-    participant C as Cache
-
-    S->>AS: Request data
-    AS->>C: Check cache
-    
-    alt Cache Hit
-        C-->>AS: Return cached
-    else Cache Miss
-        AS->>API: HTTP Request
-        API-->>AS: API Response
-        AS->>AS: Parse response
-        AS->>C: Store in cache
-        AS->>DB: Update database
-    end
-    
-    AS-->>S: Return data
-```
-
-### File Upload Processing
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant UC as UploadController
-    participant V as Validator
-    participant FS as File Storage
-    participant DB as Database
-
-    U->>UC: Upload file
-    UC->>V: Validate file
-    
-    alt Valid File
-        V->>FS: Store file
-        FS->>FS: Generate path
-        FS-->>UC: Return path
-        UC->>DB: Save metadata
-        UC-->>U: Upload success
-    else Invalid File
-        V-->>U: Validation error
-    end
-```
-
----
-
-## Error Handling & Recovery
-
-### Transaction Management
-```mermaid
-sequenceDiagram
-    participant C as Controller
-    participant DB as Database
-    participant T as Transaction
-    participant L as Logger
-
-    C->>T: Begin transaction
-    T->>DB: Execute queries
-    
-    alt Success
-        DB-->>T: All successful
-        T->>T: Commit
-        T-->>C: Success
-    else Failure
-        DB-->>T: Error occurred
-        T->>T: Rollback
-        T->>L: Log error
-        T-->>C: Failure
-        C-->>C: Handle error
-    end
-```
-
----
-
-## Security Flows
-
-### CSRF Protection
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Form
-    participant MW as CSRF Middleware
-    participant C as Controller
-
-    U->>F: Request form
-    F->>F: Generate CSRF token
-    F-->>U: Form with token
-    U->>MW: Submit with token
-    MW->>MW: Verify token
-    
-    alt Valid Token
-        MW->>C: Process request
-        C-->>U: Success
-    else Invalid Token
-        MW-->>U: 419 Error
-    end
-```
+### Key Features
+1. **Authentication**: Multi-role authentication with external API integration
+2. **Group Management**: Formation and assignment of student groups
+3. **Report Workflow**: Creation, submission, and review of reports
+4. **Meeting Documentation**: Recording and tracking of supervision meetings
+5. **Automated Assignment**: Algorithmic supervisor-group matching
+6. **Data Synchronization**: Integration with university systems
+7. **Notification System**: Real-time updates for all stakeholders
 
 ---
 
 ## Notes
-
-1. **Authentication**: Multi-type login system with external API integration
-2. **Authorization**: Role-based middleware protection on all routes
-3. **Data Flow**: Clear separation between controllers, services, and models
-4. **Notifications**: Event-driven notification system with multiple channels
-5. **File Management**: Centralized file storage with validation
-6. **API Integration**: Throttled external API calls with caching
-7. **Error Handling**: Comprehensive error handling with transaction support
-8. **Security**: CSRF protection, session management, and role verification
-
-These sequence diagrams represent the core workflows and interactions within the ThesisRepo system, providing a comprehensive view of how different components interact to deliver functionality.
+These sequence diagrams illustrate the primary interactions within the Thesis Repository Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and focus on essential system behaviors rather than implementation details.
