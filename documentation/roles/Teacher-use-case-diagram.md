@@ -134,50 +134,31 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    Teacher((Teacher))
+    Teacher((Teacher<br/>Login))
     
-    %% System
-    subgraph System["ThesisRepo System"]
-        Dashboard[Teacher Dashboard<br/>Shows Available Panels]
-        
-        %% Assignment Check
-        Check{Check Assignments<br/>in Database}
-        
-        %% Possible Outcomes
-        NoAccess[No Access<br/>No groups assigned]
-        SupervisorPanel[Supervisor Panel<br/>Full Features]
-        CoSupervisorPanel[Co-Supervisor Panel<br/>Limited Features]
-        PanelMemberPanel[Panel Member Panel<br/>Review Only]
-        AdminPanel[Admin Panel<br/>System Management]
-        
-        %% Empty Panels
-        EmptyAdvisor[Advisor Panel<br/>Empty - No Students]
-    end
+    %% Dashboard Always Accessible
+    Dashboard[Teacher Dashboard]
+    
+    %% Possible Panels Based on Assignments
+    Panels[Available Panels<br/>Based on Database Assignments:<br/><br/>• Supervisor - if supervisor_id matches<br/>• Co-Supervisor - if co_supervisor_id matches<br/>• Panel Member - if in group_panel_members<br/>• Admin - if type_id includes '1'<br/>• Advisor - always shown but empty]
+    
+    %% No Assignment Case
+    NoAssignment[No Functional Access<br/>Only Profile View]
     
     Teacher --> Dashboard
-    Dashboard --> Check
-    
-    Check -->|No Assignments| NoAccess
-    Check -->|supervisor_id matches| SupervisorPanel
-    Check -->|co_supervisor_id matches| CoSupervisorPanel
-    Check -->|in group_panel_members| PanelMemberPanel
-    Check -->|type_id has '1'| AdminPanel
-    Check -->|Has teacher role| EmptyAdvisor
+    Dashboard -->|Has Assignments| Panels
+    Dashboard -->|No Assignments| NoAssignment
     
     %% Styling
     classDef actor fill:#ffe0b2,stroke:#ef6c00,stroke-width:3px
     classDef dashboard fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    classDef check fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef access fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
+    classDef panels fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
     classDef noAccess fill:#ffcdd2,stroke:#c62828,stroke-width:1px
-    classDef empty fill:#fff3e0,stroke:#ff9800,stroke-width:1px
     
     class Teacher actor
     class Dashboard dashboard
-    class Check check
-    class SupervisorPanel,CoSupervisorPanel,PanelMemberPanel,AdminPanel access
-    class NoAccess noAccess
-    class EmptyAdvisor empty
+    class Panels panels
+    class NoAssignment noAccess
 ```
 
 ## Assignment-Based Access Flow
