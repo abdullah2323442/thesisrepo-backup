@@ -3,7 +3,39 @@
 ## Overview
 Students are the primary end-users of the thesis management system, focusing on document submission, progress tracking, and communication with supervisors.
 
-## Use Case Diagram
+## Use Case Diagram (Reference Design Style)
+
+```mermaid
+graph LR
+    %% Actor
+    Student((Student))
+    
+    %% System Boundary
+    subgraph System["Thesis Management System"]
+        %% Use Cases
+        UC1[Document Submission]
+        UC2[View Dashboard]
+        UC3[Thesis Approval]
+    end
+    
+    %% Connections
+    Student ---|purple| UC1
+    Student ---|purple| UC2
+    Student ---|purple| UC3
+    
+    %% Styling
+    classDef actor fill:#9c27b0,stroke:#000,stroke-width:2px
+    classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
+    classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
+    
+    class Student actor
+    class System system
+    class UC1,UC2,UC3 usecase
+    
+    style Student fill:#9c27b0,color:#fff
+```
+
+## Detailed Use Case Diagram
 
 ```mermaid
 graph TB

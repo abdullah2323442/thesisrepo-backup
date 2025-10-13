@@ -3,7 +3,35 @@
 ## Overview
 Co-Supervisors assist main supervisors in thesis guidance, with conditional meeting management permissions and full annotation capabilities.
 
-## Use Case Diagram
+## Use Case Diagram (Reference Design Style)
+
+```mermaid
+graph LR
+    %% Actor
+    CoSupervisor((Co-Supervisor))
+    
+    %% System Boundary
+    subgraph System["Thesis Management System"]
+        %% Use Cases
+        UC1[Meeting Management]
+    end
+    
+    %% Connections
+    CoSupervisor ---|green| UC1
+    
+    %% Styling
+    classDef actor fill:#4caf50,stroke:#000,stroke-width:2px
+    classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
+    classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
+    
+    class CoSupervisor actor
+    class System system
+    class UC1 usecase
+    
+    style CoSupervisor fill:#4caf50,color:#fff
+```
+
+## Detailed Use Case Diagram
 
 ```mermaid
 graph TB

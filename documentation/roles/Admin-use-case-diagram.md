@@ -3,7 +3,39 @@
 ## Overview
 The Admin role has comprehensive system management capabilities including configuration, monitoring, and global group management.
 
-## Use Case Diagram
+## Use Case Diagram (Reference Design Style)
+
+```mermaid
+graph LR
+    %% Actor
+    Admin((Admin))
+    
+    %% System Boundary
+    subgraph System["Thesis Management System"]
+        %% Use Cases
+        UC1[Manage AOI & Batches]
+        UC2[Group Management]
+        UC3[Supervisor Assignment]
+        UC4[View Dashboard]
+    end
+    
+    %% Connections
+    Admin ---|red| UC1
+    Admin ---|red| UC2
+    
+    %% Styling
+    classDef actor fill:#ff6b6b,stroke:#000,stroke-width:2px
+    classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
+    classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
+    
+    class Admin actor
+    class System system
+    class UC1,UC2,UC3,UC4 usecase
+    
+    style Admin fill:#ff6b6b,color:#fff
+```
+
+## Detailed Use Case Diagram
 
 ```mermaid
 graph TB

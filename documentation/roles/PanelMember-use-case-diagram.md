@@ -3,7 +3,35 @@
 ## Overview
 Panel Members serve as reviewers for thesis groups, providing feedback through annotations without management responsibilities.
 
-## Use Case Diagram
+## Use Case Diagram (Reference Design Style)
+
+```mermaid
+graph LR
+    %% Actor
+    PanelMember((Panel Member))
+    
+    %% System Boundary
+    subgraph System["Thesis Management System"]
+        %% Use Cases
+        UC1[Report Annotation]
+    end
+    
+    %% Connections
+    PanelMember ---|teal| UC1
+    
+    %% Styling
+    classDef actor fill:#009688,stroke:#000,stroke-width:2px
+    classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
+    classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
+    
+    class PanelMember actor
+    class System system
+    class UC1 usecase
+    
+    style PanelMember fill:#009688,color:#fff
+```
+
+## Detailed Use Case Diagram
 
 ```mermaid
 graph TB

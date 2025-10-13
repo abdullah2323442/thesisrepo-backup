@@ -3,7 +3,41 @@
 ## Overview
 Supervisors are the main thesis guides responsible for managing groups, conducting meetings, creating reports, and providing final thesis approval.
 
-## Use Case Diagram
+## Use Case Diagram (Reference Design Style)
+
+```mermaid
+graph LR
+    %% Actor
+    Supervisor((Supervisor))
+    
+    %% System Boundary
+    subgraph System["Thesis Management System"]
+        %% Use Cases
+        UC1[Meeting Management]
+        UC2[Report Annotation]
+        UC3[Report Management]
+        UC4[Thesis Approval]
+    end
+    
+    %% Connections
+    Supervisor ---|pink| UC1
+    Supervisor ---|pink| UC2
+    Supervisor ---|pink| UC3
+    Supervisor ---|pink| UC4
+    
+    %% Styling
+    classDef actor fill:#e91e63,stroke:#000,stroke-width:2px
+    classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
+    classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
+    
+    class Supervisor actor
+    class System system
+    class UC1,UC2,UC3,UC4 usecase
+    
+    style Supervisor fill:#e91e63,color:#fff
+```
+
+## Detailed Use Case Diagram
 
 ```mermaid
 graph TB

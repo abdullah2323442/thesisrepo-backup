@@ -3,7 +3,37 @@
 ## Overview
 Advisors manage student group formation and supervisor assignment, acting as the bridge between students and supervisors in the thesis process.
 
-## Use Case Diagram
+## Use Case Diagram (Reference Design Style)
+
+```mermaid
+graph LR
+    %% Actor
+    Advisor((Advisor))
+    
+    %% System Boundary
+    subgraph System["Thesis Management System"]
+        %% Use Cases
+        UC1[Group Management]
+        UC2[Supervisor Assignment]
+    end
+    
+    %% Connections
+    Advisor ---|blue| UC1
+    Advisor ---|blue| UC2
+    
+    %% Styling
+    classDef actor fill:#2196f3,stroke:#000,stroke-width:2px
+    classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
+    classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
+    
+    class Advisor actor
+    class System system
+    class UC1,UC2 usecase
+    
+    style Advisor fill:#2196f3,color:#fff
+```
+
+## Detailed Use Case Diagram
 
 ```mermaid
 graph TB
