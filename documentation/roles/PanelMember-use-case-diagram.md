@@ -8,7 +8,7 @@ Panel Members serve as reviewers for thesis groups, providing feedback through a
 ```mermaid
 graph LR
     %% Actor
-    actor PanelMember as "Panel Member"
+    PanelMember[Panel Member]
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -34,7 +34,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    actor PanelMember as "👤 Panel Member"
+    PanelMember["👤 Panel Member"]
     
     %% System Boundary
     subgraph System["Thesis Management System - Panel Member Module"]
@@ -101,7 +101,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    actor PanelMember as "Panel Member"
+    PanelMember[Panel Member]
     
     %% System Boundary
     subgraph System["Panel Member Portal"]
@@ -129,7 +129,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    actor PanelMember as "Panel Member"
+    PanelMember[Panel Member]
     
     %% Review Workflow
     subgraph ReviewProcess["Panel Review Process"]

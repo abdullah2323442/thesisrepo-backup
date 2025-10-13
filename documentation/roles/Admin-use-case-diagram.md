@@ -8,7 +8,7 @@ The Admin role has comprehensive system management capabilities including config
 ```mermaid
 graph LR
     %% Actor
-    actor Admin
+    Admin[Admin]
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -38,7 +38,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    actor Admin as "👤 Admin"
+    Admin["👤 Admin"]
     
     %% System Boundary
     subgraph System["Thesis Management System - Admin Module"]
@@ -151,7 +151,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    actor Admin
+    Admin[Admin]
     
     %% System Boundary
     subgraph System["Admin Management System"]

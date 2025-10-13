@@ -8,12 +8,12 @@ This diagram shows all system actors and their interactions with the Thesis Mana
 ```mermaid
 graph LR
     %% Actors
-    actor Admin
-    actor CoSupervisor as "Co-Supervisor"
-    actor Supervisor
-    actor Advisor
-    actor PanelMember as "Panel Member"
-    actor Student
+    Admin[Admin]
+    CoSupervisor[Co-Supervisor]
+    Supervisor[Supervisor]
+    Advisor[Advisor]
+    PanelMember[Panel Member]
+    Student[Student]
     
     %% System Boundary
     subgraph System["Thesis Management System"]

@@ -8,7 +8,7 @@ Supervisors are the main thesis guides responsible for managing groups, conducti
 ```mermaid
 graph LR
     %% Actor
-    actor Supervisor
+    Supervisor[Supervisor]
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -40,7 +40,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    actor Supervisor as "👤 Supervisor"
+    Supervisor["👤 Supervisor"]
     
     %% System Boundary
     subgraph System["Thesis Management System - Supervisor Module"]
@@ -144,7 +144,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    actor Supervisor
+    Supervisor[Supervisor]
     
     %% System Boundary
     subgraph System["Supervisor Management System"]
@@ -176,7 +176,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    actor Supervisor
+    Supervisor[Supervisor]
     
     %% Main Workflows
     subgraph Workflows["Supervisor Workflows"]
@@ -274,7 +274,7 @@ graph TB
     UC33 --> Comments[Add Comments]
     UC33 --> Notifications[Send Notifications]
     
-    actor Supervisor2 as "Supervisor"
+    Supervisor2[Supervisor]
     Supervisor2 --> Extended
     
     %% Styling

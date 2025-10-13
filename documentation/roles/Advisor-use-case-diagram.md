@@ -8,7 +8,7 @@ Advisors manage student group formation and supervisor assignment, acting as the
 ```mermaid
 graph LR
     %% Actor
-    actor Advisor
+    Advisor[Advisor]
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -36,7 +36,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    actor Advisor as "👤 Advisor"
+    Advisor["👤 Advisor"]
     
     %% System Boundary
     subgraph System["Thesis Management System - Advisor Module"]
@@ -149,7 +149,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    actor Advisor
+    Advisor[Advisor]
     
     %% System Boundary
     subgraph System["Advisor Management System"]
@@ -181,7 +181,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    actor Advisor
+    Advisor[Advisor]
     
     %% Main Workflows
     subgraph Workflows["Advisor Workflows"]

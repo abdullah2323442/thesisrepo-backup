@@ -8,7 +8,7 @@ Students are the primary end-users of the thesis management system, focusing on 
 ```mermaid
 graph LR
     %% Actor
-    actor Student
+    Student[Student]
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -38,7 +38,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    actor Student as "👤 Student"
+    Student["👤 Student"]
     
     %% System Boundary
     subgraph System["Thesis Management System - Student Module"]
@@ -129,7 +129,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    actor Student
+    Student[Student]
     
     %% System Boundary
     subgraph System["Student Portal"]
@@ -161,7 +161,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    actor Student
+    Student[Student]
     
     %% Primary Use Cases with Extensions
     subgraph Primary["Primary Activities"]

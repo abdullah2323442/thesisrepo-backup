@@ -8,7 +8,7 @@ Co-Supervisors assist main supervisors in thesis guidance, with conditional meet
 ```mermaid
 graph LR
     %% Actor
-    actor CoSupervisor as "Co-Supervisor"
+    CoSupervisor[Co-Supervisor]
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -34,7 +34,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    actor CoSupervisor as "👤 Co-Supervisor"
+    CoSupervisor["👤 Co-Supervisor"]
     
     %% System Boundary
     subgraph System["Thesis Management System - Co-Supervisor Module"]
@@ -120,7 +120,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    actor CoSupervisor as "Co-Supervisor"
+    CoSupervisor[Co-Supervisor]
     
     %% System Boundary
     subgraph System["Co-Supervisor Portal"]
@@ -155,7 +155,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    actor CoSupervisor as "Co-Supervisor"
+    CoSupervisor[Co-Supervisor]
     
     %% Permission Check Flow
     subgraph PermissionFlow["Permission-Based Access"]
