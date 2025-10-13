@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Repository - Activity Diagrams</title>
+    
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        nav {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        nav h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px;
+        }
+        
+        nav a {
+            display: block;
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #2c3e50;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+            font-weight: 500;
+        }
+        
+        nav a:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin: 30px 0 20px 0;
+            padding: 12px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            border-left: 4px solid #764ba2;
+            border-radius: 5px;
+            font-size: 1.3em;
+        }
+        
+        .diagram-container {
+            margin: 25px 0;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+        
+        .mermaid {
+            text-align: center;
+            margin: 0 auto;
+        }
+        
+        .notation-guide {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .notation-guide h3 {
+            background: transparent;
+            border-left: 4px solid #2196f3;
+            margin-top: 0;
+        }
+        
+        .notation-guide ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .notation-guide li {
+            margin: 8px 0;
+            color: #1565c0;
+        }
+        
+        .summary-section {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .summary-section h3 {
+            background: transparent;
+            border-left: 4px solid #8e24aa;
+        }
+        
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-size: 24px;
+        }
+        
+        .back-to-top:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+        
+        .notes {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-style: italic;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            nav ul {
+                grid-template-columns: 1fr;
+            }
+            
+            .diagram-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Activity Diagrams</h1>
+            <p class="subtitle">Thesis Repository Management System - Process Flows</p>
+        </header>
+        
+        <nav>
+            <h2>📋 Table of Contents</h2>
+            <ul>
+                <li><a href="#section-1">🔐 User Authentication Flow</a></li>
+                <li><a href="#section-2">👨‍🎓 Student Activities</a></li>
+                <li><a href="#section-3">👨‍🏫 Supervisor Activities</a></li>
+                <li><a href="#section-4">👥 Advisor Activities</a></li>
+                <li><a href="#section-5">⚙️ Administrative Activities</a></li>
+                <li><a href="#section-6">🔄 System Processes</a></li>
+            </ul>
+        </nav>
+        
+        <div id="diagrams-container">
+            <div class="loading">Loading activity diagrams</div>
+        </div>
+        
+        <a href="#top" class="back-to-top">↑</a>
+    </div>
+    
+    <script>
+        // Initialize Mermaid with custom theme
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#764ba2',
+                lineColor: '#667eea',
+                secondaryColor: '#f3f4f6',
+                tertiaryColor: '#e8f5e9',
+                errorBkgColor: '#ffebee',
+                errorTextColor: '#c62828'
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis',
+                rankSpacing: 50,
+                nodeSpacing: 50,
+                padding: 15
+            }
+        });
+        
+        // Activity diagrams data
+        const sections = [
+            {
+                id: 'section-1',
+                title: '1. User Authentication Flow',
+                icon: '🔐',
+                diagrams: [
+                    {
+                        title: '1.1 Login Process',
+                        code: `graph TD
+    Start([Start]) --> Input[Enter Credentials]
+    Input --> CheckType{Identify User Type}
+    
+    CheckType -->|Numeric ID| StudentAuth[Student Authentication]
+    CheckType -->|Alphanumeric ID| FacultyAuth[Faculty Authentication]
+    
+    StudentAuth --> CallStudentAPI[Call Student API]
+    FacultyAuth --> CallFacultyAPI[Call Faculty API]
+    
+    CallStudentAPI --> ValidateS{Valid?}
+    CallFacultyAPI --> ValidateF{Valid?}
+    
+    ValidateS -->|No| ShowError[Display Error]
+    ValidateF -->|No| ShowError
+    
+    ValidateS -->|Yes| CreateSession[Create Session]
+    ValidateF -->|Yes| ParseRoles[Parse TypeId Roles]
+    
+    ParseRoles --> CreateSession
+    CreateSession --> RedirectDashboard[Redirect to Dashboard]
+    
+    ShowError --> Input
+    RedirectDashboard --> End([End])
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style ShowError fill:#ffebee
+    style CreateSession fill:#e8f5e9`
+                    }
+                ]
+            },
+            {
+                id: 'section-2',
+                title: '2. Student Activities',
+                icon: '👨‍🎓',
+                diagrams: [
+                    {
+                        title: '2.1 Report Submission Workflow',
+                        code: `graph TD
+    Start([Student Starts]) --> ViewReports[View Assigned Reports]
+    ViewReports --> CheckStatus{Report Status?}
+    
+    CheckStatus -->|Draft| SelectReport[Select Report]
+    CheckStatus -->|No Reports| Wait[Wait for Assignment]
+    
+    SelectReport --> UploadOption{Upload Document}
+    UploadOption --> SelectFile[Select PDF File]
+    
+    SelectFile --> ValidateFile{Valid PDF?}
+    ValidateFile -->|No| ShowFileError[Show Format Error]
+    ValidateFile -->|Yes| UploadFile[Upload to Server]
+    
+    ShowFileError --> SelectFile
+    
+    UploadFile --> StoreFile[Store in Database]
+    StoreFile --> NotifySupervisor[Create Supervisor Notification]
+    NotifySupervisor --> ShowSuccess[Display Success Message]
+    
+    ShowSuccess --> End([End])
+    Wait --> End
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style ShowFileError fill:#ffebee
+    style ShowSuccess fill:#e8f5e9`
+                    },
+                    {
+                        title: '2.2 Notification Management',
+                        code: `graph TD
+    Start([Student Dashboard]) --> CheckNotif[Check Notifications]
+    CheckNotif --> QueryDB{New Notifications?}
+    
+    QueryDB -->|Yes| DisplayBadge[Show Notification Badge]
+    QueryDB -->|No| ClearBadge[Clear Badge]
+    
+    DisplayBadge --> UserClick{User Clicks Bell?}
+    UserClick -->|Yes| FetchDetails[Fetch Notification Details]
+    UserClick -->|No| KeepBadge[Keep Badge Visible]
+    
+    FetchDetails --> DisplayList[Display Notification List]
+    DisplayList --> SelectNotif{Select Notification?}
+    
+    SelectNotif -->|Yes| ViewDetails[View Full Details]
+    SelectNotif -->|No| ClosePanel[Close Panel]
+    
+    ViewDetails --> MarkRead[Mark as Read]
+    MarkRead --> UpdateDB[Update Database]
+    
+    UpdateDB --> End([End])
+    ClearBadge --> End
+    KeepBadge --> End
+    ClosePanel --> End
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style DisplayBadge fill:#fff3cd`
+                    }
+                ]
+            },
+            {
+                id: 'section-3',
+                title: '3. Supervisor Activities',
+                icon: '👨‍🏫',
+                diagrams: [
+                    {
+                        title: '3.1 Report Creation and Management',
+                        code: `graph TD
+    Start([Supervisor Starts]) --> SelectGroup[Select Student Group]
+    SelectGroup --> CreateReport[Create New Report]
+    
+    CreateReport --> EnterDetails[Enter Report Details]
+    EnterDetails --> SetDeadline[Set Submission Deadline]
+    SetDeadline --> SaveReport[Save to Database]
+    
+    SaveReport --> NotifyStudents[Notify All Group Students]
+    NotifyStudents --> ReportCreated[Report Created Successfully]
+    
+    ReportCreated --> ManageOption{Management Option?}
+    
+    ManageOption -->|View Submissions| ViewSubmissions[View Student Submissions]
+    ManageOption -->|Add Annotation| AnnotateDoc[Annotate Document]
+    ManageOption -->|Add Comment| AddComment[Add Comment]
+    ManageOption -->|Approve| ApproveReport[Approve Report]
+    
+    ViewSubmissions --> CheckSubmission{Submission Available?}
+    CheckSubmission -->|Yes| ReviewDoc[Review Document]
+    CheckSubmission -->|No| WaitSubmission[Wait for Submission]
+    
+    AnnotateDoc --> SaveAnnotation[Save Annotations]
+    AddComment --> SaveComment[Save Comment]
+    ApproveReport --> UpdateStatus[Update Report Status]
+    
+    SaveAnnotation --> NotifyStudents2[Notify Students]
+    SaveComment --> NotifyStudents2
+    UpdateStatus --> NotifyStudents2
+    
+    NotifyStudents2 --> End([End])
+    WaitSubmission --> End
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style ReportCreated fill:#e8f5e9`
+                    },
+                    {
+                        title: '3.2 Meeting Documentation Process',
+                        code: `graph TD
+    Start([Start Meeting Record]) --> SelectGroup[Select Group]
+    SelectGroup --> EnterDate[Enter Meeting Date]
+    
+    EnterDate --> EnterTopics[Enter Discussed Topics]
+    EnterTopics --> EnterOutcomes[Enter Meeting Outcomes]
+    EnterOutcomes --> MarkAttendance[Mark Student Attendance]
+    
+    MarkAttendance --> LoopStudents{For Each Student}
+    LoopStudents -->|Mark| SetPresent{Present?}
+    SetPresent -->|Yes| MarkPresent[Mark Present]
+    SetPresent -->|No| MarkAbsent[Mark Absent]
+    
+    MarkPresent --> NextStudent{More Students?}
+    MarkAbsent --> NextStudent
+    
+    NextStudent -->|Yes| LoopStudents
+    NextStudent -->|No| SaveMeeting[Save Meeting Record]
+    
+    SaveMeeting --> GeneratePDF{Generate Report?}
+    GeneratePDF -->|Yes| CreatePDF[Create PDF Report]
+    GeneratePDF -->|No| Complete[Meeting Recorded]
+    
+    CreatePDF --> DownloadPDF[Download PDF]
+    DownloadPDF --> Complete
+    
+    Complete --> End([End])
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style Complete fill:#e8f5e9`
+                    }
+                ]
+            },
+            {
+                id: 'section-4',
+                title: '4. Advisor Activities',
+                icon: '👥',
+                diagrams: [
+                    {
+                        title: '4.1 Group Formation Process',
+                        code: `graph TD
+    Start([Advisor Starts]) --> SelectBatch[Select Student Batch]
+    SelectBatch --> FetchStudents[Fetch Students from API]
+    
+    FetchStudents --> DisplayList[Display Student List]
+    DisplayList --> CreateGroups{Create Groups Method?}
+    
+    CreateGroups -->|Manual| ManualGroup[Manual Selection]
+    CreateGroups -->|Excel Import| ExcelImport[Upload Excel File]
+    
+    ManualGroup --> SelectStudents[Select Students]
+    SelectStudents --> AssignToGroup[Assign to Group]
+    AssignToGroup --> SetGroupName[Set Group Name]
+    SetGroupName --> SetAOI[Set Area of Interest]
+    
+    ExcelImport --> ValidateExcel{Valid Format?}
+    ValidateExcel -->|No| ShowExcelError[Show Format Error]
+    ValidateExcel -->|Yes| ParseData[Parse Excel Data]
+    
+    ShowExcelError --> ExcelImport
+    ParseData --> SetAOI
+    
+    SetAOI --> SaveGroup[Save Group to Database]
+    SaveGroup --> MoreGroups{Create More Groups?}
+    
+    MoreGroups -->|Yes| DisplayList
+    MoreGroups -->|No| GroupsCreated[Groups Created Successfully]
+    
+    GroupsCreated --> End([End])
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style ShowExcelError fill:#ffebee
+    style GroupsCreated fill:#e8f5e9`
+                    },
+                    {
+                        title: '4.2 Supervisor Assignment Lottery',
+                        code: `graph TD
+    Start([Start Assignment]) --> SelectMode{Select Assignment Mode}
+    
+    SelectMode -->|AOI-Based| AOIMode[Area of Interest Mode]
+    SelectMode -->|Ranking-Based| RankMode[Ranking Mode]
+    SelectMode -->|Hybrid| HybridMode[Combined Mode]
+    
+    AOIMode --> GetGroups1[Get Unassigned Groups]
+    RankMode --> GetGroups2[Get Unassigned Groups]
+    HybridMode --> GetGroups3[Get Unassigned Groups]
+    
+    GetGroups1 --> GetSupervisors1[Get Supervisors with AOI]
+    GetGroups2 --> GetSupervisors2[Get All Supervisors]
+    GetGroups3 --> GetSupervisors3[Get Supervisors with AOI]
+    
+    GetSupervisors1 --> AOIAlgorithm[Execute AOI Matching]
+    GetSupervisors2 --> RankAlgorithm[Execute Round-Robin]
+    GetSupervisors3 --> HybridAlgorithm[Execute Balanced Assignment]
+    
+    AOIAlgorithm --> ProcessGroups1{For Each Group}
+    RankAlgorithm --> ProcessGroups2{For Each Group}
+    HybridAlgorithm --> ProcessGroups3{For Each Group}
+    
+    ProcessGroups1 -->|Match AOI| RandomSelect[Random Selection from Matches]
+    ProcessGroups2 -->|Next in Rotation| AssignByRank[Assign by Rank Order]
+    ProcessGroups3 -->|Balance Load| OptimalSelect[Select Optimal Supervisor]
+    
+    RandomSelect --> UpdateDB1[Update Database]
+    AssignByRank --> UpdateDB2[Update Database]
+    OptimalSelect --> UpdateDB3[Update Database]
+    
+    UpdateDB1 --> CheckMore1{More Groups?}
+    UpdateDB2 --> CheckMore2{More Groups?}
+    UpdateDB3 --> CheckMore3{More Groups?}
+    
+    CheckMore1 -->|Yes| ProcessGroups1
+    CheckMore2 -->|Yes| ProcessGroups2
+    CheckMore3 -->|Yes| ProcessGroups3
+    
+    CheckMore1 -->|No| ShowResults[Display Assignment Results]
+    CheckMore2 -->|No| ShowResults
+    CheckMore3 -->|No| ShowResults
+    
+    ShowResults --> End([End])
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style ShowResults fill:#e8f5e9`
+                    }
+                ]
+            },
+            {
+                id: 'section-5',
+                title: '5. Administrative Activities',
+                icon: '⚙️',
+                diagrams: [
+                    {
+                        title: '5.1 Data Synchronization Process',
+                        code: `graph TD
+    Start([Admin Initiates Sync]) --> SelectType{Sync Type?}
+    
+    SelectType -->|Supervisors| SyncSupervisors[Sync Supervisors]
+    SelectType -->|Students| SyncStudents[Sync Students]
+    SelectType -->|Batches| SyncBatches[Sync Batches]
+    
+    SyncSupervisors --> CallSupAPI[Call Supervisor API]
+    SyncStudents --> CallStuAPI[Call Student API]
+    SyncBatches --> CallBatchAPI[Call Batch API]
+    
+    CallSupAPI --> ProcessSupData[Process Supervisor Data]
+    CallStuAPI --> ProcessStuData[Process Student Data]
+    CallBatchAPI --> ProcessBatchData[Process Batch Data]
+    
+    ProcessSupData --> CompareSupDB{Compare with Database}
+    ProcessStuData --> CompareStuDB{Compare with Database}
+    ProcessBatchData --> CompareBatchDB{Compare with Database}
+    
+    CompareSupDB -->|New| AddSupervisor[Add New Supervisor]
+    CompareSupDB -->|Existing| UpdateSupervisor[Update Supervisor]
+    CompareSupDB -->|Deleted| DeactivateSupervisor[Deactivate Supervisor]
+    
+    CompareStuDB -->|New| AddStudent[Add New Student]
+    CompareStuDB -->|Existing| UpdateStudent[Update Student]
+    
+    CompareBatchDB -->|New| AddBatch[Add New Batch]
+    CompareBatchDB -->|Existing| UpdateBatch[Update Batch]
+    
+    AddSupervisor --> SyncComplete[Synchronization Complete]
+    UpdateSupervisor --> SyncComplete
+    DeactivateSupervisor --> SyncComplete
+    AddStudent --> SyncComplete
+    UpdateStudent --> SyncComplete
+    AddBatch --> SyncComplete
+    UpdateBatch --> SyncComplete
+    
+    SyncComplete --> GenerateReport[Generate Sync Report]
+    GenerateReport --> End([End])
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style SyncComplete fill:#e8f5e9`
+                    },
+                    {
+                        title: '5.2 System Monitoring',
+                        code: `graph TD
+    Start([Monitor System]) --> CollectMetrics[Collect System Metrics]
+    
+    CollectMetrics --> QueryPerformance[Query Performance Data]
+    QueryPerformance --> AnalyzeData{Analyze Metrics}
+    
+    AnalyzeData --> CheckUsers[Check Active Users]
+    AnalyzeData --> CheckReports[Check Report Statistics]
+    AnalyzeData --> CheckAssignments[Check Assignment Status]
+    AnalyzeData --> CheckStorage[Check Storage Usage]
+    
+    CheckUsers --> CalcUserMetrics[Calculate User Metrics]
+    CheckReports --> CalcReportMetrics[Calculate Report Metrics]
+    CheckAssignments --> CalcAssignMetrics[Calculate Assignment Metrics]
+    CheckStorage --> CalcStorageMetrics[Calculate Storage Metrics]
+    
+    CalcUserMetrics --> CompileResults[Compile All Results]
+    CalcReportMetrics --> CompileResults
+    CalcAssignMetrics --> CompileResults
+    CalcStorageMetrics --> CompileResults
+    
+    CompileResults --> GenerateDashboard[Generate Dashboard View]
+    GenerateDashboard --> DisplayMetrics[Display to Administrator]
+    
+    DisplayMetrics --> RefreshOption{Auto Refresh?}
+    RefreshOption -->|Yes| WaitInterval[Wait 30 seconds]
+    RefreshOption -->|No| End([End])
+    
+    WaitInterval --> CollectMetrics
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style GenerateDashboard fill:#e8f5e9`
+                    }
+                ]
+            },
+            {
+                id: 'section-6',
+                title: '6. System Processes',
+                icon: '🔄',
+                diagrams: [
+                    {
+                        title: '6.1 Report Lifecycle',
+                        code: `graph TD
+    Start([Report Created]) --> StatusDraft[Status: Draft]
+    
+    StatusDraft --> StudentSubmits{Student Submits?}
+    StudentSubmits -->|No| WaitSubmission[Wait for Submission]
+    StudentSubmits -->|Yes| StatusSubmitted[Status: Submitted]
+    
+    WaitSubmission --> CheckDeadline{Deadline Passed?}
+    CheckDeadline -->|Yes| StatusOverdue[Status: Overdue]
+    CheckDeadline -->|No| StudentSubmits
+    
+    StatusSubmitted --> SupervisorReview[Supervisor Reviews]
+    SupervisorReview --> AddFeedback{Add Feedback?}
+    
+    AddFeedback -->|Annotation| AddAnnotation[Add Annotations]
+    AddFeedback -->|Comment| AddComment[Add Comments]
+    AddFeedback -->|Approve| ApproveReport[Approve Report]
+    AddFeedback -->|Reject| RejectReport[Request Revision]
+    
+    AddAnnotation --> NotifyStudent1[Notify Student]
+    AddComment --> NotifyStudent2[Notify Student]
+    RejectReport --> StatusRevision[Status: Needs Revision]
+    
+    StatusRevision --> StudentSubmits
+    
+    ApproveReport --> PanelReview{Panel Review Required?}
+    PanelReview -->|Yes| StatusPanelReview[Status: Under Panel Review]
+    PanelReview -->|No| StatusApproved[Status: Approved]
+    
+    StatusPanelReview --> PanelFeedback[Panel Provides Feedback]
+    PanelFeedback --> FinalDecision{Final Decision}
+    
+    FinalDecision -->|Approved| StatusApproved
+    FinalDecision -->|Revision| StatusRevision
+    
+    StatusApproved --> StatusComplete[Status: Complete]
+    StatusOverdue --> StatusComplete
+    
+    StatusComplete --> ArchiveReport[Archive Report]
+    ArchiveReport --> End([End])
+    
+    NotifyStudent1 --> SupervisorReview
+    NotifyStudent2 --> SupervisorReview
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style StatusComplete fill:#e8f5e9
+    style StatusOverdue fill:#ffebee`
+                    },
+                    {
+                        title: '6.2 Notification Flow',
+                        code: `graph TD
+    Start([Event Triggered]) --> IdentifyType{Event Type?}
+    
+    IdentifyType -->|Report Created| ReportNotif[Report Notification]
+    IdentifyType -->|Annotation Added| AnnotationNotif[Annotation Notification]
+    IdentifyType -->|Comment Added| CommentNotif[Comment Notification]
+    IdentifyType -->|Meeting Scheduled| MeetingNotif[Meeting Notification]
+    
+    ReportNotif --> CreateNotification[Create Notification Object]
+    AnnotationNotif --> CreateNotification
+    CommentNotif --> CreateNotification
+    MeetingNotif --> CreateNotification
+    
+    CreateNotification --> IdentifyRecipients[Identify Recipients]
+    IdentifyRecipients --> StoreInDB[Store in Database]
+    
+    StoreInDB --> SetUnread[Set Status: Unread]
+    SetUnread --> UpdateCounter[Update User's Notification Counter]
+    
+    UpdateCounter --> UserOnline{User Online?}
+    UserOnline -->|Yes| ShowBadge[Display Badge Immediately]
+    UserOnline -->|No| WaitForLogin[Wait for User Login]
+    
+    ShowBadge --> UserViews{User Views?}
+    WaitForLogin --> UserLogin[User Logs In]
+    UserLogin --> ShowBadge
+    
+    UserViews -->|Yes| MarkAsRead[Mark as Read]
+    UserViews -->|No| KeepUnread[Keep as Unread]
+    
+    MarkAsRead --> UpdateDB[Update Database]
+    UpdateDB --> End([End])
+    KeepUnread --> End
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style ShowBadge fill:#fff3cd`
+                    },
+                    {
+                        title: '6.3 File Upload Process',
+                        code: `graph TD
+    Start([User Initiates Upload]) --> SelectFile[Select File]
+    
+    SelectFile --> CheckSize{File Size OK?}
+    CheckSize -->|No| ShowSizeError[Show Size Error]
+    CheckSize -->|Yes| CheckFormat{Format Valid?}
+    
+    ShowSizeError --> SelectFile
+    
+    CheckFormat -->|No| ShowFormatError[Show Format Error]
+    CheckFormat -->|Yes| GenerateHash[Generate File Hash]
+    
+    ShowFormatError --> SelectFile
+    
+    GenerateHash --> CheckDuplicate{Duplicate File?}
+    CheckDuplicate -->|Yes| ShowDuplicateWarning[Show Duplicate Warning]
+    CheckDuplicate -->|No| UploadToServer[Upload to Server]
+    
+    ShowDuplicateWarning --> UserDecision{Continue?}
+    UserDecision -->|No| SelectFile
+    UserDecision -->|Yes| UploadToServer
+    
+    UploadToServer --> StoreFile[Store in File System]
+    StoreFile --> GeneratePath[Generate Storage Path]
+    GeneratePath --> SaveMetadata[Save File Metadata]
+    
+    SaveMetadata --> CreateRecord[Create Database Record]
+    CreateRecord --> LinkToEntity[Link to Related Entity]
+    
+    LinkToEntity --> UploadComplete[Upload Successful]
+    UploadComplete --> End([End])
+    
+    style Start fill:#e1f5fe
+    style End fill:#e1f5fe
+    style UploadComplete fill:#e8f5e9
+    style ShowSizeError fill:#ffebee
+    style ShowFormatError fill:#ffebee`
+                    }
+                ]
+            }
+        ];
+        
+        // Function to render diagrams
+        async function renderDiagrams() {
+            const container = document.getElementById('diagrams-container');
+            container.innerHTML = '';
+            
+            for (const section of sections) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'section';
+                sectionDiv.id = section.id;
+                
+                const sectionTitle = document.createElement('h2');
+                sectionTitle.innerHTML = `${section.icon} ${section.title}`;
+                sectionDiv.appendChild(sectionTitle);
+                
+                for (const diagram of section.diagrams) {
+                    const diagramTitle = document.createElement('h3');
+                    diagramTitle.textContent = diagram.title;
+                    sectionDiv.appendChild(diagramTitle);
+                    
+                    const diagramContainer = document.createElement('div');
+                    diagramContainer.className = 'diagram-container';
+                    
+                    const mermaidDiv = document.createElement('div');
+                    mermaidDiv.className = 'mermaid';
+                    mermaidDiv.textContent = diagram.code;
+                    
+                    diagramContainer.appendChild(mermaidDiv);
+                    sectionDiv.appendChild(diagramContainer);
+                }
+                
+                container.appendChild(sectionDiv);
+            }
+            
+            // Add notation guide
+            const notationDiv = document.createElement('div');
+            notationDiv.className = 'section notation-guide';
+            notationDiv.innerHTML = `
+                <h2>📖 Activity Diagram Notation Guide</h2>
+                
+                <h3>Symbols Used</h3>
+                <ul>
+                    <li><strong>Rounded Rectangle</strong>: Start/End points</li>
+                    <li><strong>Rectangle</strong>: Activities/Actions</li>
+                    <li><strong>Diamond</strong>: Decision points</li>
+                    <li><strong>Arrows</strong>: Flow direction</li>
+                    <li><strong>Parallel Bars</strong>: Concurrent activities (fork/join)</li>
+                </ul>
+                
+                <h3>Color Coding</h3>
+                <ul>
+                    <li>🔵 <strong>Light Blue</strong>: Start/End states</li>
+                    <li>🟢 <strong>Light Green</strong>: Success states</li>
+                    <li>🔴 <strong>Light Red</strong>: Error states</li>
+                    <li>🟡 <strong>Light Yellow</strong>: Warning/Notification states</li>
+                </ul>
+            `;
+            container.appendChild(notationDiv);
+            
+            // Add summary section
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'section summary-section';
+            summaryDiv.innerHTML = `
+                <h2>📊 System Activity Summary</h2>
+                
+                <h3>Core Workflows</h3>
+                <ol>
+                    <li><strong>Authentication</strong>: Multi-path authentication based on user type</li>
+                    <li><strong>Report Management</strong>: Complete lifecycle from creation to archival</li>
+                    <li><strong>Group Management</strong>: Formation and supervisor assignment</li>
+                    <li><strong>Notification System</strong>: Event-driven notification delivery</li>
+                    <li><strong>File Management</strong>: Secure upload and storage process</li>
+                    <li><strong>Data Synchronization</strong>: External API integration workflow</li>
+                </ol>
+                
+                <h3>Key Decision Points</h3>
+                <ul>
+                    <li>User type identification during login</li>
+                    <li>Assignment strategy selection for supervisor lottery</li>
+                    <li>Report approval/rejection decisions</li>
+                    <li>File validation checks</li>
+                    <li>Notification delivery timing</li>
+                </ul>
+                
+                <h3>Parallel Processes</h3>
+                <ul>
+                    <li>Multiple students can submit reports simultaneously</li>
+                    <li>Supervisors can manage multiple groups concurrently</li>
+                    <li>System can process multiple API synchronizations</li>
+                    <li>Notifications are processed asynchronously</li>
+                </ul>
+                
+                <div class="notes">
+                    <strong>Note:</strong> These activity diagrams follow IEEE standards for software documentation and UML 2.5 specifications. 
+                    They represent the logical flow of activities within the Thesis Repository Management System, focusing on business logic 
+                    rather than technical implementation details.
+                </div>
+            `;
+            container.appendChild(summaryDiv);
+            
+            // Render all mermaid diagrams
+            await mermaid.run();
+        }
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+        
+        // Load diagrams when page is ready
+        document.addEventListener('DOMContentLoaded', renderDiagrams);
+    </script>
+</body>
+</html>
