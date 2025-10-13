@@ -172,22 +172,30 @@ sequenceDiagram
     RC-->>Su: Report created
 ```
 
-### 3.3 Meeting Scheduling
+### 3.3 Meeting Record Management
 ```mermaid
 sequenceDiagram
     participant Su as Supervisor
     participant MC as MeetingController
     participant DB as Database
-    participant N as NotificationService
+    participant PDF as PDF Service
 
-    Su->>MC: Schedule meeting
+    Su->>MC: Record meeting
     MC->>DB: Get group students
-    MC-->>Su: Show scheduling form
-    Su->>MC: Submit meeting details
-    MC->>DB: Create meeting record
-    MC->>DB: Create attendance records
-    MC->>N: Notify students
-    MC-->>Su: Meeting scheduled
+    MC-->>Su: Show meeting form
+    Su->>MC: Submit meeting record
+    Note over Su,MC: • Meeting date<br/>• Discussed topics<br/>• Outcomes<br/>• Attendance
+    MC->>DB: Save meeting record
+    MC->>DB: Save attendance records
+    
+    alt Generate Report
+        Su->>MC: Request PDF report
+        MC->>DB: Get all meetings
+        MC->>PDF: Generate report
+        PDF-->>Su: Download PDF
+    end
+    
+    MC-->>Su: Meeting recorded
 ```
 
 ### 3.4 Report Annotation
@@ -295,28 +303,96 @@ sequenceDiagram
     GC-->>Ad: Groups created
 ```
 
-### 6.2 Supervisor Assignment (Lottery)
+### 6.2 Supervisor Assignment Lottery System
+
+#### 6.2.1 AOI-Based Lottery (Mode: 'aoi')
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
-    participant SAC as SupervisorAssignmentController
-    participant SAS as AssignmentService
+    participant SAS as Service
     participant DB as Database
 
-    Ad->>SAC: Run lottery
-    SAC->>DB: Get unassigned groups
-    SAC->>DB: Get available supervisors
-    SAC->>SAS: Execute lottery algorithm
+    Ad->>SAS: Run AOI lottery
+    SAS->>DB: Get groups & supervisors
     
-    loop For each group
-        SAS->>SAS: Match AOIs
-        SAS->>SAS: Check capacity
-        SAS->>SAS: Assign supervisor
+    loop Each group
+        SAS->>SAS: Get group AOIs
+        SAS->>SAS: Find matching supervisors
+        SAS->>SAS: Random selection
+        SAS->>DB: Assign & record
     end
     
-    SAS->>DB: Save assignments
-    SAS->>DB: Log history
-    SAC-->>Ad: Assignment complete
+    SAS-->>Ad: Results
+    
+    Note over SAS: Features:<br/>• Pure random within AOI<br/>• Tries fallback AOIs<br/>• Excludes last assigned
+```
+
+#### 6.2.2 Ranking-Based Lottery (Mode: 'ranking')
+```mermaid
+sequenceDiagram
+    participant Ad as Advisor
+    participant SAS as Service
+    participant DB as Database
+
+    Ad->>SAS: Run ranking lottery
+    SAS->>DB: Get groups & supervisors
+    SAS->>SAS: Sort by designation
+    
+    loop Each group
+        SAS->>SAS: Round-robin selection
+        SAS->>SAS: Check capacity
+        SAS->>DB: Assign supervisor
+    end
+    
+    SAS-->>Ad: Results
+    
+    Note over SAS: Features:<br/>• Ignores AOI completely<br/>• Fair distribution<br/>• Everyone gets 1 before 2
+```
+
+#### 6.2.3 Combined Lottery (Mode: 'both')
+```mermaid
+sequenceDiagram
+    participant Ad as Advisor
+    participant SAS as Service
+    participant DB as Database
+
+    Ad->>SAS: Run combined lottery
+    SAS->>DB: Get groups & supervisors
+    
+    loop Each group
+        SAS->>SAS: Match AOI first
+        SAS->>SAS: Find min assignments
+        SAS->>SAS: Use rank as tiebreaker
+        SAS->>DB: Assign & track
+    end
+    
+    SAS-->>Ad: Results
+    
+    Note over SAS: Features:<br/>• AOI matching required<br/>• Fair within each AOI<br/>• Rank breaks ties
+```
+
+#### 6.2.4 Lottery Comparison
+```mermaid
+graph LR
+    subgraph AOI Mode
+        A[Random Selection<br/>Within Expertise]
+    end
+    
+    subgraph Ranking Mode
+        B[Round-Robin<br/>By Designation]
+    end
+    
+    subgraph Combined Mode
+        C[AOI Match +<br/>Fair Distribution]
+    end
+    
+    Groups --> A
+    Groups --> B
+    Groups --> C
+    
+    A --> R1[Expertise matched<br/>but uneven load]
+    B --> R2[Even distribution<br/>but no expertise]
+    C --> R3[Balanced approach]
 ```
 
 ### 6.3 Excel Import/Export
