@@ -295,7 +295,49 @@ sequenceDiagram
     GC-->>Ad: Groups created
 ```
 
-### 6.2 Supervisor Assignment (Lottery)
+### 6.2 Supervisor Assignment (Three Lottery Modes)
+
+#### 6.2.1 AOI-Based Assignment (Mode: 'aoi')
+```mermaid
+sequenceDiagram
+    participant Ad as Advisor
+    participant SAC as SupervisorAssignmentController
+    participant SAS as AssignmentService
+    participant DB as Database
+    participant AH as AssignmentHistory
+
+    Ad->>SAC: Run lottery (mode: 'aoi')
+    SAC->>DB: Get unassigned groups
+    SAC->>SAS: Execute AOI assignment
+    
+    SAS->>DB: Get supervisors with AOIs
+    SAS->>SAS: Build AOI pools with randomization
+    SAS->>SAS: Shuffle supervisors within ranks
+    
+    loop For each group
+        SAS->>SAS: Get group AOIs (primary + fallback)
+        
+        loop For each AOI (in priority order)
+            SAS->>SAS: Collect all available candidates
+            SAS->>AH: Check last assigned supervisor
+            SAS->>SAS: Exclude last supervisor if others available
+            SAS->>SAS: Random selection from all candidates
+            
+            alt Supervisor found
+                SAS->>DB: Update group assignment
+                SAS->>AH: Record assignment history
+                SAS-->>SAS: Break (stop trying other AOIs)
+            else No match
+                SAS-->>SAS: Try next AOI
+            end
+        end
+    end
+    
+    SAS-->>SAC: Return results
+    SAC-->>Ad: Assignment complete with stats
+```
+
+#### 6.2.2 Ranking-Based Assignment (Mode: 'ranking')
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
@@ -303,20 +345,107 @@ sequenceDiagram
     participant SAS as AssignmentService
     participant DB as Database
 
-    Ad->>SAC: Run lottery
+    Ad->>SAC: Run lottery (mode: 'ranking')
     SAC->>DB: Get unassigned groups
-    SAC->>DB: Get available supervisors
-    SAC->>SAS: Execute lottery algorithm
+    SAC->>SAS: Execute ranking assignment
+    
+    SAS->>DB: Get all active supervisors
+    SAS->>SAS: Sort by rank (Professor > Associate > Assistant > Lecturer)
+    SAS->>SAS: Initialize round-robin tracking
+    
+    Note over SAS: PROPER ROUND-ROBIN:<br/>Each supervisor gets 1 group<br/>before any gets 2
     
     loop For each group
-        SAS->>SAS: Match AOIs
-        SAS->>SAS: Check capacity
-        SAS->>SAS: Assign supervisor
+        SAS->>SAS: Current round = 0
+        SAS->>SAS: Supervisor index = 0
+        
+        loop Until assigned or no capacity
+            alt Supervisor at current round level
+                SAS->>SAS: Check capacity
+                SAS->>DB: Assign supervisor
+                SAS->>SAS: Increment assignment count
+                SAS-->>SAS: Group assigned
+            else Already has groups for this round
+                SAS->>SAS: Skip to next supervisor
+            end
+            
+            SAS->>SAS: Move to next supervisor (circular)
+            
+            alt Completed full cycle
+                SAS->>SAS: Increment round
+            end
+        end
     end
     
-    SAS->>DB: Save assignments
-    SAS->>DB: Log history
-    SAC-->>Ad: Assignment complete
+    SAS-->>SAC: Return results
+    SAC-->>Ad: Assignment complete (ignores AOI)
+```
+
+#### 6.2.3 Combined Assignment (Mode: 'both')
+```mermaid
+sequenceDiagram
+    participant Ad as Advisor
+    participant SAC as SupervisorAssignmentController
+    participant SAS as AssignmentService
+    participant DB as Database
+
+    Ad->>SAC: Run lottery (mode: 'both')
+    SAC->>DB: Get unassigned groups
+    SAC->>SAS: Execute combined assignment
+    
+    SAS->>DB: Get supervisors with AOIs
+    SAS->>SAS: Build AOI pools WITHOUT randomization
+    SAS->>SAS: Sort by load for fairness
+    
+    Note over SAS: INTELLIGENT ROUND-ROBIN:<br/>Within each AOI, no one gets 2<br/>before everyone gets 1
+    
+    loop For each group
+        SAS->>SAS: Get group AOIs
+        
+        loop For each AOI
+            SAS->>SAS: Get all supervisors for this AOI
+            SAS->>SAS: Find minimum assignment count
+            SAS->>SAS: Filter to only min count supervisors
+            
+            alt Multiple candidates with same count
+                SAS->>SAS: Sort by rank priority
+                SAS->>SAS: Avoid consecutive assignments
+            end
+            
+            SAS->>SAS: Select best candidate
+            
+            alt Supervisor found
+                SAS->>DB: Update assignment
+                SAS->>SAS: Update global counts
+                SAS->>SAS: Track last assigned per area
+                SAS-->>SAS: Break
+            end
+        end
+    end
+    
+    SAS-->>SAC: Return results
+    SAC-->>Ad: Assignment complete (AOI + Ranking)
+```
+
+#### 6.2.4 Assignment Mode Comparison
+```mermaid
+graph TD
+    subgraph Modes["Three Assignment Modes"]
+        AOI["AOI Mode<br/>• Pure random within AOI<br/>• Tries multiple AOIs<br/>• Excludes last assigned<br/>• Ignores ranking"]
+        
+        Ranking["Ranking Mode<br/>• Strict rank priority<br/>• Round-robin fairness<br/>• Ignores AOI completely<br/>• Everyone gets 1 before 2"]
+        
+        Combined["Combined Mode<br/>• AOI matching required<br/>• Rank as tiebreaker<br/>• Intelligent round-robin<br/>• Fair distribution per AOI"]
+    end
+    
+    Start[Advisor Selects Mode] --> Decision{Which Mode?}
+    Decision -->|AOI Focus| AOI
+    Decision -->|Rank Focus| Ranking
+    Decision -->|Balanced| Combined
+    
+    AOI --> Result1[Random but AOI-matched]
+    Ranking --> Result2[Fair but ignores expertise]
+    Combined --> Result3[Best of both worlds]
 ```
 
 ### 6.3 Excel Import/Export
