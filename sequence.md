@@ -297,71 +297,94 @@ sequenceDiagram
 
 ### 6.2 Supervisor Assignment Lottery System
 
-#### 6.2.1 Unified Lottery Process
+#### 6.2.1 AOI-Based Lottery (Mode: 'aoi')
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
-    participant SAC as Controller
-    participant SAS as AssignmentService
+    participant SAS as Service
     participant DB as Database
 
-    Ad->>SAC: Select lottery mode
-    SAC->>DB: Get unassigned groups
-    SAC->>SAS: Execute lottery (mode)
-    
-    alt Mode: AOI
-        SAS->>SAS: Random selection within AOI
-        Note right of SAS: • Match group AOIs<br/>• Try fallback areas<br/>• Pure random pick
-    else Mode: Ranking
-        SAS->>SAS: Round-robin by rank
-        Note right of SAS: • Sort by designation<br/>• Fair distribution<br/>• Ignore AOI
-    else Mode: Combined
-        SAS->>SAS: AOI + Rank balance
-        Note right of SAS: • Match AOI first<br/>• Rank as tiebreaker<br/>• Fair per area
-    end
+    Ad->>SAS: Run AOI lottery
+    SAS->>DB: Get groups & supervisors
     
     loop Each group
-        SAS->>DB: Assign supervisor
-        SAS->>DB: Record history
+        SAS->>SAS: Get group AOIs
+        SAS->>SAS: Find matching supervisors
+        SAS->>SAS: Random selection
+        SAS->>DB: Assign & record
     end
     
-    SAS-->>Ad: Results & statistics
+    SAS-->>Ad: Results
+    
+    Note over SAS: Features:<br/>• Pure random within AOI<br/>• Tries fallback AOIs<br/>• Excludes last assigned
 ```
 
-#### 6.2.2 Three Assignment Algorithms
+#### 6.2.2 Ranking-Based Lottery (Mode: 'ranking')
+```mermaid
+sequenceDiagram
+    participant Ad as Advisor
+    participant SAS as Service
+    participant DB as Database
+
+    Ad->>SAS: Run ranking lottery
+    SAS->>DB: Get groups & supervisors
+    SAS->>SAS: Sort by designation
+    
+    loop Each group
+        SAS->>SAS: Round-robin selection
+        SAS->>SAS: Check capacity
+        SAS->>DB: Assign supervisor
+    end
+    
+    SAS-->>Ad: Results
+    
+    Note over SAS: Features:<br/>• Ignores AOI completely<br/>• Fair distribution<br/>• Everyone gets 1 before 2
+```
+
+#### 6.2.3 Combined Lottery (Mode: 'both')
+```mermaid
+sequenceDiagram
+    participant Ad as Advisor
+    participant SAS as Service
+    participant DB as Database
+
+    Ad->>SAS: Run combined lottery
+    SAS->>DB: Get groups & supervisors
+    
+    loop Each group
+        SAS->>SAS: Match AOI first
+        SAS->>SAS: Find min assignments
+        SAS->>SAS: Use rank as tiebreaker
+        SAS->>DB: Assign & track
+    end
+    
+    SAS-->>Ad: Results
+    
+    Note over SAS: Features:<br/>• AOI matching required<br/>• Fair within each AOI<br/>• Rank breaks ties
+```
+
+#### 6.2.4 Lottery Comparison
 ```mermaid
 graph LR
     subgraph AOI Mode
-        A1[Groups] --> A2[Match AOI]
-        A2 --> A3[Random Pick]
-        A3 --> A4[Assigned]
+        A[Random Selection<br/>Within Expertise]
     end
     
     subgraph Ranking Mode
-        B1[Groups] --> B2[Sort by Rank]
-        B2 --> B3[Round-Robin]
-        B3 --> B4[Assigned]
+        B[Round-Robin<br/>By Designation]
     end
     
     subgraph Combined Mode
-        C1[Groups] --> C2[Match AOI]
-        C2 --> C3[Rank Priority]
-        C3 --> C4[Fair Distribution]
-        C4 --> C5[Assigned]
+        C[AOI Match +<br/>Fair Distribution]
     end
-```
-
-#### 6.2.3 Mode Selection Logic
-```mermaid
-graph TD
-    Start[Unassigned Groups] --> Choice{Priority?}
-    Choice -->|Expertise Match| AOI[AOI Mode<br/>Random within expertise]
-    Choice -->|Fair Distribution| Rank[Ranking Mode<br/>Round-robin by designation]
-    Choice -->|Balanced| Comb[Combined Mode<br/>AOI + Fair distribution]
     
-    AOI --> Result[Groups Assigned]
-    Rank --> Result
-    Comb --> Result
+    Groups --> A
+    Groups --> B
+    Groups --> C
+    
+    A --> R1[Expertise matched<br/>but uneven load]
+    B --> R2[Even distribution<br/>but no expertise]
+    C --> R3[Balanced approach]
 ```
 
 ### 6.3 Excel Import/Export
