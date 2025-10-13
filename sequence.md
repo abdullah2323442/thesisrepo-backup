@@ -65,12 +65,11 @@ sequenceDiagram
     participant Student
     participant System
     participant Database
-    participant Supervisor
 
     Student->>System: Upload report document
     System->>System: Validate document format
     System->>Database: Store submission
-    System->>Supervisor: Send notification
+    System->>Database: Create supervisor notification
     System-->>Student: Confirmation message
 ```
 
@@ -97,12 +96,13 @@ sequenceDiagram
     participant Supervisor
     participant System
     participant Database
-    participant Student
 
     Supervisor->>System: Create report assignment
     System->>Database: Store report details
-    System->>Student: Notify of new assignment
+    System->>Database: Create student notification
     System-->>Supervisor: Confirmation
+    
+    Note over Database: Students see notification on dashboard
 ```
 
 ### 3.2 Document Annotation Process
@@ -111,14 +111,15 @@ sequenceDiagram
     participant Supervisor
     participant System
     participant Database
-    participant Student
 
     Supervisor->>System: Open student submission
     System->>Database: Retrieve document
     Supervisor->>System: Add annotations
     System->>Database: Save annotated version
-    System->>Student: Send notification
+    System->>Database: Create notification for students
     System-->>Supervisor: Save confirmation
+    
+    Note over Database: Students receive in-app notification
 ```
 
 ### 3.3 Meeting Documentation
@@ -272,24 +273,34 @@ sequenceDiagram
     Web Server-->>Client: HTTP Response
 ```
 
-### 6.2 Notification System
+### 6.2 Student Notification System
 ```mermaid
 sequenceDiagram
+    participant Supervisor
     participant System
-    participant Notification Service
     participant Database
-    participant User
+    participant Student Dashboard
 
-    System->>Notification Service: Trigger event
-    Notification Service->>Database: Store notification
+    Note over Supervisor,Student Dashboard: Report updates trigger notifications
     
-    alt Email delivery
-        Notification Service->>User: Send email
-    else In-app notification
-        User->>System: Check notifications
-        System->>Database: Retrieve notifications
-        Database-->>System: Return data
-        System-->>User: Display notifications
+    alt New Report Created
+        Supervisor->>System: Create new report
+        System->>Database: Store notification
+        Student Dashboard->>Database: Poll for updates
+        Database-->>Student Dashboard: New report notification
+        Student Dashboard->>Student Dashboard: Display notification badge
+    else Report Annotated
+        Supervisor->>System: Add annotations
+        System->>Database: Store notification
+        Student Dashboard->>Database: Check notifications
+        Database-->>Student Dashboard: Annotation notification
+        Student Dashboard->>Student Dashboard: Update notification count
+    else Comment Added
+        Supervisor->>System: Add comment
+        System->>Database: Store notification
+        Student Dashboard->>Database: Fetch notifications
+        Database-->>Student Dashboard: New comment alert
+        Student Dashboard->>Student Dashboard: Display in notification panel
     end
 ```
 
@@ -337,7 +348,7 @@ sequenceDiagram
 4. **Meeting Documentation**: Recording and tracking of supervision meetings
 5. **Automated Assignment**: Algorithmic supervisor-group matching
 6. **Data Synchronization**: Integration with university systems
-7. **Notification System**: Real-time updates for all stakeholders
+7. **In-App Notifications**: Dashboard-based notifications for students on report updates
 
 ---
 
