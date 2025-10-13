@@ -8,7 +8,7 @@ Supervisors are the main thesis guides responsible for managing groups, conducti
 ```mermaid
 graph LR
     %% Actor
-    Supervisor((Supervisor))
+    actor Supervisor
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -26,15 +26,13 @@ graph LR
     Supervisor ---|pink| UC4
     
     %% Styling
-    classDef actor fill:#e91e63,stroke:#000,stroke-width:2px
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class Supervisor actor
     class System system
     class UC1,UC2,UC3,UC4 usecase
     
-    style Supervisor fill:#e91e63,color:#fff
+    style Supervisor fill:#e91e63,color:#fff,stroke:#000,stroke-width:2px
 ```
 
 ## Detailed Use Case Diagram
@@ -42,7 +40,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    Supervisor[("👤 Supervisor")]
+    actor Supervisor as "👤 Supervisor"
     
     %% System Boundary
     subgraph System["Thesis Management System - Supervisor Module"]
@@ -146,7 +144,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    Supervisor((Supervisor))
+    actor Supervisor
     
     %% System Boundary
     subgraph System["Supervisor Management System"]
@@ -166,11 +164,11 @@ graph LR
     Supervisor --> UC5
     
     %% Styling
-    classDef actor fill:#ffecb3,stroke:#ff6f00,stroke-width:3px
     classDef usecase fill:#e0f2f1,stroke:#00695c,stroke-width:2px
     
-    class Supervisor actor
     class UC1,UC2,UC3,UC4,UC5 usecase
+    
+    style Supervisor fill:#ffecb3,stroke:#ff6f00,stroke-width:3px
 ```
 
 ## Detailed Workflow Diagram
@@ -178,7 +176,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    Supervisor((Supervisor))
+    actor Supervisor
     
     %% Main Workflows
     subgraph Workflows["Supervisor Workflows"]
@@ -218,12 +216,12 @@ graph TD
     Supervisor --> CreateReport
     
     %% Styling
-    classDef actor fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef process fill:#f5f5f5,stroke:#424242,stroke-width:1px
     classDef workflow fill:#fafafa,stroke:#9e9e9e,stroke-width:2px
     
-    class Supervisor actor
     class ViewGroups,SetPerms,CreateMeet,RecordAttend,ExportPDF,CreateReport,Review,Annotate,Approve,Publish process
+    
+    style Supervisor fill:#ffe0b2,stroke:#e65100,stroke-width:3px
 ```
 
 ## Key Use Cases
@@ -276,7 +274,8 @@ graph TB
     UC33 --> Comments[Add Comments]
     UC33 --> Notifications[Send Notifications]
     
-    Supervisor2((Supervisor)) --> Extended
+    actor Supervisor2 as "Supervisor"
+    Supervisor2 --> Extended
     
     %% Styling
     classDef extended fill:#e8eaf6,stroke:#3f51b5,stroke-width:1px

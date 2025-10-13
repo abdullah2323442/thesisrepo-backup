@@ -8,12 +8,12 @@ This diagram shows all system actors and their interactions with the Thesis Mana
 ```mermaid
 graph LR
     %% Actors
-    Admin((Admin))
-    CoSupervisor((Co-Supervisor))
-    Supervisor((Supervisor))
-    Advisor((Advisor))
-    PanelMember((Panel Member))
-    Student((Student))
+    actor Admin
+    actor CoSupervisor as "Co-Supervisor"
+    actor Supervisor
+    actor Advisor
+    actor PanelMember as "Panel Member"
+    actor Student
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -55,23 +55,18 @@ graph LR
     Student ---|purple| UC7
     
     %% Styling
-    classDef adminActor fill:#ff6b6b,stroke:#000,stroke-width:2px,color:#fff
-    classDef advisorActor fill:#2196f3,stroke:#000,stroke-width:2px,color:#fff
-    classDef coSupervisorActor fill:#4caf50,stroke:#000,stroke-width:2px,color:#fff
-    classDef supervisorActor fill:#e91e63,stroke:#000,stroke-width:2px,color:#fff
-    classDef panelMemberActor fill:#009688,stroke:#000,stroke-width:2px,color:#fff
-    classDef studentActor fill:#9c27b0,stroke:#000,stroke-width:2px,color:#fff
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class Admin adminActor
-    class Advisor advisorActor
-    class CoSupervisor coSupervisorActor
-    class Supervisor supervisorActor
-    class PanelMember panelMemberActor
-    class Student studentActor
     class System system
     class UC1,UC2,UC3,UC4,UC5,UC6,UC7,UC8,UC9 usecase
+    
+    style Admin fill:#ff6b6b,stroke:#000,stroke-width:2px,color:#fff
+    style Advisor fill:#2196f3,stroke:#000,stroke-width:2px,color:#fff
+    style CoSupervisor fill:#4caf50,stroke:#000,stroke-width:2px,color:#fff
+    style Supervisor fill:#e91e63,stroke:#000,stroke-width:2px,color:#fff
+    style PanelMember fill:#009688,stroke:#000,stroke-width:2px,color:#fff
+    style Student fill:#9c27b0,stroke:#000,stroke-width:2px,color:#fff
 ```
 
 ## Detailed Actor-Use Case Relationships

@@ -8,7 +8,7 @@ Panel Members serve as reviewers for thesis groups, providing feedback through a
 ```mermaid
 graph LR
     %% Actor
-    PanelMember((Panel Member))
+    actor PanelMember as "Panel Member"
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -20,15 +20,13 @@ graph LR
     PanelMember ---|teal| UC1
     
     %% Styling
-    classDef actor fill:#009688,stroke:#000,stroke-width:2px
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class PanelMember actor
     class System system
     class UC1 usecase
     
-    style PanelMember fill:#009688,color:#fff
+    style PanelMember fill:#009688,color:#fff,stroke:#000,stroke-width:2px
 ```
 
 ## Detailed Use Case Diagram
@@ -36,7 +34,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    PanelMember[("👤 Panel Member")]
+    actor PanelMember as "👤 Panel Member"
     
     %% System Boundary
     subgraph System["Thesis Management System - Panel Member Module"]
@@ -103,7 +101,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    PanelMember((Panel Member))
+    actor PanelMember as "Panel Member"
     
     %% System Boundary
     subgraph System["Panel Member Portal"]
@@ -119,11 +117,11 @@ graph LR
     PanelMember --> UC3
     
     %% Styling
-    classDef actor fill:#f3e5f5,stroke:#6a1b9a,stroke-width:3px
     classDef usecase fill:#e0f2f1,stroke:#00695c,stroke-width:2px
     
-    class PanelMember actor
     class UC1,UC2,UC3 usecase
+    
+    style PanelMember fill:#f3e5f5,stroke:#6a1b9a,stroke-width:3px
 ```
 
 ## Review Workflow Diagram
@@ -131,7 +129,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    PanelMember((Panel Member))
+    actor PanelMember as "Panel Member"
     
     %% Review Workflow
     subgraph ReviewProcess["Panel Review Process"]
@@ -170,13 +168,13 @@ graph TD
     PanelMember --> ViewGroups
     
     %% Styling
-    classDef actor fill:#ce93d8,stroke:#6a1b9a,stroke-width:3px
     classDef process fill:#ffffff,stroke:#424242,stroke-width:1px
     classDef notification fill:#fff9c4,stroke:#f57f17,stroke-width:1px
     
-    class PanelMember actor
     class ViewGroups,SelectGroup,ViewReports,SelectReport,MarkReview,ViewSubmission,DownloadPDF,AnnotatePDF,SaveDraft,SendFeedback process
     class NotifyStudent notification
+    
+    style PanelMember fill:#ce93d8,stroke:#6a1b9a,stroke-width:3px
 ```
 
 ## Key Use Cases

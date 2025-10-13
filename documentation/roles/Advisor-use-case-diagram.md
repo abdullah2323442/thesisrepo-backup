@@ -8,7 +8,7 @@ Advisors manage student group formation and supervisor assignment, acting as the
 ```mermaid
 graph LR
     %% Actor
-    Advisor((Advisor))
+    actor Advisor
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -22,15 +22,13 @@ graph LR
     Advisor ---|blue| UC2
     
     %% Styling
-    classDef actor fill:#2196f3,stroke:#000,stroke-width:2px
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class Advisor actor
     class System system
     class UC1,UC2 usecase
     
-    style Advisor fill:#2196f3,color:#fff
+    style Advisor fill:#2196f3,color:#fff,stroke:#000,stroke-width:2px
 ```
 
 ## Detailed Use Case Diagram
@@ -38,7 +36,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    Advisor[("👤 Advisor")]
+    actor Advisor as "👤 Advisor"
     
     %% System Boundary
     subgraph System["Thesis Management System - Advisor Module"]
@@ -151,7 +149,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    Advisor((Advisor))
+    actor Advisor
     
     %% System Boundary
     subgraph System["Advisor Management System"]
@@ -171,11 +169,11 @@ graph LR
     Advisor --> UC5
     
     %% Styling
-    classDef actor fill:#e1bee7,stroke:#6a1b9a,stroke-width:3px
     classDef usecase fill:#e0f7fa,stroke:#00838f,stroke-width:2px
     
-    class Advisor actor
     class UC1,UC2,UC3,UC4,UC5 usecase
+    
+    style Advisor fill:#e1bee7,stroke:#6a1b9a,stroke-width:3px
 ```
 
 ## Detailed Workflow Diagram
@@ -183,7 +181,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    Advisor((Advisor))
+    actor Advisor
     
     %% Main Workflows
     subgraph Workflows["Advisor Workflows"]
@@ -231,12 +229,12 @@ graph TD
     Advisor --> SelectMethod
     
     %% Styling
-    classDef actor fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
     classDef process fill:#ffffff,stroke:#424242,stroke-width:1px
     classDef workflow fill:#fafafa,stroke:#9e9e9e,stroke-width:2px
     
-    class Advisor actor
     class GetStudents,CreateGroup,AssignStudents,SetAOI,ValidateGroup,CheckAvailable,MatchAOI,CheckCapacity,AssignSuper,SelectMethod,RunLottery,Preview,Confirm process
+    
+    style Advisor fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px
 ```
 
 ## Key Use Cases

@@ -8,7 +8,7 @@ Students are the primary end-users of the thesis management system, focusing on 
 ```mermaid
 graph LR
     %% Actor
-    Student((Student))
+    actor Student
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -24,15 +24,13 @@ graph LR
     Student ---|purple| UC3
     
     %% Styling
-    classDef actor fill:#9c27b0,stroke:#000,stroke-width:2px
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class Student actor
     class System system
     class UC1,UC2,UC3 usecase
     
-    style Student fill:#9c27b0,color:#fff
+    style Student fill:#9c27b0,color:#fff,stroke:#000,stroke-width:2px
 ```
 
 ## Detailed Use Case Diagram
@@ -40,7 +38,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    Student[("👤 Student")]
+    actor Student as "👤 Student"
     
     %% System Boundary
     subgraph System["Thesis Management System - Student Module"]
@@ -131,7 +129,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    Student((Student))
+    actor Student
     
     %% System Boundary
     subgraph System["Student Portal"]
@@ -151,11 +149,11 @@ graph LR
     Student --> UC5
     
     %% Styling
-    classDef actor fill:#e1f5fe,stroke:#0277bd,stroke-width:3px
     classDef usecase fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
     
-    class Student actor
     class UC1,UC2,UC3,UC4,UC5 usecase
+    
+    style Student fill:#e1f5fe,stroke:#0277bd,stroke-width:3px
 ```
 
 ## Detailed Use Case Breakdown
@@ -163,7 +161,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    Student((Student))
+    actor Student
     
     %% Primary Use Cases with Extensions
     subgraph Primary["Primary Activities"]
@@ -193,13 +191,13 @@ graph TD
     Student --> Primary
     
     %% Styling
-    classDef actor fill:#bbdefb,stroke:#1976d2,stroke-width:3px
     classDef primary fill:#fff9c4,stroke:#f57f17,stroke-width:2px
     classDef extended fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px
     
-    class Student actor
     class Submit,View,Track,Communicate primary
     class PDF,PPT,Edit,Delete,Dashboard,Reports,Meetings,Status,Comments,Annotations,Notifications,Feedback extended
+    
+    style Student fill:#bbdefb,stroke:#1976d2,stroke-width:3px
 ```
 
 ## Key Use Cases

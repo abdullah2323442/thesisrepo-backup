@@ -8,7 +8,7 @@ The Admin role has comprehensive system management capabilities including config
 ```mermaid
 graph LR
     %% Actor
-    Admin((Admin))
+    actor Admin
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -24,15 +24,13 @@ graph LR
     Admin ---|red| UC2
     
     %% Styling
-    classDef actor fill:#ff6b6b,stroke:#000,stroke-width:2px
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class Admin actor
     class System system
     class UC1,UC2,UC3,UC4 usecase
     
-    style Admin fill:#ff6b6b,color:#fff
+    style Admin fill:#ff6b6b,color:#fff,stroke:#000,stroke-width:2px
 ```
 
 ## Detailed Use Case Diagram
@@ -40,7 +38,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    Admin[("👤 Admin")]
+    actor Admin as "👤 Admin"
     
     %% System Boundary
     subgraph System["Thesis Management System - Admin Module"]
@@ -153,7 +151,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    Admin((Admin))
+    actor Admin
     
     %% System Boundary
     subgraph System["Admin Management System"]
@@ -173,11 +171,11 @@ graph LR
     Admin --> UC5
     
     %% Styling
-    classDef actor fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px
     classDef usecase fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     
-    class Admin actor
     class UC1,UC2,UC3,UC4,UC5 usecase
+    
+    style Admin fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px
 ```
 
 ## Key Use Cases

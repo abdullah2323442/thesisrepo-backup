@@ -8,7 +8,7 @@ Co-Supervisors assist main supervisors in thesis guidance, with conditional meet
 ```mermaid
 graph LR
     %% Actor
-    CoSupervisor((Co-Supervisor))
+    actor CoSupervisor as "Co-Supervisor"
     
     %% System Boundary
     subgraph System["Thesis Management System"]
@@ -20,15 +20,13 @@ graph LR
     CoSupervisor ---|green| UC1
     
     %% Styling
-    classDef actor fill:#4caf50,stroke:#000,stroke-width:2px
     classDef system fill:#4dabf7,stroke:#000,stroke-width:2px
     classDef usecase fill:#ffffff,stroke:#000,stroke-width:1px
     
-    class CoSupervisor actor
     class System system
     class UC1 usecase
     
-    style CoSupervisor fill:#4caf50,color:#fff
+    style CoSupervisor fill:#4caf50,color:#fff,stroke:#000,stroke-width:2px
 ```
 
 ## Detailed Use Case Diagram
@@ -36,7 +34,7 @@ graph LR
 ```mermaid
 graph TB
     %% Actor
-    CoSupervisor[("👤 Co-Supervisor")]
+    actor CoSupervisor as "👤 Co-Supervisor"
     
     %% System Boundary
     subgraph System["Thesis Management System - Co-Supervisor Module"]
@@ -122,7 +120,7 @@ graph TB
 ```mermaid
 graph LR
     %% Actor
-    CoSupervisor((Co-Supervisor))
+    actor CoSupervisor as "Co-Supervisor"
     
     %% System Boundary
     subgraph System["Co-Supervisor Portal"]
@@ -143,13 +141,13 @@ graph LR
     UC2 -.-> Note["*Requires Permission from Main Supervisor"]
     
     %% Styling
-    classDef actor fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
     classDef usecase fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     classDef note fill:#fffde7,stroke:#f57f17,stroke-width:1px,stroke-dasharray: 3 3
     
-    class CoSupervisor actor
     class UC1,UC2,UC3,UC4 usecase
     class Note note
+    
+    style CoSupervisor fill:#fff3e0,stroke:#ef6c00,stroke-width:3px
 ```
 
 ## Permission-Based Workflow
@@ -157,7 +155,7 @@ graph LR
 ```mermaid
 graph TD
     %% Actor
-    CoSupervisor((Co-Supervisor))
+    actor CoSupervisor as "Co-Supervisor"
     
     %% Permission Check Flow
     subgraph PermissionFlow["Permission-Based Access"]
@@ -195,17 +193,17 @@ graph TD
     CoSupervisor --> AlwaysAvailable
     
     %% Styling
-    classDef actor fill:#ffe0b2,stroke:#e65100,stroke-width:3px
     classDef decision fill:#fff9c4,stroke:#f9a825,stroke-width:2px
     classDef allowed fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
     classDef restricted fill:#ffcdd2,stroke:#c62828,stroke-width:1px
     classDef always fill:#e1f5fe,stroke:#0277bd,stroke-width:1px
     
-    class CoSupervisor actor
     class CheckPerm decision
     class CreateMeet,EditMeet,ManageMeet allowed
     class ViewOnly,NoCreate,NoEdit restricted
     class ViewReports,Annotate,SendFeedback always
+    
+    style CoSupervisor fill:#ffe0b2,stroke:#e65100,stroke-width:3px
 ```
 
 ## Key Use Cases
