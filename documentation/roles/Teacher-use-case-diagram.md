@@ -1,580 +1,345 @@
 # Teacher Use Case Diagram
 
 ## Overview
-Teacher is a multi-faceted role in the ThesisRepo system. Teachers can serve as supervisors, co-supervisors, panel members, and potentially system administrators. The system dynamically detects and enables appropriate functionalities based on role assignments and permissions.
+Teacher is NOT a role with inherent features in the ThesisRepo system. It's merely a login type that provides access to various panels based on actual assignments. A teacher without any assignments cannot perform any actions in the system.
+
+## Important Note
+**Teachers have NO specific features by default.** They can only:
+1. Login to the system
+2. View their dashboard showing available panels
+3. Access panels ONLY if they have actual assignments:
+   - Supervisor panel → Requires being assigned as supervisor to at least one group
+   - Co-Supervisor panel → Requires being assigned as co-supervisor to at least one group
+   - Panel Member panel → Requires being assigned as panel member to at least one group
+   - Advisor panel → Accessible but requires actual student assignments to be functional
+   - Admin panel → Only if type_id includes '1'
 
 ## Use Case Diagram
 
 ```mermaid
 graph TB
     %% Actors
-    Teacher[("👤 Teacher<br/>(Faculty Member)")]
-    TeacherAdmin[("👤 Teacher-Admin<br/>(Dual Role)")]
+    Teacher[("👤 Teacher<br/>(Login Type)")]
     
     %% System Boundary
-    subgraph System["ThesisRepo - Teacher Module"]
-        %% Faculty Dashboard
-        subgraph FacultyDashboard["Faculty Dashboard"]
-            UC1["View Unified Teacher Dashboard"]
-            UC2["Switch Between Academic Roles"]
-            UC3["View All Assigned Groups<br/>(across all roles)"]
-            UC4["Check Notification Center"]
+    subgraph System["ThesisRepo - Teacher Access System"]
+        %% Basic Teacher Access (Always Available)
+        subgraph BasicAccess["Basic Teacher Access"]
+            UC1["Login to System"]
+            UC2["View Teacher Dashboard"]
+            UC3["See Available Panels<br/>(Based on Assignments)"]
+            UC4["View Profile Information"]
         end
         
-        %% Role-Based Academic Access
-        subgraph RoleAccess["Academic Role Access"]
-            UC5["Access Supervisor Dashboard<br/>(for groups where assigned as supervisor)"]
-            UC6["Access Co-Supervisor Dashboard<br/>(for groups where assigned as co-supervisor)"]
-            UC7["Access Panel Member Dashboard<br/>(for groups where assigned to panel)"]
+        %% Conditional Access Based on Assignments
+        subgraph ConditionalAccess["Conditional Access (Requires Actual Assignment)"]
+            %% Supervisor Access
+            subgraph SupervisorAccess["IF Assigned as Supervisor"]
+                UC5["Access Supervisor Panel"]
+                UC6["View Supervised Groups"]
+                UC7["Manage Meetings"]
+                UC8["Create/Edit/Delete Reports"]
+                UC9["Approve Thesis"]
+                UC10["Add Comments on Reports<br/>(ONLY for supervised groups)"]
+            end
+            
+            %% Co-Supervisor Access
+            subgraph CoSupervisorAccess["IF Assigned as Co-Supervisor"]
+                UC11["Access Co-Supervisor Panel"]
+                UC12["View Co-Supervised Groups"]
+                UC13["Conditional Meeting Management<br/>(if permission granted)"]
+                UC14["Review Reports"]
+                UC15["Annotate Submissions"]
+            end
+            
+            %% Panel Member Access
+            subgraph PanelAccess["IF Assigned as Panel Member"]
+                UC16["Access Panel Member Panel"]
+                UC17["View Panel Groups"]
+                UC18["Review Reports"]
+                UC19["Create Annotations"]
+            end
+            
+            %% Advisor Access
+            subgraph AdvisorAccess["IF Has Teacher Role"]
+                UC20["Access Advisor Panel<br/>(But needs student assignments)"]
+            end
+            
+            %% Admin Access
+            subgraph AdminAccess["IF type_id includes '1'"]
+                UC21["Access Admin Panel"]
+                UC22["Manage System Settings"]
+                UC23["Sync from APIs"]
+                UC24["Global Management"]
+            end
         end
         
-        %% Supervisor Functions (When Assigned)
-        subgraph SupervisorFunctions["Supervisor Capabilities"]
-            UC8["Schedule/Manage Meetings<br/>(via MeetingAttendance model)"]
-            UC9["Create/Edit/Delete Reports<br/>(Report model)"]
-            UC10["Approve Final Thesis"]
-            UC11["Annotate Student Submissions<br/>(ReportAnnotationSession)"]
-            UC12["Set Co-Supervisor Meeting Rights"]
-        end
-        
-        %% Co-Supervisor Functions (When Assigned)
-        subgraph CoSupervisorFunctions["Co-Supervisor Capabilities"]
-            UC13["View Assigned Groups<br/>(GroupStudent relations)"]
-            UC14["Manage Meetings<br/>(if permission granted)"]
-            UC15["Review & Annotate Reports"]
-            UC16["Track Student Progress"]
-        end
-        
-        %% Panel Member Functions (When Assigned)
-        subgraph PanelFunctions["Panel Member Capabilities"]
-            UC17["Review Assigned Reports<br/>(GroupPanelMember relations)"]
-            UC18["Create Annotation Sessions"]
-            UC19["Mark Reports as Reviewed"]
-            UC20["Provide Evaluation Feedback"]
-        end
-        
-        %% Teacher-Specific Features
-        subgraph TeacherSpecific["Teacher Core Features"]
-            UC21["Add Comments on Reports<br/>(ReportComment model)"]
-            UC22["View Supervisor Assignments<br/>(Supervisor model)"]
-            UC23["Check Thesis Capacity Limits"]
-            UC24["View Area of Interest Assignments"]
-        end
-        
-        %% Admin Functions (If Teacher has Admin Role)
-        subgraph AdminFunctions["Administrative Functions<br/>(When type_id includes '1')"]
-            UC25["Manage Areas of Interest<br/>(AreaOfInterest CRUD)"]
-            UC26["Sync Supervisors from API<br/>(SupervisorApiService)"]
-            UC27["Manage Batches<br/>(BatchApiService)"]
-            UC28["Create/Delete Groups<br/>(AdminCreatedGroup)"]
-            UC29["Assign Students to Groups<br/>(GroupStudent)"]
-            UC30["Monitor System Performance<br/>(PerformanceMonitoringService)"]
-            UC31["Manage Global Supervisor Assignments<br/>(SupervisorAssignmentService)"]
+        %% No Assignment State
+        subgraph NoAssignment["If No Assignments"]
+            UC25["View Dashboard Only<br/>(No functional access)"]
+            UC26["See 'No groups assigned' messages"]
         end
     end
     
-    %% Connections for Regular Teacher
+    %% Basic connections (always available)
     Teacher --> UC1
-    Teacher --> UC2
-    Teacher --> UC3
-    Teacher --> UC4
-    Teacher --> UC5
-    Teacher --> UC6
-    Teacher --> UC7
+    UC1 --> UC2
+    UC2 --> UC3
+    UC2 --> UC4
     
+    %% Conditional connections
+    UC3 -.->|If supervisor_id matches| UC5
+    UC5 --> UC6
+    UC5 --> UC7
     UC5 --> UC8
     UC5 --> UC9
     UC5 --> UC10
-    UC5 --> UC11
-    UC5 --> UC12
     
-    UC6 --> UC13
-    UC6 --> UC14
-    UC6 --> UC15
-    UC6 --> UC16
+    UC3 -.->|If co_supervisor_id matches| UC11
+    UC11 --> UC12
+    UC11 --> UC13
+    UC11 --> UC14
+    UC11 --> UC15
     
-    UC7 --> UC17
-    UC7 --> UC18
-    UC7 --> UC19
-    UC7 --> UC20
+    UC3 -.->|If in group_panel_members| UC16
+    UC16 --> UC17
+    UC16 --> UC18
+    UC16 --> UC19
     
-    Teacher --> UC21
-    Teacher --> UC22
-    Teacher --> UC23
-    Teacher --> UC24
+    UC3 -.->|If has teacher role| UC20
     
-    UC21 -.triggers.-> UC4
+    UC3 -.->|If type_id has '1'| UC21
+    UC21 --> UC22
+    UC21 --> UC23
+    UC21 --> UC24
     
-    %% Connections for Teacher-Admin
-    TeacherAdmin --> UC1
-    TeacherAdmin --> UC25
-    TeacherAdmin --> UC26
-    TeacherAdmin --> UC27
-    TeacherAdmin --> UC28
-    TeacherAdmin --> UC29
-    TeacherAdmin --> UC30
-    TeacherAdmin --> UC31
+    UC3 -.->|If no assignments| UC25
+    UC25 --> UC26
     
     %% Styling
     classDef actor fill:#ffecb3,stroke:#ff6f00,stroke-width:3px
-    classDef adminActor fill:#ffcdd2,stroke:#d32f2f,stroke-width:3px
-    classDef usecase fill:#e8f5e9,stroke:#388e3c,stroke-width:1px
-    classDef roleSpecific fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,stroke-dasharray: 5 5
-    classDef adminFunc fill:#fce4ec,stroke:#c2185b,stroke-width:2px,stroke-dasharray: 3 3
+    classDef basic fill:#e8f5e9,stroke:#388e3c,stroke-width:1px
+    classDef conditional fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,stroke-dasharray: 5 5
+    classDef noAccess fill:#ffebee,stroke:#c62828,stroke-width:1px
     classDef subsystem fill:#f5f5f5,stroke:#616161,stroke-width:2px
     
     class Teacher actor
-    class TeacherAdmin adminActor
-    class UC1,UC2,UC3,UC4,UC21,UC22,UC23,UC24 usecase
-    class UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19,UC20 roleSpecific
-    class UC25,UC26,UC27,UC28,UC29,UC30,UC31 adminFunc
+    class UC1,UC2,UC3,UC4 basic
+    class UC5,UC6,UC7,UC8,UC9,UC10,UC11,UC12,UC13,UC14,UC15,UC16,UC17,UC18,UC19,UC20,UC21,UC22,UC23,UC24 conditional
+    class UC25,UC26 noAccess
 ```
 
-## Simplified Multi-Role View with Admin Integration
+## Simplified Reality View
 
 ```mermaid
 graph LR
-    %% Actors
+    %% Actor
     Teacher((Teacher))
-    TeacherAdmin((Teacher<br/>+Admin))
     
-    %% System Boundary
-    subgraph System["ThesisRepo Multi-Role System"]
-        %% Central Hub
-        Hub[Unified Dashboard<br/>Dynamic Role Detection]
+    %% System
+    subgraph System["ThesisRepo System"]
+        Dashboard[Teacher Dashboard<br/>Shows Available Panels]
         
-        %% Academic Roles
-        subgraph AcademicRoles["Academic Roles"]
-            Supervisor[Supervisor<br/>• Manage Meetings<br/>• Create/Delete Reports<br/>• Approve Thesis<br/>• Full Group Control]
-            CoSupervisor[Co-Supervisor<br/>• Conditional Meetings<br/>• Review Reports<br/>• Annotate Submissions<br/>• Support Role]
-            Panel[Panel Member<br/>• Review Reports<br/>• Provide Feedback<br/>• Evaluation Only<br/>• No Management]
-        end
+        %% Assignment Check
+        Check{Check Assignments<br/>in Database}
         
-        %% Administrative Role
-        subgraph AdminRole["System Administration<br/>(if type_id includes '1')"]
-            Admin[Admin Functions<br/>• Manage AOIs<br/>• Sync from APIs<br/>• Global Groups<br/>• System Monitoring]
-        end
+        %% Possible Outcomes
+        NoAccess[❌ No Access<br/>"No groups assigned"]
+        SupervisorPanel[✓ Supervisor Panel<br/>Full Features]
+        CoSupervisorPanel[✓ Co-Supervisor Panel<br/>Limited Features]
+        PanelMemberPanel[✓ Panel Member Panel<br/>Review Only]
+        AdminPanel[✓ Admin Panel<br/>System Management]
         
-        %% Core Teacher Features
-        TeacherCore[Teacher Features<br/>• Add Comments<br/>• View Assignments<br/>• Check Capacity<br/>• Notifications]
+        %% Empty Panels
+        EmptyAdvisor[Advisor Panel<br/>(Empty - No Students)]
     end
     
-    %% Connections for Regular Teacher
-    Teacher --> Hub
-    Hub --> Supervisor
-    Hub --> CoSupervisor
-    Hub --> Panel
-    Teacher --> TeacherCore
+    Teacher --> Dashboard
+    Dashboard --> Check
     
-    %% Connections for Teacher-Admin
-    TeacherAdmin --> Hub
-    TeacherAdmin --> Admin
-    Admin -.extends.-> Supervisor
-    Admin -.extends.-> TeacherCore
+    Check -->|No Assignments| NoAccess
+    Check -->|supervisor_id matches| SupervisorPanel
+    Check -->|co_supervisor_id matches| CoSupervisorPanel
+    Check -->|in group_panel_members| PanelMemberPanel
+    Check -->|type_id has '1'| AdminPanel
+    Check -->|Has teacher role| EmptyAdvisor
     
     %% Styling
     classDef actor fill:#ffe0b2,stroke:#ef6c00,stroke-width:3px
-    classDef adminActor fill:#ffcdd2,stroke:#c62828,stroke-width:3px,stroke-dasharray: 5 5
-    classDef hub fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    classDef role fill:#e1f5fe,stroke:#0277bd,stroke-width:1px
-    classDef adminRole fill:#fce4ec,stroke:#ad1457,stroke-width:2px
-    classDef feature fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px
+    classDef dashboard fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+    classDef check fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef access fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
+    classDef noAccess fill:#ffcdd2,stroke:#c62828,stroke-width:1px
+    classDef empty fill:#fff3e0,stroke:#ff9800,stroke-width:1px
     
     class Teacher actor
-    class TeacherAdmin adminActor
-    class Hub hub
-    class Supervisor,CoSupervisor,Panel role
-    class Admin adminRole
-    class TeacherCore feature
+    class Dashboard dashboard
+    class Check check
+    class SupervisorPanel,CoSupervisorPanel,PanelMemberPanel,AdminPanel access
+    class NoAccess noAccess
+    class EmptyAdvisor empty
 ```
 
-## Dynamic Role Assignment Flow with Admin Detection
+## Assignment-Based Access Flow
 
 ```mermaid
 graph TD
     %% Actor
     Teacher((Teacher))
     
-    %% Role Detection
-    subgraph RoleDetection["ThesisRepo Role Detection System"]
-        Login[Teacher Login<br/>via External API]
-        DetectType{Detect Login Type<br/>from Input Pattern}
-        CallAPI[Call Teacher API<br/>with Credentials]
-        ParseTypeId[Parse TypeId Field<br/>'1''2' format → ['1','2']]
-        CheckUser{Check User Model<br/>type_id array}
+    %% Login and Check Process
+    subgraph LoginProcess["Login & Assignment Check"]
+        Login[Teacher Login]
+        LoadDashboard[Load Teacher Dashboard]
+        CheckDB{Query Database<br/>for Assignments}
         
-        %% Admin Check
-        IsAdmin{type_id<br/>includes '1'?}
-        EnableAdmin[Enable Admin<br/>Dashboard & Functions<br/>via 'admin' middleware]
+        %% Database Checks
+        CheckSuper{supervisor_id<br/>in groups table?}
+        CheckCoSuper{co_supervisor_id<br/>in groups table?}
+        CheckPanel{supervisor_id in<br/>group_panel_members?}
+        CheckAdmin{type_id<br/>includes '1'?}
         
-        %% Academic Role Checks
-        CheckAcademic[Check Academic Assignments]
-        HasSuper{Supervisor<br/>in groups.supervisor_id?}
-        HasCoSuper{Co-Supervisor<br/>in groups.co_supervisor_id?}
-        HasPanel{Panel Member<br/>in group_panel_members?}
-        
-        %% Enable Dashboards
-        EnableSuper[Enable Supervisor<br/>Dashboard & Reports]
-        EnableCoSuper[Enable Co-Supervisor<br/>Dashboard]
-        EnablePanel[Enable Panel<br/>Review Interface]
-        
-        %% Combined Access
-        SetSession[Set Session Data<br/>user_type: 'teacher']
-        CombinedDash[Teacher Dashboard<br/>with All Active Roles]
+        %% Results
+        ShowPanels[Show Available Panels<br/>with Quick Actions]
+        ShowEmpty[Show Dashboard<br/>No Functional Access]
     end
     
     Teacher --> Login
-    Login --> DetectType
-    DetectType --> CallAPI
-    CallAPI --> ParseTypeId
-    ParseTypeId --> CheckUser
-    CheckUser --> IsAdmin
-    CheckUser --> CheckAcademic
+    Login --> LoadDashboard
+    LoadDashboard --> CheckDB
     
-    IsAdmin -->|Yes| EnableAdmin
-    IsAdmin -->|No| CheckAcademic
+    CheckDB --> CheckSuper
+    CheckDB --> CheckCoSuper
+    CheckDB --> CheckPanel
+    CheckDB --> CheckAdmin
     
-    CheckAcademic --> HasSuper
-    CheckAcademic --> HasCoSuper
-    CheckAcademic --> HasPanel
+    CheckSuper -->|Yes| ShowPanels
+    CheckCoSuper -->|Yes| ShowPanels
+    CheckPanel -->|Yes| ShowPanels
+    CheckAdmin -->|Yes| ShowPanels
     
-    HasSuper -->|Yes| EnableSuper
-    HasCoSuper -->|Yes| EnableCoSuper
-    HasPanel -->|Yes| EnablePanel
-    
-    EnableAdmin --> SetSession
-    EnableSuper --> SetSession
-    EnableCoSuper --> SetSession
-    EnablePanel --> SetSession
-    SetSession --> CombinedDash
+    CheckSuper -->|No| ShowEmpty
+    CheckCoSuper -->|No| ShowEmpty
+    CheckPanel -->|No| ShowEmpty
+    CheckAdmin -->|No| ShowEmpty
     
     %% Styling
     classDef actor fill:#ffccbc,stroke:#d84315,stroke-width:3px
     classDef process fill:#ffffff,stroke:#424242,stroke-width:1px
     classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef adminCheck fill:#ffebee,stroke:#c62828,stroke-width:2px
-    classDef enabled fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
-    classDef api fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef success fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
+    classDef failure fill:#ffcdd2,stroke:#c62828,stroke-width:1px
     
     class Teacher actor
-    class Login,CheckUser,CheckAcademic,SetSession,CombinedDash process
-    class DetectType,HasSuper,HasCoSuper,HasPanel decision
-    class IsAdmin adminCheck
-    class EnableAdmin,EnableSuper,EnableCoSuper,EnablePanel enabled
-    class CallAPI,ParseTypeId api
+    class Login,LoadDashboard,CheckDB process
+    class CheckSuper,CheckCoSuper,CheckPanel,CheckAdmin decision
+    class ShowPanels success
+    class ShowEmpty failure
 ```
 
-## Role-Based Capabilities Matrix (ThesisRepo Implementation)
+## Real Implementation from Code
 
-| Capability | As Supervisor | As Co-Supervisor | As Panel Member | As Teacher-Admin | Teacher Core |
-|------------|--------------|------------------|-----------------|------------------|--------------|
-| **Group Management** |
-| View Groups (groups table) | ✓ | ✓ | ✓ | ✓ (all) | ✓ |
-| Create Groups | ✗ | ✗ | ✗ | ✓ | ✗ |
-| Delete Groups | ✗ | ✗ | ✗ | ✓ (empty only) | ✗ |
-| Assign Students (group_students) | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **Meeting Management** |
-| Create Meetings (meetings table) | ✓ | Conditional* | ✗ | ✓ | ✗ |
-| Track Attendance (meeting_attendances) | ✓ | Conditional* | ✗ | ✓ | ✗ |
-| **Report Management** |
-| Create Reports (reports table) | ✓ | ✗ | ✗ | ✓ | ✗ |
-| Delete Reports | ✓ | ✗ | ✗ | ✓ | ✗ |
-| Approve Thesis | ✓ | ✗ | ✗ | ✓ | ✗ |
-| **Annotation & Review** |
-| Create Annotation Sessions | ✓ | ✓ | ✓ | ✓ | ✗ |
-| Add Comments (report_comments) | ✓ | ✗ | ✗ | ✓ | ✓** |
-| Review Submissions | ✓ | ✓ | ✓ | ✓ | ✗ |
-| **System Administration** |
-| Manage AOIs (area_of_interests) | ✗ | ✗ | ✗ | ✓ | ✗ |
-| Sync from APIs | ✗ | ✗ | ✗ | ✓ | ✗ |
-| Manage Batches | ✗ | ✗ | ✗ | ✓ | ✗ |
-| Supervisor Assignment Service | ✗ | ✗ | ✗ | ✓ | ✗ |
-| Performance Monitoring | ✗ | ✗ | ✗ | ✓ | ✗ |
-| **Navigation** |
-| Switch Between Roles | - | - | - | ✓ | ✓ |
-| Access Unified Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ |
-
-*Conditional: Based on `co_supervisor_can_manage_meetings` flag in groups table
-**Teacher can add comments only on groups they supervise
-
-## Real-World Use Case Scenarios in ThesisRepo
-
-```mermaid
-graph LR
-    subgraph Scenario1["Scenario 1: Multi-Role Faculty"]
-        T1((Dr. Smith<br/>type_id: ['2']))
-        T1 --> S1[Supervisor<br/>CSE401 Group]
-        T1 --> C1[Co-Supervisor<br/>CSE402 Group]
-        T1 --> P1[Panel Member<br/>CSE403 Group]
-        T1 --> Cap1[Capacity: 3/5<br/>Thesis Slots]
-    end
-    
-    subgraph Scenario2["Scenario 2: Teacher-Admin"]
-        T2((Prof. Johnson<br/>type_id: ['1','2']))
-        T2 --> S2[Supervisor<br/>3 Groups]
-        T2 --> A2[Admin Access<br/>System Management]
-        T2 --> API2[API Sync<br/>Supervisor/Batch Data]
-        T2 --> Perf2[Performance<br/>Monitoring]
-    end
-    
-    subgraph Scenario3["Scenario 3: Panel Specialist"]
-        T3((Dr. Lee<br/>type_id: ['2']))
-        T3 --> P3[Panel Member<br/>5 Groups]
-        T3 --> Ann3[Annotation<br/>Sessions Active]
-        T3 --> Rev3[Review Queue<br/>12 Reports]
-    end
-    
-    subgraph Scenario4["Scenario 4: New Faculty"]
-        T4((Mr. Chen<br/>type_id: ['2']))
-        T4 --> NoRole[No Assignments Yet]
-        T4 --> AOI4[AOI: Machine Learning<br/>Awaiting Groups]
-    end
-    
-    %% Styling
-    classDef teacher fill:#fff8e1,stroke:#ff8f00,stroke-width:2px
-    classDef admin fill:#ffebee,stroke:#c62828,stroke-width:2px
-    classDef role fill:#e8eaf6,stroke:#5e35b1,stroke-width:1px
-    classDef info fill:#e3f2fd,stroke:#1565c0,stroke-width:1px
-    
-    class T1,T3,T4 teacher
-    class T2 admin
-    class S1,C1,P1,S2,P3 role
-    class Cap1,A2,API2,Perf2,Ann3,Rev3,NoRole,AOI4 info
-```
-
-## Comment System Implementation (ReportComment Model)
-
-```mermaid
-graph TD
-    subgraph CommentSystem["ThesisRepo Comment System"]
-        Teacher((Teacher))
-        
-        CheckRole{Check User Role<br/>& Permissions}
-        
-        IsSuper{Is Supervisor<br/>of Group?}
-        IsAdmin{Has Admin<br/>Role (type_id='1')?}
-        
-        AllowComment[Create ReportComment<br/>Entry]
-        SetTeacherId[Set teacher_id<br/>in report_comments]
-        TriggerNotification[Dispatch<br/>NewReportComment<br/>Notification]
-        SaveToDatabase[Save to<br/>report_comments table]
-        UpdateReport[Update Report<br/>last_activity]
-        
-        DenyComment[Access Denied<br/>No Permission]
-        
-        Teacher --> CheckRole
-        CheckRole --> IsSuper
-        CheckRole --> IsAdmin
-        
-        IsSuper -->|Yes| AllowComment
-        IsAdmin -->|Yes| AllowComment
-        IsSuper -->|No| DenyComment
-        IsAdmin -->|No| DenyComment
-        
-        AllowComment --> SetTeacherId
-        SetTeacherId --> SaveToDatabase
-        SaveToDatabase --> TriggerNotification
-        SaveToDatabase --> UpdateReport
-    end
-    
-    %% Styling
-    classDef actor fill:#ffe0b2,stroke:#ef6c00,stroke-width:2px
-    classDef allowed fill:#c8e6c9,stroke:#2e7d32,stroke-width:1px
-    classDef denied fill:#ffcdd2,stroke:#c62828,stroke-width:1px
-    classDef process fill:#e1f5fe,stroke:#0277bd,stroke-width:1px
-    
-    class Teacher actor
-    class AllowComment,SetTeacherId,SaveToDatabase,TriggerNotification,UpdateReport allowed
-    class DenyComment denied
-    class CheckRole,IsSuper,IsAdmin process
-```
-
-## ThesisRepo Access Paths & Routes
-
-### Teacher Core Routes
-- `/teacher/dashboard` - Unified teacher dashboard with role detection
-- `/teacher/reports/{report}/comments` - Add comments on supervised groups' reports
-
-### Academic Role Routes (Protected by 'teacher' middleware)
-- `/supervisor/dashboard` - Supervisor-specific interface
-- `/supervisor/groups` - View and manage supervised groups
-- `/supervisor/groups/toggle-co-supervisor-meetings` - Set co-supervisor meeting permissions
-- `/supervisor/reports` - Full report CRUD operations
-- `/supervisor/reports/{report}/finalize` - Approve final thesis
-- `/supervisor/meetings` - Schedule and manage meetings
-- `/supervisor/meetings/{group}/pdf` - Download meeting reports
-
-- `/co-supervisor/dashboard` - Co-supervisor interface
-- `/co-supervisor/groups` - View co-supervised groups
-- `/co-supervisor/meetings` - Conditional meeting management
-- `/co-supervisor/reports` - Review reports
-- `/co-supervisor/reports/{report}/under-review` - Mark reports for review
-
-- `/panel-member/dashboard` - Panel member interface
-- `/panel-member/groups` - View assigned groups
-- `/panel-member/reports` - Review assigned reports
-- `/panel-member/reports/{report}/submissions/{submission}/annotate` - Create annotations
-
-### Admin Routes (Protected by 'admin' middleware - requires type_id includes '1')
-- `/admin/dashboard` - System administration dashboard
-- `/admin/areas-of-interest` - AOI CRUD operations with bulk creation
-- `/admin/supervisors` - Supervisor management with thesis limits
-- `/admin/supervisors/sync` - Sync from external API (throttled)
-- `/admin/supervisors/{supervisor}/refresh` - Refresh individual supervisor
-- `/admin/batches` - Batch management with activation controls
-- `/admin/batches/sync` - Sync from external API (throttled)
-- `/admin/batches/compare` - Compare local vs API data
-- `/admin/groups` - Global group management
-- `/admin/groups/create` - Create new groups
-- `/admin/groups/bulk-delete` - Bulk delete empty groups
-- `/admin/performance` - System performance monitoring
-- `/admin/performance/metrics` - Real-time metrics
-- `/admin/performance/health` - System health checks
-- `/admin/performance/test` - Run component tests
-
-### API Integration Routes
-- `/api/supervisors/sync` - Sync supervisors from external API
-- `/api/batches/sync` - Sync batches from external API
-- `/api/students/sync` - Sync students from external API
-
-## ThesisRepo Navigation Flow
-
-```mermaid
-sequenceDiagram
-    participant T as Teacher
-    participant Auth as Auth System
-    participant DB as Database
-    participant Sys as ThesisRepo System
-    participant SD as Supervisor Module
-    participant AD as Admin Module
-    participant Notif as Notification Service
-    
-    T->>Auth: Login with credentials
-    Auth->>DB: Verify User model
-    DB-->>Auth: Return user with type_id array
-    Auth->>Sys: Authenticated (type_id: ['1','2'] or ['2'])
-    
-    Sys->>DB: Query role assignments
-    Note over DB: Check groups (supervisor_id)<br/>Check groups (co_supervisor_id)<br/>Check group_panel_members<br/>Check type_id for admin
-    DB-->>Sys: Return all active roles
-    
-    Sys-->>T: Display Unified Dashboard<br/>with available roles
-    
-    alt Teacher has Admin Role (type_id includes '1')
-        T->>AD: Access Admin Functions
-        AD->>DB: Load admin permissions
-        AD-->>T: Admin dashboard & tools
-        
-        T->>AD: Manage AOIs/Groups/Supervisors
-        AD->>DB: Execute CRUD operations
-        DB-->>AD: Confirm changes
-        AD->>Notif: Trigger relevant notifications
-    end
-    
-    alt Select Supervisor Role
-        T->>SD: Navigate to Supervisor Dashboard
-        SD->>DB: Load supervised groups
-        SD-->>T: Supervisor interface
-        
-        T->>SD: Create Report
-        SD->>DB: Insert into reports table
-        DB-->>SD: Report created
-        SD->>Notif: Send NewReportAssigned notification
-    end
-    
-    T->>Sys: Add comment on report
-    Sys->>DB: Verify supervisor status
-    DB-->>Sys: Confirmed as supervisor
-    Sys->>DB: Insert into report_comments
-    DB-->>Sys: Comment saved
-    Sys->>Notif: Dispatch NewReportComment
-    Notif-->>T: Notification sent to students
-```
-
-## Key Features in ThesisRepo
-
-### Faculty Dashboard
-- **Unified Access Point**: Single entry for all faculty roles via User model
-- **Dynamic Role Detection**: Automatic detection based on database relationships
-- **Multi-Role Support**: Simultaneous supervisor, co-supervisor, panel, and admin roles
-- **Real-time Notifications**: Integration with notification system for all activities
-
-### Academic Role Management
-- **Supervisor Features**: Full control over groups, reports, meetings via dedicated models
-- **Co-Supervisor Support**: Conditional permissions based on `co_supervisor_can_manage_meetings` flag
-- **Panel Member Interface**: Streamlined review and annotation workflow
-- **Capacity Management**: Thesis limit tracking through Supervisor model
-
-### Administrative Capabilities (Teacher-Admin)
-- **API Integration**: Sync with external systems via SupervisorApiService, BatchApiService
-- **Group Management**: Create/delete groups with AdminCreatedGroup tracking
-- **AOI Management**: Full CRUD on AreaOfInterest with many-to-many relationships
-- **Performance Monitoring**: System health via PerformanceMonitoringService
-- **Assignment Algorithm**: Automated supervisor assignment via SupervisorAssignmentService
-
-### Comment & Annotation System
-- **ReportComment Model**: Structured comment storage with teacher_id tracking
-- **Annotation Sessions**: ReportAnnotationSession with created_by_type field
-- **Notification Integration**: Automatic dispatch of NewReportComment notifications
-- **Permission-Based**: Comments restricted to supervisors and admins
-
-### Database Integration
-- **User Model**: Central authentication with type_id array for role detection
-- **Group Relations**: Complex relationships via groups, group_students, group_panel_members
-- **Report Management**: Comprehensive reports table with status tracking
-- **Meeting System**: meetings and meeting_attendances for scheduling
-- **History Tracking**: AssignmentHistory for audit trails
-
-## Technical Implementation Notes
-
-### Role Detection Logic (from AuthenticatedSessionController.php)
+### Teacher Dashboard (dashboard.blade.php)
 ```php
-// Login type detection based on input pattern:
-- Numeric (10+ digits): Student login
-- Alphanumeric with letters: Teacher login
-- Short numeric (1-6 digits): Teacher login
+// Quick Actions section shows panels based on type_id
+@if($hasAdminRole)
+    <a href="{{ route('admin.dashboard') }}">Admin Panel</a>
+@endif
 
-// TypeId parsing from API response:
-private function determineTypeId($typeId): array {
-    $allowedTypes = ['1', '2']; // Only Admin and Teacher
-    
-    // Handles formats like "'1''2''3'" → ['1','2']
-    if (preg_match_all("/'(\d+)'/", $typeId, $matches)) {
-        return array_filter($matches[1], fn($t) => in_array($t, $allowedTypes));
-    }
-    
-    // Default to Teacher role if not specified
-    return ['2'];
+@if($hasTeacherRole)
+    <a href="{{ route('supervisor.dashboard') }}">Supervisor Panel</a>
+    <a href="{{ route('co-supervisor.dashboard') }}">Co-Supervisor Panel</a>
+    <a href="{{ route('panel-member.dashboard') }}">Panel Member Panel</a>
+    <a href="{{ route('advisor.dashboard') }}">Advisor Panel</a>
+@endif
+
+// If only basic teacher with no admin role
+@if(count($typeIds) === 1 && $typeIds[0] === '2')
+    <button disabled>Basic Teacher Access Only</button>
+@endif
+```
+
+### Supervisor Dashboard Controller
+```php
+// Checks if teacher has actual supervisor assignments
+$supervisor = SupervisorModel::where('email', $user->email)->first();
+
+if ($supervisor) {
+    $groups = Group::where('supervisor_id', $supervisor->id)->get();
+} else {
+    $groups = collect(); // Empty collection
 }
 
-// Middleware-based access control:
-- 'teacher' middleware: Checks auth()->user()->isTeacher()
-- 'admin' middleware: Checks auth()->user()->isAdmin()
-- Teacher with type_id ['1','2'] passes both middlewares
+// If no groups: "No groups have been assigned to you yet."
 ```
 
-### Key Models & Services
-- **User**: Central authentication and role management
-- **Supervisor**: Teacher-specific capacity and AOI assignments
-- **Group**: Core entity linking students, supervisors, and panel
-- **Report/ReportComment**: Document and feedback management
-- **Services**: API integration, performance monitoring, assignment algorithms
+### Co-Supervisor Dashboard Controller
+```php
+// Must have actual co-supervisor assignments
+$supervisor = Supervisor::where('email', $user->email)->first();
 
-### Security & Permissions
-- **Middleware-based Access Control**: Separate middleware for each role (EnsureUserIsAdmin, EnsureUserIsTeacher, etc.)
-- **Route Protection**: All routes protected by appropriate middleware groups
-- **API Throttling**: External API calls throttled via named rate limiters:
-  - `external_api_admin_supervisors_sync`
-  - `external_api_admin_batches_sync`
-  - `external_api_advisor_dashboard`
-  - And more for different API endpoints
-- **Session Management**: User type stored in session for quick role detection
-- **Audit Logging**: AssignmentHistory model tracks all supervisor assignments
-- **Permission Checks**: Co-supervisor meeting permissions via `co_supervisor_can_manage_meetings` flag
+if (!$supervisor) {
+    return redirect()->route('dashboard')
+        ->with('error', 'You are not registered as a co-supervisor');
+}
 
-## System Integration Points
-- External API sync for supervisors, batches, and students
-- Notification system for all major events
-- Performance monitoring dashboard for system health
-- Automated assignment algorithms for supervisor allocation
-- Excel import/export for bulk operations
+$groups = Group::where('co_supervisor_id', $supervisor->id)->get();
+```
+
+### Panel Member Dashboard Controller
+```php
+// Must be assigned as panel member
+$supervisor = Supervisor::where('email', $user->email)->first();
+
+if (!$supervisor) {
+    return redirect()->route('dashboard')
+        ->with('error', 'You are not registered as a panel member');
+}
+
+$panelMemberRecords = GroupPanelMember::where('supervisor_id', $supervisor->id)->get();
+```
+
+### Report Comment Controller (ONLY Teacher-Specific Feature)
+```php
+// Can ONLY comment on reports for groups they supervise
+$supervisor = Supervisor::where('email', auth()->user()->email)->first();
+
+if (!$supervisor || $report->group->supervisor_id !== $supervisor->id) {
+    return back()->with('error', 'You are not authorized to comment');
+}
+```
+
+## Key Reality Points
+
+1. **Teacher is NOT a role** - it's a login type (type_id: '2')
+2. **No inherent features** - Teachers can't do anything without assignments
+3. **Panel access requires assignments**:
+   - Supervisor panel → Must be assigned as supervisor to groups
+   - Co-Supervisor panel → Must be assigned as co-supervisor to groups
+   - Panel Member panel → Must be assigned as panel member to groups
+   - Admin panel → Must have type_id including '1'
+4. **Empty panels show "No groups assigned"** messages
+5. **Only teacher-specific feature**: Comment on reports (but ONLY for groups they supervise)
+
+## Access Matrix
+
+| Feature | Requirement | Without Assignment |
+|---------|------------|-------------------|
+| Login | Teacher credentials | ✓ Can login |
+| View Dashboard | Authenticated as teacher | ✓ Can view |
+| Supervisor Panel | supervisor_id in groups table | ❌ No access/Empty |
+| Co-Supervisor Panel | co_supervisor_id in groups table | ❌ No access/Empty |
+| Panel Member Panel | supervisor_id in group_panel_members | ❌ No access/Empty |
+| Advisor Panel | Has teacher role | ✓ Can access but empty |
+| Admin Panel | type_id includes '1' | ❌ No access |
+| Comment on Reports | Must be supervisor of that group | ❌ Cannot comment |
+
+## Conclusion
+
+The Teacher "role" in ThesisRepo is essentially just a gateway that:
+1. Allows login to the system
+2. Shows a dashboard with potential panels
+3. Grants access to panels ONLY based on actual database assignments
+4. Without assignments, a teacher can only view their profile and see empty panels
+
+This is fundamentally different from roles like Student (who can always view their own data) or Admin (who has system-wide permissions). Teachers are completely dependent on being assigned to groups in specific capacities to have any functional access to the system.
