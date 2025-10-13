@@ -295,96 +295,28 @@ sequenceDiagram
     GC-->>Ad: Groups created
 ```
 
-### 6.2 Supervisor Assignment Lottery System
-
-#### 6.2.1 AOI-Based Lottery (Mode: 'aoi')
+### 6.2 Supervisor Assignment (Lottery)
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
-    participant SAS as Service
+    participant SAC as SupervisorAssignmentController
+    participant SAS as AssignmentService
     participant DB as Database
 
-    Ad->>SAS: Run AOI lottery
-    SAS->>DB: Get groups & supervisors
+    Ad->>SAC: Run lottery
+    SAC->>DB: Get unassigned groups
+    SAC->>DB: Get available supervisors
+    SAC->>SAS: Execute lottery algorithm
     
-    loop Each group
-        SAS->>SAS: Get group AOIs
-        SAS->>SAS: Find matching supervisors
-        SAS->>SAS: Random selection
-        SAS->>DB: Assign & record
-    end
-    
-    SAS-->>Ad: Results
-    
-    Note over SAS: Features:<br/>• Pure random within AOI<br/>• Tries fallback AOIs<br/>• Excludes last assigned
-```
-
-#### 6.2.2 Ranking-Based Lottery (Mode: 'ranking')
-```mermaid
-sequenceDiagram
-    participant Ad as Advisor
-    participant SAS as Service
-    participant DB as Database
-
-    Ad->>SAS: Run ranking lottery
-    SAS->>DB: Get groups & supervisors
-    SAS->>SAS: Sort by designation
-    
-    loop Each group
-        SAS->>SAS: Round-robin selection
+    loop For each group
+        SAS->>SAS: Match AOIs
         SAS->>SAS: Check capacity
-        SAS->>DB: Assign supervisor
+        SAS->>SAS: Assign supervisor
     end
     
-    SAS-->>Ad: Results
-    
-    Note over SAS: Features:<br/>• Ignores AOI completely<br/>• Fair distribution<br/>• Everyone gets 1 before 2
-```
-
-#### 6.2.3 Combined Lottery (Mode: 'both')
-```mermaid
-sequenceDiagram
-    participant Ad as Advisor
-    participant SAS as Service
-    participant DB as Database
-
-    Ad->>SAS: Run combined lottery
-    SAS->>DB: Get groups & supervisors
-    
-    loop Each group
-        SAS->>SAS: Match AOI first
-        SAS->>SAS: Find min assignments
-        SAS->>SAS: Use rank as tiebreaker
-        SAS->>DB: Assign & track
-    end
-    
-    SAS-->>Ad: Results
-    
-    Note over SAS: Features:<br/>• AOI matching required<br/>• Fair within each AOI<br/>• Rank breaks ties
-```
-
-#### 6.2.4 Lottery Comparison
-```mermaid
-graph LR
-    subgraph AOI Mode
-        A[Random Selection<br/>Within Expertise]
-    end
-    
-    subgraph Ranking Mode
-        B[Round-Robin<br/>By Designation]
-    end
-    
-    subgraph Combined Mode
-        C[AOI Match +<br/>Fair Distribution]
-    end
-    
-    Groups --> A
-    Groups --> B
-    Groups --> C
-    
-    A --> R1[Expertise matched<br/>but uneven load]
-    B --> R2[Even distribution<br/>but no expertise]
-    C --> R3[Balanced approach]
+    SAS->>DB: Save assignments
+    SAS->>DB: Log history
+    SAC-->>Ad: Assignment complete
 ```
 
 ### 6.3 Excel Import/Export
