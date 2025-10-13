@@ -305,94 +305,262 @@ sequenceDiagram
 
 ### 6.2 Supervisor Assignment Lottery System
 
-#### 6.2.1 AOI-Based Lottery (Mode: 'aoi')
+#### 6.2.1 Complete Lottery Flow with Mode Selection
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
-    participant SAS as Service
+    participant SAC as Controller
+    participant SAS as AssignmentService
     participant DB as Database
+    participant AH as AssignmentHistory
 
-    Ad->>SAS: Run AOI lottery
-    SAS->>DB: Get groups & supervisors
+    Ad->>SAC: Select lottery criteria
+    Note over Ad,SAC: • Use AOI checkbox<br/>• Use Ranking checkbox<br/>• Batch filter (optional)
     
-    loop Each group
-        SAS->>SAS: Get group AOIs
-        SAS->>SAS: Find matching supervisors
-        SAS->>SAS: Random selection
-        SAS->>DB: Assign & record
+    SAC->>SAC: Determine mode
+    alt AOI + Ranking checked
+        SAC->>SAC: mode = 'both'
+    else Only AOI checked
+        SAC->>SAC: mode = 'aoi'
+    else Only Ranking checked
+        SAC->>SAC: mode = 'ranking'
     end
     
-    SAS-->>Ad: Results
+    SAC->>DB: Get eligible groups
+    Note over DB: WHERE supervisor_id IS NULL<br/>AND is_manual_assignment = false<br/>AND has students<br/>AND (AOI required for 'aoi' mode)
     
-    Note over SAS: Features:<br/>• Pure random within AOI<br/>• Tries fallback AOIs<br/>• Excludes last assigned
+    SAC->>DB: Begin transaction
+    SAC->>SAS: runLotteryAssignment(groups, mode)
+    
+    alt Assignment successful
+        SAS-->>SAC: Results array
+        SAC->>DB: Commit transaction
+        SAC-->>Ad: Success message with stats
+    else Assignment failed
+        SAS-->>SAC: Exception
+        SAC->>DB: Rollback transaction
+        SAC-->>Ad: Error message
+    end
 ```
 
-#### 6.2.2 Ranking-Based Lottery (Mode: 'ranking')
+#### 6.2.2 AOI-Based Lottery Algorithm (Mode: 'aoi')
+```mermaid
+sequenceDiagram
+    participant SAS as AssignmentService
+    participant DB as Database
+    participant AH as AssignmentHistory
+    participant P as Pools
+
+    SAS->>SAS: sortGroupsByNumber()
+    SAS->>SAS: Collect all unique AOI IDs
+    SAS->>DB: Get active supervisors with AOIs
+    SAS->>P: buildAOIPoolsWithRandomization()
+    
+    Note over P: Structure:<br/>pools[aoiId][rank] = {<br/>  supervisors: [...],<br/>  shuffled: true<br/>}
+    
+    loop For each group
+        SAS->>SAS: Get group AOI IDs (primary + fallback)
+        
+        loop For each AOI (priority order)
+            SAS->>P: Get supervisor pool for AOI
+            
+            alt Pool exists
+                SAS->>AH: Get last assigned supervisor
+                SAS->>SAS: Collect all candidates
+                Note over SAS: Exclude last assigned<br/>if others available
+                
+                SAS->>SAS: array_rand() selection
+                SAS->>DB: Update group record
+                Note over DB: SET supervisor_id,<br/>matched_area_of_interest_id,<br/>assigned_at, assignment_priority
+                
+                SAS->>AH: recordAssignment()
+                SAS->>SAS: Update capacity & counts
+                SAS-->>SAS: Break (assigned)
+            else No pool for AOI
+                SAS-->>SAS: Try next AOI
+            end
+        end
+        
+        alt Not assigned
+            SAS->>SAS: Categorize as unassigned/no_matches
+        end
+    end
+    
+    SAS-->>SAS: Return results with statistics
+```
+
+#### 6.2.3 Ranking-Based Lottery Algorithm (Mode: 'ranking')
+```mermaid
+sequenceDiagram
+    participant SAS as AssignmentService
+    participant DB as Database
+    participant RR as RoundRobin
+
+    SAS->>SAS: sortGroupsByNumber()
+    SAS->>DB: Get all active supervisors
+    SAS->>SAS: Filter by available_slots > 0
+    SAS->>SAS: Sort by rank_priority, then name
+    
+    Note over SAS: Rank Priority:<br/>1=Professor<br/>2=Associate Prof<br/>3=Assistant Prof<br/>4=Lecturer
+    
+    SAS->>RR: Initialize round-robin state
+    Note over RR: currentRound = 0<br/>supervisorIndex = 0<br/>assignmentCounts[]
+    
+    loop For each group
+        RR->>RR: attempts = 0
+        
+        loop Until assigned or max attempts
+            RR->>RR: Get supervisor at index
+            
+            alt Supervisor eligible
+                Note over RR: assigned_count <= currentRound<br/>AND < available_slots
+                
+                SAS->>DB: Assign supervisor
+                RR->>RR: assignmentCounts[id]++
+                RR->>RR: assigned = true
+            else Not eligible
+                RR->>RR: Skip to next
+            end
+            
+            RR->>RR: supervisorIndex++
+            alt Full cycle completed
+                RR->>RR: currentRound++
+                RR->>RR: supervisorIndex = 0
+            end
+        end
+        
+        alt Not assigned
+            SAS->>SAS: Mark as unassigned
+        end
+    end
+    
+    SAS-->>SAS: Return results
+```
+
+#### 6.2.4 Combined Lottery Algorithm (Mode: 'both')
+```mermaid
+sequenceDiagram
+    participant SAS as AssignmentService
+    participant DB as Database
+    participant IR as IntelligentRoundRobin
+
+    SAS->>SAS: sortGroupsByNumber()
+    SAS->>DB: Get supervisors with AOIs
+    SAS->>SAS: buildAOIPoolsWithoutRandomization()
+    Note over SAS: Pools sorted by load<br/>No shuffling
+    
+    SAS->>IR: Initialize tracking
+    Note over IR: globalAssignmentCounts[]<br/>lastAssignedPerArea[]
+    
+    loop For each group
+        SAS->>SAS: Get group AOI IDs
+        
+        loop For each AOI
+            IR->>IR: Get all supervisors for AOI
+            IR->>IR: Find minimum assignment count
+            
+            Note over IR: FAIRNESS RULE:<br/>No one gets 2 before<br/>everyone gets 1<br/>within same AOI
+            
+            IR->>IR: Filter to min count only
+            
+            alt Multiple candidates
+                IR->>IR: Sort by rank priority
+                IR->>IR: Avoid consecutive assignments
+                IR->>IR: Select best candidate
+            else Single candidate
+                IR->>IR: Select candidate
+            end
+            
+            alt Supervisor found
+                SAS->>DB: Assign with matched AOI
+                IR->>IR: Update global counts
+                IR->>IR: Track last assigned per area
+                SAS-->>SAS: Break (assigned)
+            end
+        end
+    end
+    
+    SAS-->>SAS: Return results
+```
+
+#### 6.2.5 Preview Mode (Non-destructive)
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
-    participant SAS as Service
-    participant DB as Database
+    participant SAC as Controller
+    participant SAS as AssignmentService
 
-    Ad->>SAS: Run ranking lottery
-    SAS->>DB: Get groups & supervisors
-    SAS->>SAS: Sort by designation
+    Ad->>SAC: Request preview
+    SAC->>SAS: previewLotteryAssignment(groups, mode)
     
-    loop Each group
-        SAS->>SAS: Round-robin selection
-        SAS->>SAS: Check capacity
-        SAS->>DB: Assign supervisor
-    end
+    Note over SAS: Simulates assignment<br/>without DB updates
     
-    SAS-->>Ad: Results
+    SAS->>SAS: Run algorithm simulation
+    SAS->>SAS: Build preview data
     
-    Note over SAS: Features:<br/>• Ignores AOI completely<br/>• Fair distribution<br/>• Everyone gets 1 before 2
+    SAS-->>SAC: Preview results
+    Note over SAC: {<br/>  assignments: [...],<br/>  unassigned: [...],<br/>  stats: {...}<br/>}
+    
+    SAC-->>Ad: JSON response
+    Ad->>Ad: Display preview modal
 ```
 
-#### 6.2.3 Combined Lottery (Mode: 'both')
+#### 6.2.6 Manual Assignment & Validation
 ```mermaid
 sequenceDiagram
     participant Ad as Advisor
-    participant SAS as Service
+    participant SAC as Controller
     participant DB as Database
 
-    Ad->>SAS: Run combined lottery
-    SAS->>DB: Get groups & supervisors
+    Ad->>SAC: Select supervisor for group
+    SAC->>DB: Validate assignment
     
-    loop Each group
-        SAS->>SAS: Match AOI first
-        SAS->>SAS: Find min assignments
-        SAS->>SAS: Use rank as tiebreaker
-        SAS->>DB: Assign & track
+    alt Check co-supervisor conflict
+        DB-->>SAC: Same as co-supervisor
+        SAC-->>Ad: Error: Already co-supervisor
+    else Check capacity
+        DB-->>SAC: No available slots
+        SAC-->>Ad: Error: No capacity
+    else Check AOI match
+        DB-->>SAC: No AOI match
+        SAC-->>Ad: Error: AOI mismatch
+    else Valid assignment
+        SAC->>DB: Update group
+        Note over DB: is_manual_assignment = true
+        SAC-->>Ad: Success
     end
-    
-    SAS-->>Ad: Results
-    
-    Note over SAS: Features:<br/>• AOI matching required<br/>• Fair within each AOI<br/>• Rank breaks ties
 ```
 
-#### 6.2.4 Lottery Comparison
+#### 6.2.7 Algorithm Comparison Matrix
 ```mermaid
-graph LR
-    subgraph AOI Mode
-        A[Random Selection<br/>Within Expertise]
+graph TD
+    subgraph "AOI Mode"
+        A1[Pure Random Selection]
+        A2[Within AOI Match]
+        A3[Tries Fallback AOIs]
+        A4[Excludes Last Assigned]
+        A5[Ignores Rank]
     end
     
-    subgraph Ranking Mode
-        B[Round-Robin<br/>By Designation]
+    subgraph "Ranking Mode"
+        B1[Round-Robin Distribution]
+        B2[Rank Priority Order]
+        B3[Fair Load Balancing]
+        B4[Ignores AOI Completely]
+        B5[Everyone Gets 1 Before 2]
     end
     
-    subgraph Combined Mode
-        C[AOI Match +<br/>Fair Distribution]
+    subgraph "Combined Mode"
+        C1[AOI Match Required]
+        C2[Fair Within Each AOI]
+        C3[Rank as Tiebreaker]
+        C4[Intelligent Round-Robin]
+        C5[Prevents Senior Monopoly]
     end
     
-    Groups --> A
-    Groups --> B
-    Groups --> C
-    
-    A --> R1[Expertise matched<br/>but uneven load]
-    B --> R2[Even distribution<br/>but no expertise]
-    C --> R3[Balanced approach]
+    A1 --> Result1[Best for: Expertise Priority]
+    B5 --> Result2[Best for: Equal Distribution]
+    C5 --> Result3[Best for: Balanced Approach]
 ```
 
 ### 6.3 Excel Import/Export
