@@ -86,6 +86,43 @@ sequenceDiagram
     System-->>Student: Display annotated document
 ```
 
+### 2.3 Dashboard Notification System
+```mermaid
+sequenceDiagram
+    participant Student
+    participant Dashboard
+    participant System
+    participant Database
+
+    Note over Student,Database: Notifications appear on student dashboard
+    
+    Student->>Dashboard: Access dashboard
+    Dashboard->>System: Check for notifications
+    System->>Database: Query unread notifications
+    
+    alt New notifications exist
+        Database-->>System: Return notification list
+        System-->>Dashboard: Display notification badge
+        Dashboard-->>Student: Show notification count
+        
+        Student->>Dashboard: Click notification bell
+        Dashboard->>System: Fetch notification details
+        System->>Database: Retrieve full notifications
+        Database-->>System: Return notification data
+        System-->>Dashboard: Display notifications
+        
+        Note over Dashboard: Types of notifications:<br/>• New report assigned<br/>• Report annotated<br/>• New comment added<br/>• Meeting scheduled
+        
+        Student->>Dashboard: Mark as read
+        Dashboard->>System: Update notification status
+        System->>Database: Mark notifications read
+    else No new notifications
+        Database-->>System: Empty result
+        System-->>Dashboard: No notifications
+        Dashboard-->>Student: Clear notification area
+    end
+```
+
 ---
 
 ## 3. Supervisor Operations
@@ -273,38 +310,7 @@ sequenceDiagram
     Web Server-->>Client: HTTP Response
 ```
 
-### 6.2 Student Notification System
-```mermaid
-sequenceDiagram
-    participant Supervisor
-    participant System
-    participant Database
-    participant Student Dashboard
-
-    Note over Supervisor,Student Dashboard: Report updates trigger notifications
-    
-    alt New Report Created
-        Supervisor->>System: Create new report
-        System->>Database: Store notification
-        Student Dashboard->>Database: Poll for updates
-        Database-->>Student Dashboard: New report notification
-        Student Dashboard->>Student Dashboard: Display notification badge
-    else Report Annotated
-        Supervisor->>System: Add annotations
-        System->>Database: Store notification
-        Student Dashboard->>Database: Check notifications
-        Database-->>Student Dashboard: Annotation notification
-        Student Dashboard->>Student Dashboard: Update notification count
-    else Comment Added
-        Supervisor->>System: Add comment
-        System->>Database: Store notification
-        Student Dashboard->>Database: Fetch notifications
-        Database-->>Student Dashboard: New comment alert
-        Student Dashboard->>Student Dashboard: Display in notification panel
-    end
-```
-
-### 6.3 File Management
+### 6.2 File Management
 ```mermaid
 sequenceDiagram
     participant User
