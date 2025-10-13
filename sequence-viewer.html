@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Repository - Sequence Diagrams</title>
+    
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        nav {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        nav h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        
+        nav a {
+            display: block;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            border-left: 3px solid #667eea;
+        }
+        
+        nav a:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin: 30px 0 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        
+        .diagram-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .mermaid {
+            text-align: center;
+            margin: 0 auto;
+        }
+        
+        .description {
+            background: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .description h3 {
+            background: transparent;
+            border-left: 4px solid #17a2b8;
+            margin-top: 0;
+        }
+        
+        .description ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .description li {
+            margin: 5px 0;
+        }
+        
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .back-to-top:hover {
+            background: #764ba2;
+            transform: translateY(-5px);
+        }
+        
+        .notes {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            nav ul {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Loading animation */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+        
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Thesis Repository Management System</h1>
+            <p class="subtitle">Sequence Diagrams Documentation</p>
+        </header>
+        
+        <nav>
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#section-1">1. System Authentication</a></li>
+                <li><a href="#section-2">2. Student Operations</a></li>
+                <li><a href="#section-3">3. Supervisor Operations</a></li>
+                <li><a href="#section-4">4. Advisor Operations</a></li>
+                <li><a href="#section-5">5. Administrative Functions</a></li>
+                <li><a href="#section-6">6. System Architecture</a></li>
+            </ul>
+        </nav>
+        
+        <div id="diagrams-container">
+            <div class="loading">Loading diagrams</div>
+        </div>
+        
+        <a href="#top" class="back-to-top">↑ Top</a>
+    </div>
+    
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#7c3aed',
+                lineColor: '#5a67d8',
+                secondaryColor: '#f3f4f6',
+                tertiaryColor: '#fff'
+            },
+            sequence: {
+                diagramMarginX: 50,
+                diagramMarginY: 30,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true
+            },
+            flowchart: {
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+        
+        // Sequence diagrams data
+        const sections = [
+            {
+                id: 'section-1',
+                title: '1. System Authentication',
+                diagrams: [
+                    {
+                        title: '1.1 User Authentication Process',
+                        code: `sequenceDiagram
+    participant User
+    participant System
+    participant External API
+    participant Database
+
+    User->>System: Submit credentials
+    System->>System: Identify user type
+    
+    alt Faculty authentication
+        System->>External API: Validate faculty credentials
+        External API-->>System: Return user profile
+    else Student authentication
+        System->>External API: Validate student credentials
+        External API-->>System: Return student data
+    end
+    
+    System->>Database: Store/Update user record
+    System->>System: Create session
+    System-->>User: Redirect to dashboard`
+                    },
+                    {
+                        title: '1.2 Role-Based Access Control',
+                        code: `sequenceDiagram
+    participant User
+    participant System
+    participant Database
+
+    User->>System: Request resource
+    System->>Database: Verify user permissions
+    
+    alt Authorized
+        Database-->>System: Permission granted
+        System-->>User: Display resource
+    else Unauthorized
+        Database-->>System: Permission denied
+        System-->>User: Access denied message
+    end`
+                    }
+                ]
+            },
+            {
+                id: 'section-2',
+                title: '2. Student Operations',
+                diagrams: [
+                    {
+                        title: '2.1 Report Submission Process',
+                        code: `sequenceDiagram
+    participant Student
+    participant System
+    participant Database
+
+    Student->>System: Upload report document
+    System->>System: Validate document format
+    System->>Database: Store submission
+    System->>Database: Create supervisor notification
+    System-->>Student: Confirmation message`
+                    },
+                    {
+                        title: '2.2 View Feedback and Annotations',
+                        code: `sequenceDiagram
+    participant Student
+    participant System
+    participant Database
+
+    Student->>System: Request feedback
+    System->>Database: Retrieve annotations
+    Database-->>System: Return feedback data
+    System-->>Student: Display annotated document`
+                    },
+                    {
+                        title: '2.3 Dashboard Notification System',
+                        code: `sequenceDiagram
+    participant Student
+    participant Dashboard
+    participant System
+    participant Database
+
+    Note over Student,Database: Notifications appear on student dashboard
+    
+    Student->>Dashboard: Access dashboard
+    Dashboard->>System: Check for notifications
+    System->>Database: Query unread notifications
+    
+    alt New notifications exist
+        Database-->>System: Return notification list
+        System-->>Dashboard: Display notification badge
+        Dashboard-->>Student: Show notification count
+        
+        Student->>Dashboard: Click notification bell
+        Dashboard->>System: Fetch notification details
+        System->>Database: Retrieve full notifications
+        Database-->>System: Return notification data
+        System-->>Dashboard: Display notifications
+        
+        Note over Dashboard: Types of notifications:<br/>• New report assigned<br/>• Report annotated<br/>• New comment added<br/>• Meeting scheduled
+        
+        Student->>Dashboard: Mark as read
+        Dashboard->>System: Update notification status
+        System->>Database: Mark notifications read
+    else No new notifications
+        Database-->>System: Empty result
+        System-->>Dashboard: No notifications
+        Dashboard-->>Student: Clear notification area
+    end`
+                    }
+                ]
+            },
+            {
+                id: 'section-3',
+                title: '3. Supervisor Operations',
+                diagrams: [
+                    {
+                        title: '3.1 Report Management',
+                        code: `sequenceDiagram
+    participant Supervisor
+    participant System
+    participant Database
+
+    Supervisor->>System: Create report assignment
+    System->>Database: Store report details
+    System->>Database: Create student notification
+    System-->>Supervisor: Confirmation
+    
+    Note over Database: Students see notification on dashboard`
+                    },
+                    {
+                        title: '3.2 Document Annotation Process',
+                        code: `sequenceDiagram
+    participant Supervisor
+    participant System
+    participant Database
+
+    Supervisor->>System: Open student submission
+    System->>Database: Retrieve document
+    Supervisor->>System: Add annotations
+    System->>Database: Save annotated version
+    System->>Database: Create notification for students
+    System-->>Supervisor: Save confirmation
+    
+    Note over Database: Students receive in-app notification`
+                    },
+                    {
+                        title: '3.3 Meeting Documentation',
+                        code: `sequenceDiagram
+    participant Supervisor
+    participant System
+    participant Database
+
+    Supervisor->>System: Record meeting details
+    System->>System: Process attendance data
+    System->>Database: Store meeting record
+    
+    alt Generate report
+        Supervisor->>System: Request meeting report
+        System->>Database: Compile meeting history
+        System-->>Supervisor: Generate PDF report
+    end`
+                    }
+                ]
+            },
+            {
+                id: 'section-4',
+                title: '4. Advisor Operations',
+                diagrams: [
+                    {
+                        title: '4.1 Group Formation',
+                        code: `sequenceDiagram
+    participant Advisor
+    participant System
+    participant External API
+    participant Database
+
+    Advisor->>System: Request student list
+    System->>External API: Fetch batch students
+    External API-->>System: Return student data
+    System-->>Advisor: Display available students
+    Advisor->>System: Create groups
+    System->>Database: Store group assignments
+    System-->>Advisor: Confirmation`
+                    },
+                    {
+                        title: '4.2.1 Automated Assignment Process',
+                        code: `sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Advisor->>System: Initiate assignment process
+    System->>System: Select assignment strategy
+    System->>Database: Retrieve eligible groups
+    System->>Database: Retrieve available supervisors
+    System->>System: Execute assignment algorithm
+    System->>Database: Store assignments
+    System-->>Advisor: Display results`
+                    },
+                    {
+                        title: '4.2.2 Area of Interest Based Assignment',
+                        code: `sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Strategy: Match groups with supervisor expertise
+    
+    Advisor->>System: Select AOI-based assignment
+    System->>Database: Retrieve unassigned groups
+    System->>Database: Retrieve supervisors with expertise areas
+    
+    loop For each group
+        System->>System: Identify group's area of interest
+        System->>System: Find matching supervisors
+        System->>System: Random selection from matches
+        System->>Database: Assign supervisor to group
+    end
+    
+    System-->>Advisor: Display assignment results
+    
+    Note over System: Ensures expertise alignment<br/>May result in uneven distribution`
+                    },
+                    {
+                        title: '4.2.3 Ranking Based Assignment',
+                        code: `sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Strategy: Fair distribution by designation rank
+    
+    Advisor->>System: Select ranking-based assignment
+    System->>Database: Retrieve unassigned groups
+    System->>Database: Retrieve supervisors by designation
+    System->>System: Sort by rank (Professor to Lecturer)
+    
+    loop Round-robin assignment
+        System->>System: Select next supervisor in rotation
+        System->>System: Verify supervisor capacity
+        System->>Database: Assign supervisor to group
+        System->>System: Move to next supervisor
+        
+        Note over System: Each supervisor gets one group<br/>before anyone gets second
+    end
+    
+    System-->>Advisor: Display assignment results
+    
+    Note over System: Ensures equal distribution<br/>Ignores expertise matching`
+                    },
+                    {
+                        title: '4.2.4 Hybrid Assignment Strategy',
+                        code: `sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Strategy: Balance expertise and fair distribution
+    
+    Advisor->>System: Select hybrid assignment
+    System->>Database: Retrieve unassigned groups
+    System->>Database: Retrieve supervisors with expertise
+    
+    loop For each group
+        System->>System: Find area-matching supervisors
+        System->>System: Check assignment counts
+        System->>System: Select supervisor with minimum load
+        
+        alt Multiple candidates with same load
+            System->>System: Apply rank-based selection
+        end
+        
+        System->>Database: Assign supervisor to group
+    end
+    
+    System-->>Advisor: Display assignment results
+    
+    Note over System: Optimizes both expertise match<br/>and workload distribution`
+                    },
+                    {
+                        title: '4.2.5 Assignment Strategy Comparison',
+                        code: `graph TD
+    Start[Assignment Strategy Selection]
+    
+    Start --> AOI[Area-Based Strategy]
+    Start --> Rank[Ranking-Based Strategy]
+    Start --> Hybrid[Hybrid Strategy]
+    
+    AOI --> AOIResult[Expertise-focused<br/>Random within matches<br/>Possible uneven load]
+    Rank --> RankResult[Equal distribution<br/>Round-robin assignment<br/>Ignores expertise]
+    Hybrid --> HybridResult[Balanced approach<br/>Expertise with fairness<br/>Optimal distribution]
+    
+    style Start fill:#f9f,stroke:#333,stroke-width:2px
+    style AOIResult fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
+    style RankResult fill:#e3f2fd,stroke:#2196f3,stroke-width:1px
+    style HybridResult fill:#fff3e0,stroke:#ff9800,stroke-width:1px`
+                    },
+                    {
+                        title: '4.3 Data Import/Export',
+                        code: `sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    alt Import Process
+        Advisor->>System: Upload spreadsheet
+        System->>System: Validate data format
+        System->>Database: Store group data
+        System-->>Advisor: Import confirmation
+    else Export Process
+        Advisor->>System: Request template
+        System->>Database: Retrieve group data
+        System->>System: Generate spreadsheet
+        System-->>Advisor: Download file
+    end`
+                    }
+                ]
+            },
+            {
+                id: 'section-5',
+                title: '5. Administrative Functions',
+                diagrams: [
+                    {
+                        title: '5.1 External Data Synchronization',
+                        code: `sequenceDiagram
+    participant Administrator
+    participant System
+    participant External API
+    participant Database
+
+    Administrator->>System: Initiate synchronization
+    System->>External API: Request updated data
+    External API-->>System: Return data
+    System->>System: Process updates
+    System->>Database: Update records
+    System-->>Administrator: Synchronization report`
+                    },
+                    {
+                        title: '5.2 System Monitoring',
+                        code: `sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Administrator->>System: Request system metrics
+    System->>Database: Query performance data
+    Database-->>System: Return statistics
+    System->>System: Calculate metrics
+    System-->>Administrator: Display dashboard`
+                    }
+                ]
+            },
+            {
+                id: 'section-6',
+                title: '6. System Architecture',
+                diagrams: [
+                    {
+                        title: '6.1 Request Processing Flow',
+                        code: `sequenceDiagram
+    participant Client
+    participant Web Server
+    participant Application
+    participant Database
+
+    Client->>Web Server: HTTP Request
+    Web Server->>Application: Route request
+    Application->>Application: Process business logic
+    Application->>Database: Data operation
+    Database-->>Application: Return data
+    Application-->>Web Server: Generate response
+    Web Server-->>Client: HTTP Response`
+                    },
+                    {
+                        title: '6.2 File Management',
+                        code: `sequenceDiagram
+    participant User
+    participant System
+    participant Storage
+    participant Database
+
+    User->>System: Upload file
+    System->>System: Validate file
+    
+    alt Valid file
+        System->>Storage: Store file
+        System->>Database: Save metadata
+        System-->>User: Upload successful
+    else Invalid file
+        System-->>User: Validation error
+    end`
+                    }
+                ]
+            }
+        ];
+        
+        // Function to render diagrams
+        async function renderDiagrams() {
+            const container = document.getElementById('diagrams-container');
+            container.innerHTML = '';
+            
+            for (const section of sections) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'section';
+                sectionDiv.id = section.id;
+                
+                const sectionTitle = document.createElement('h2');
+                sectionTitle.textContent = section.title;
+                sectionDiv.appendChild(sectionTitle);
+                
+                for (const diagram of section.diagrams) {
+                    const diagramTitle = document.createElement('h3');
+                    diagramTitle.textContent = diagram.title;
+                    sectionDiv.appendChild(diagramTitle);
+                    
+                    const diagramContainer = document.createElement('div');
+                    diagramContainer.className = 'diagram-container';
+                    
+                    const mermaidDiv = document.createElement('div');
+                    mermaidDiv.className = 'mermaid';
+                    mermaidDiv.textContent = diagram.code;
+                    
+                    diagramContainer.appendChild(mermaidDiv);
+                    sectionDiv.appendChild(diagramContainer);
+                }
+                
+                container.appendChild(sectionDiv);
+            }
+            
+            // Add system description at the end
+            const descriptionDiv = document.createElement('div');
+            descriptionDiv.className = 'section description';
+            descriptionDiv.innerHTML = `
+                <h2>System Components Description</h2>
+                
+                <h3>Core Components</h3>
+                <ul>
+                    <li><strong>Client</strong>: End-user interface (web browser)</li>
+                    <li><strong>System</strong>: Application server handling business logic</li>
+                    <li><strong>Database</strong>: Persistent data storage</li>
+                    <li><strong>External API</strong>: University information systems</li>
+                    <li><strong>Storage</strong>: File storage service</li>
+                </ul>
+                
+                <h3>User Roles</h3>
+                <ul>
+                    <li><strong>Student</strong>: Thesis/project students</li>
+                    <li><strong>Supervisor</strong>: Faculty members supervising groups</li>
+                    <li><strong>Advisor</strong>: Faculty coordinating student groups</li>
+                    <li><strong>Administrator</strong>: System administrators</li>
+                </ul>
+                
+                <h3>Key Features</h3>
+                <ol>
+                    <li><strong>Authentication</strong>: Multi-role authentication with external API integration</li>
+                    <li><strong>Group Management</strong>: Formation and assignment of student groups</li>
+                    <li><strong>Report Workflow</strong>: Creation, submission, and review of reports</li>
+                    <li><strong>Meeting Documentation</strong>: Recording and tracking of supervision meetings</li>
+                    <li><strong>Automated Assignment</strong>: Algorithmic supervisor-group matching</li>
+                    <li><strong>Data Synchronization</strong>: Integration with university systems</li>
+                    <li><strong>In-App Notifications</strong>: Dashboard-based notifications for students on report updates</li>
+                </ol>
+                
+                <div class="notes">
+                    <strong>Note:</strong> These sequence diagrams illustrate the primary interactions within the Thesis Repository Management System, 
+                    demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards 
+                    and focus on essential system behaviors rather than implementation details.
+                </div>
+            `;
+            container.appendChild(descriptionDiv);
+            
+            // Render all mermaid diagrams
+            await mermaid.run();
+        }
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+        
+        // Load diagrams when page is ready
+        document.addEventListener('DOMContentLoaded', renderDiagrams);
+    </script>
+</body>
+</html>
