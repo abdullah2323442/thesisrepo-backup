@@ -121,76 +121,40 @@ This Level 0 Data Flow Diagram represents the highest-level view of the Universi
 ### 3.2 Mermaid Diagram
 
 ```mermaid
-flowchart TB
-    %% External Entities
-    Admin[["ADMIN<br/>External Entity"]]
-    Advisor[["ADVISOR<br/>External Entity"]]
-    Supervisor[["SUPERVISOR<br/>CO-SUPERVISOR<br/>PANEL MEMBER<br/>External Entity"]]
-    Student[["STUDENT<br/>External Entity"]]
-    Teacher[["TEACHER<br/>(Multi-Role)<br/>External Entity"]]
-    ExtAPI[["EXTERNAL<br/>UNIVERSITY API<br/>External Entity"]]
+flowchart LR
+    %% External Entities with modern rectangular style
+    Admin["Administrator"]
+    Advisor["Advisor"]
+    Supervisor["Supervisor/<br/>Co-Supervisor/<br/>Panel Member"]
+    Student["Student"]
+    Teacher["Teacher<br/>(Multi-Role)"]
+    ExtAPI["External<br/>University API"]
     
-    %% Central Process
-    System(("UNIVERSITY<br/>THESIS<br/>MANAGEMENT<br/>SYSTEM<br/>(Process 0.0)"))
+    %% Central Process - circular style
+    System(("University<br/>Thesis<br/>Management<br/>System"))
     
-    %% Admin Flows
-    Admin -->|Login Credentials| System
-    Admin -->|System Configuration| System
-    Admin -->|Supervisor Data| System
-    Admin -->|Batch Data| System
-    Admin -->|API Sync Requests| System
-    System -->|Performance Reports| Admin
-    System -->|System Metrics| Admin
-    System -->|Assignment History| Admin
+    %% Position entities around the central system
+    Admin -.->|Login Credentials<br/>System Configuration<br/>Supervisor Data<br/>Batch Data| System
+    System -.->|Performance Reports<br/>System Metrics| Admin
     
-    %% Advisor Flows
-    Advisor -->|Login Credentials| System
-    Advisor -->|Group Information| System
-    Advisor -->|Student Assignments| System
-    Advisor -->|Supervisor Assignment Requests| System
-    System -->|Group Lists| Advisor
-    System -->|Student Lists| Advisor
-    System -->|Supervisor Availability| Advisor
-    System -->|Assignment Results| Advisor
+    Advisor -.->|Group Information<br/>Student Assignments<br/>Supervisor Requests| System
+    System -.->|Group Lists<br/>Supervisor Availability| Advisor
     
-    %% Supervisor Flows
-    Supervisor -->|Login Credentials| System
-    Supervisor -->|Meeting Details| System
-    Supervisor -->|Report Feedback| System
-    Supervisor -->|Report Annotations| System
-    Supervisor -->|Attendance Records| System
-    System -->|Group Details| Supervisor
-    System -->|Meeting Schedules| Supervisor
-    System -->|Report Submissions| Supervisor
+    Supervisor -.->|Meeting Details<br/>Report Feedback<br/>Annotations| System
+    System -.->|Group Details<br/>Meeting Schedules| Supervisor
     
-    %% Student Flows
-    Student -->|Login Credentials| System
-    Student -->|Report Submissions| System
-    Student -->|Attendance Confirmation| System
-    Student -->|Meeting Requests| System
-    System -->|Group Status| Student
-    System -->|Report Feedback| Student
-    System -->|Meeting Schedules| Student
-    System -->|Annotated Reports| Student
+    Student -.->|Report Submissions<br/>Attendance<br/>Meeting Requests| System
+    System -.->|Group Status<br/>Report Feedback<br/>Schedules| Student
     
-    %% Teacher Flows
-    Teacher -->|Login Credentials| System
-    Teacher -->|Report Comments| System
-    Teacher -->|Meeting Participation| System
-    System -->|Role-based Dashboard| Teacher
-    System -->|Notifications| Teacher
+    Teacher -.->|Report Comments<br/>Meeting Participation| System
+    System -.->|Role Dashboard<br/>Notifications| Teacher
     
-    %% External API Flows
-    System -->|API Sync Requests| ExtAPI
-    System -->|Authentication Requests| ExtAPI
-    ExtAPI -->|Student Data| System
-    ExtAPI -->|Teacher Data| System
-    ExtAPI -->|Batch Information| System
-    ExtAPI -->|Authentication Tokens| System
+    ExtAPI -.->|Student Data<br/>Teacher Data<br/>Batch Info| System
+    System -.->|API Requests<br/>Auth Requests| ExtAPI
     
-    %% Styling
-    classDef entityStyle fill:#1a1a2e,stroke:#e8e8e8,stroke-width:3px,color:#e8e8e8
-    classDef processStyle fill:#0f3460,stroke:#16213e,stroke-width:4px,color:#e8e8e8
+    %% Modern styling
+    classDef entityStyle fill:#a8d5e2,stroke:#4a90a4,stroke-width:2px,color:#2c3e50,font-weight:500
+    classDef processStyle fill:#ffd4a3,stroke:#d4a574,stroke-width:3px,color:#5d4e37,font-weight:bold,font-size:14px
     
     class Admin,Advisor,Supervisor,Student,Teacher,ExtAPI entityStyle
     class System processStyle
