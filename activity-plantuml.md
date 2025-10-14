@@ -1361,8 +1361,411 @@ The Thesis Repository Management System implements a Laravel-based MVC architect
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 2.1 | Jan 2025 | System Architect | Added A4-optimized versions for IEEE reports |
 | 2.0 | Jan 2025 | System Architect | Complete IEEE-compliant redesign |
 | 1.0 | Dec 2024 | Development Team | Initial version |
+
+---
+
+## APPENDIX A: A4-OPTIMIZED VERSIONS FOR IEEE REPORTS
+
+### Important Note for IEEE Reports
+The diagrams above are comprehensive but too large for standard A4 pages. Use these compact versions for your IEEE-standard software project report.
+
+### A.1 Compact Authentication Flow (Fits A4 Portrait)
+
+```plantuml
+@startuml
+!theme plain
+skinparam activityFontSize 10
+skinparam defaultFontSize 10
+skinparam arrowFontSize 9
+skinparam noteFontSize 9
+skinparam padding 2
+skinparam nodesep 25
+skinparam ranksep 30
+scale 0.8
+
+title <b>Figure 4.1:</b> User Authentication Activity Diagram
+
+start
+:User enters credentials;
+:System identifies user type;
+
+if (Student ID?) then (yes)
+  :Call StudentApiService;
+  :Authenticate via Student API;
+else (no)
+  :Call SupervisorApiService;
+  :Authenticate via Faculty API;
+endif
+
+if (Valid?) then (yes)
+  fork
+    :Create session;
+  fork again
+    :Update database;
+  fork again
+    :Log activity;
+  end fork
+  :Redirect to dashboard;
+else (no)
+  :Display error;
+  :Return to login;
+endif
+
+stop
+@enduml
+```
+
+### A.2 Compact Report Submission (Fits A4 Portrait)
+
+```plantuml
+@startuml
+!theme plain
+skinparam activityFontSize 10
+skinparam padding 2
+scale 0.75
+
+title <b>Figure 4.2:</b> Report Submission Process
+
+start
+:Student selects report;
+:Upload PDF file;
+
+fork
+  :Validate format;
+  if (PDF?) then (yes)
+    :✓;
+  else (no)
+    :✗;
+  endif
+fork again
+  :Check size;
+  if (<10MB?) then (yes)
+    :✓;
+  else (no)
+    :✗;
+  endif
+fork again
+  :Scan content;
+  if (Valid?) then (yes)
+    :✓;
+  else (no)
+    :✗;
+  endif
+end fork
+
+if (All valid?) then (yes)
+  :Store file;
+  :Update status;
+  :Notify supervisor;
+  :Success;
+else (no)
+  :Show errors;
+  :Retry;
+endif
+
+stop
+@enduml
+```
+
+### A.3 Supervisor Assignment Overview (Fits A4 Portrait)
+
+```plantuml
+@startuml
+!theme plain
+skinparam activityFontSize 10
+scale 0.8
+
+title <b>Figure 5.1:</b> Supervisor Assignment Strategies
+
+start
+:Advisor selects strategy;
+
+split
+  -[#2196F3]-> AOI Mode;
+  :Match by expertise;
+  :Random selection;
+split again
+  -[#4CAF50]-> Ranking Mode;
+  :Sort by designation;
+  :Round-robin assignment;
+split again
+  -[#FF9800]-> Hybrid Mode;
+  :Balance expertise & load;
+  :Optimize distribution;
+end split
+
+:Execute assignment;
+:Store in database;
+:Generate report;
+stop
+@enduml
+```
+
+### A.4 Report Lifecycle States (Fits 1/2 A4 Page)
+
+```plantuml
+@startuml
+!theme plain
+skinparam activityFontSize 10
+scale 0.8
+
+title <b>Figure 5.2:</b> Report State Transitions
+
+start
+:DRAFT;
+→
+:SUBMITTED;
+
+if (Review) then (approve)
+  :APPROVED;
+  if (Panel?) then (yes)
+    :PANEL_REVIEW;
+    if (Pass?) then (yes)
+      :PANEL_APPROVED;
+    else (no)
+      :REVISION_NEEDED;
+      →
+      :RESUBMIT;
+    endif
+  endif
+  :COMPLETE;
+elseif (Review) then (reject)
+  :REJECTED;
+  stop
+else (revise)
+  :REVISION_NEEDED;
+  →
+  :RESUBMIT;
+endif
+
+stop
+@enduml
+```
+
+### A.5 Meeting Management (Compact Version)
+
+```plantuml
+@startuml
+!theme plain
+skinparam activityFontSize 10
+scale 0.85
+
+title <b>Figure 6.1:</b> Meeting Recording Process
+
+|Supervisor|
+start
+:Select group;
+:Enter details;
+
+fork
+  :Date/Time;
+fork again
+  :Topics;
+fork again
+  :Attendance;
+end fork
+
+:Submit;
+
+|System|
+:Validate;
+:Store;
+:Generate PDF;
+
+stop
+@enduml
+```
+
+### A.6 Notification Flow (Compact)
+
+```plantuml
+@startuml
+!theme plain
+skinparam activityFontSize 10
+scale 0.8
+
+title <b>Figure 6.2:</b> Notification System
+
+start
+:Event occurs;
+
+fork
+  :Identify recipients;
+fork again
+  :Prepare content;
+fork again
+  :Set priority;
+end fork
+
+:Store notification;
+
+if (User online?) then (yes)
+  :Push to dashboard;
+  :Update badge;
+else (no)
+  :Queue for later;
+endif
+
+stop
+@enduml
+```
+
+---
+
+## APPENDIX B: INTEGRATION GUIDE FOR IEEE REPORTS
+
+### B.1 LaTeX Integration
+
+For IEEE conference/journal papers using LaTeX:
+
+```latex
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% Single diagram
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.48\textwidth]{diagrams/auth-compact.pdf}
+\caption{User Authentication Activity Diagram}
+\label{fig:auth}
+\end{figure}
+
+% Two diagrams side by side
+\begin{figure}[htbp]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{diagrams/auth.pdf}
+    \caption{Authentication}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.48\textwidth}
+    \includegraphics[width=\textwidth]{diagrams/submission.pdf}
+    \caption{Report Submission}
+\end{subfigure}
+\caption{System Core Processes}
+\label{fig:core-processes}
+\end{figure}
+```
+
+### B.2 MS Word Integration
+
+For IEEE Word templates:
+
+1. **Generate high-DPI images**:
+```bash
+plantuml -tpng -dpi 300 -scale 0.8 diagram.puml
+```
+
+2. **Insert in Word**:
+   - Single column: Width = 3.5 inches
+   - Double column span: Width = 7 inches
+   - Caption: Use IEEE style "Fig. X. Description"
+
+### B.3 Generation Script for A4 Reports
+
+Create `generate-a4-diagrams.bat`:
+
+```batch
+@echo off
+echo Generating A4-optimized diagrams for IEEE report...
+
+set PLANTUML=plantuml.jar
+
+REM Generate compact versions at 300 DPI
+java -jar %PLANTUML% -tpdf -dpi 300 -scale 0.8 auth-compact.puml
+java -jar %PLANTUML% -tpdf -dpi 300 -scale 0.75 submission-compact.puml
+java -jar %PLANTUML% -tpdf -dpi 300 -scale 0.8 assignment-compact.puml
+java -jar %PLANTUML% -tpdf -dpi 300 -scale 0.85 meeting-compact.puml
+
+echo Diagrams generated successfully!
+pause
+```
+
+### B.4 Recommended Layout for IEEE Report
+
+#### Chapter Structure with Diagrams:
+
+**Chapter 4: System Design**
+- Fig 4.1: Authentication (Compact) - 1/2 page
+- Fig 4.2: Report Submission (Compact) - 1/2 page
+
+**Chapter 5: Implementation**
+- Fig 5.1: Assignment Strategies - 1/2 page
+- Fig 5.2: Report States - 1/3 page
+- Fig 5.3: AOI Algorithm (detailed) - Full page landscape
+
+**Chapter 6: System Features**
+- Fig 6.1: Meeting Management - 1/3 page
+- Fig 6.2: Notification System - 1/3 page
+- Fig 6.3: Data Sync - 1/3 page
+
+### B.5 PlantUML Settings for A4 Optimization
+
+```plantuml
+@startuml
+' Standard A4 Portrait Settings
+!define A4_SCALE 0.8
+!define A4_FONT 10
+!define A4_PADDING 2
+
+skinparam dpi 300
+skinparam backgroundColor white
+skinparam defaultFontSize A4_FONT
+skinparam activityFontSize A4_FONT
+skinparam padding A4_PADDING
+skinparam nodesep 25
+skinparam ranksep 30
+
+scale A4_SCALE
+
+' Your diagram here
+@enduml
+```
+
+### B.6 Tips for A4 Page Fitting
+
+1. **Use scale factor**: 0.7-0.9 for most diagrams
+2. **Reduce font size**: 10-11pt for activities
+3. **Minimize padding**: Set padding to 2
+4. **Use abbreviations**: Shorten long text
+5. **Split complex diagrams**: Create part 1, part 2
+6. **Consider landscape**: For wide diagrams
+7. **Use subfigures**: Group related small diagrams
+
+---
+
+## APPENDIX C: QUICK REFERENCE FOR REPORT WRITING
+
+### Diagram Selection Guide:
+
+| Diagram Type | Full Version | Compact Version | Page Space | Use Case |
+|-------------|--------------|-----------------|------------|----------|
+| Authentication | Section 1 | Appendix A.1 | 1/2 page | System overview |
+| Report Submission | Section 2 | Appendix A.2 | 1/2 page | Core functionality |
+| Assignment Algorithm | Section 3 | Appendix A.3 | 1/2 page | Algorithm overview |
+| Report Lifecycle | Section 4 | Appendix A.4 | 1/3 page | State transitions |
+| Meeting Management | Section 5 | Appendix A.5 | 1/3 page | Feature detail |
+| Notifications | Section 6 | Appendix A.6 | 1/3 page | System feature |
+
+### Export Commands:
+
+```bash
+# For IEEE LaTeX papers (vector graphics)
+plantuml -tpdf -dpi 300 -scale 0.8 *.puml
+
+# For MS Word reports (high-res raster)
+plantuml -tpng -dpi 300 -scale 0.8 *.puml
+
+# For presentations (medium-res)
+plantuml -tpng -dpi 150 -scale 1.0 *.puml
+
+# For web documentation (scalable)
+plantuml -tsvg *.puml
+```
 
 ---
 
