@@ -1,0 +1,41 @@
+@startuml Supervisor Annotation Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Document Annotation Process
+
+start
+
+:Supervisor accesses report;
+
+:System verifies authorization;
+
+if (Authorized?) then (yes)
+  :Load PDF interface;
+  
+  repeat
+    :Add annotations;
+    note right
+      Highlights, comments,
+      drawings, stamps
+    end note
+  repeat while (More annotations?)
+  
+  :Save annotations;
+  :Store with version number;
+  :Retrieve student list;
+  
+  repeat
+    :Send notification to student;
+  repeat while (More students?)
+  
+  :Display confirmation;
+  stop
+else (no)
+  :Display access denied;
+  stop
+endif
+
+@enduml

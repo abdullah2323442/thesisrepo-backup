@@ -1,0 +1,33 @@
+@startuml Template Export Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Template Export Process
+
+start
+
+:Advisor requests template;
+
+:Select batch;
+
+:Fetch students from External API;
+
+:Retrieve existing groups;
+
+:Generate Excel template;
+note right
+  Columns: Student ID,
+  Name, Group (empty)
+end note
+
+:Add instructions sheet;
+
+:Apply data validation;
+
+:Provide download link;
+
+stop
+
+@enduml

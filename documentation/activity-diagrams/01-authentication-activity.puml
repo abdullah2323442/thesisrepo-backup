@@ -1,0 +1,33 @@
+@startuml User Authentication Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title User Authentication Process
+
+start
+
+:User submits credentials;
+
+:System identifies user type;
+
+if (User type?) then (Faculty)
+  :Validate via External API;
+  :Retrieve faculty profile;
+else (Student)
+  :Validate via External API;
+  :Retrieve student data;
+endif
+
+if (Valid credentials?) then (yes)
+  :Store user record;
+  :Create session;
+  :Route to role-based dashboard;
+  stop
+else (no)
+  :Display error message;
+  stop
+endif
+
+@enduml

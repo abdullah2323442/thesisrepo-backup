@@ -1,0 +1,39 @@
+@startuml Area of Interest Assignment Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Area of Interest Based Supervisor Assignment
+
+start
+
+:Advisor selects AOI strategy;
+
+:Retrieve unassigned groups;
+
+:Retrieve supervisors with expertise;
+
+repeat
+  :Identify group's area of interest;
+  :Find matching supervisors;
+  
+  if (Matches found?) then (yes)
+    :Random selection from matches;
+    :Assign supervisor to group;
+  else (no)
+    :Mark as unassigned;
+  endif
+repeat while (More groups?)
+
+:Store assignments;
+
+:Display results;
+note right
+  Ensures expertise alignment
+  May result in uneven distribution
+end note
+
+stop
+
+@enduml

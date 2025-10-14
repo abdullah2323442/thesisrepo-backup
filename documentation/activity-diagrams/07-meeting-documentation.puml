@@ -1,0 +1,39 @@
+@startuml Meeting Documentation Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Meeting Documentation Process
+
+start
+
+:Supervisor records meeting;
+
+:Enter meeting details;
+note right
+  Date, time, duration,
+  location, agenda
+end note
+
+:Select group;
+
+repeat
+  :Mark student attendance;
+repeat while (More students?)
+
+:Enter discussion points;
+
+:Add action items;
+
+:Store meeting record;
+
+if (Generate report?) then (yes)
+  :Compile meeting history;
+  :Generate PDF report;
+  :Provide download;
+endif
+
+stop
+
+@enduml

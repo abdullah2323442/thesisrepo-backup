@@ -1,0 +1,34 @@
+@startuml Notification System Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Dashboard Notification System
+
+start
+
+:Student accesses dashboard;
+
+:System queries unread notifications;
+
+if (Notifications exist?) then (yes)
+  :Display notification badge;
+  :Show notification count;
+  
+  if (User clicks bell?) then (yes)
+    :Fetch notification details;
+    :Display notification list;
+    
+    if (User clicks notification?) then (yes)
+      :Mark as read;
+      :Navigate to related resource;
+    endif
+  endif
+else (no)
+  :Clear notification area;
+endif
+
+stop
+
+@enduml

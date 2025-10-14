@@ -1,0 +1,38 @@
+@startuml Supervisor Report Assignment Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Supervisor Report Assignment Process
+
+start
+
+:Supervisor creates report assignment;
+
+:Enter report details;
+note right
+  Title, description,
+  due date, instructions
+end note
+
+:Select target group;
+
+:System validates input;
+
+if (Valid data?) then (yes)
+  :Store report in database;
+  :Retrieve group members;
+  
+  repeat
+    :Create student notification;
+  repeat while (More students?)
+  
+  :Display confirmation;
+  stop
+else (no)
+  :Display validation errors;
+  stop
+endif
+
+@enduml

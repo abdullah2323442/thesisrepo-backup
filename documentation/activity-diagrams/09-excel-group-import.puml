@@ -1,0 +1,33 @@
+@startuml Excel Group Import Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Excel-Based Group Import Process
+
+start
+
+:Advisor uploads Excel file;
+
+:System validates file format;
+
+if (Valid format?) then (yes)
+  :Parse student-group mappings;
+  
+  if (Valid data?) then (yes)
+    :Clear existing assignments;
+    :Create missing groups;
+    :Bulk insert assignments;
+    :Display import summary;
+    stop
+  else (no)
+    :Display validation errors;
+    stop
+  endif
+else (no)
+  :Display format error;
+  stop
+endif
+
+@enduml

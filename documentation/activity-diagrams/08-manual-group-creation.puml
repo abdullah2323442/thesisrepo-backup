@@ -1,0 +1,35 @@
+@startuml Manual Group Creation Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Manual Group Creation Process
+
+start
+
+:Advisor selects batch;
+
+:Fetch students from External API;
+
+:Display available students;
+
+:Enter number of groups;
+
+:System calculates group structure;
+
+repeat
+  :Create group record;
+repeat while (More groups?)
+
+repeat
+  :Assign student to group;
+  :Validate assignment;
+  :Store in database;
+repeat while (More students?)
+
+:Display group formation summary;
+
+stop
+
+@enduml

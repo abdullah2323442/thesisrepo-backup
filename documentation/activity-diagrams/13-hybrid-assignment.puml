@@ -1,0 +1,39 @@
+@startuml Hybrid Assignment Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Hybrid Supervisor Assignment Strategy
+
+start
+
+:Advisor selects hybrid strategy;
+
+:Retrieve unassigned groups;
+
+:Retrieve supervisors with expertise;
+
+repeat
+  :Find area-matching supervisors;
+  :Check assignment counts;
+  :Select supervisor with minimum load;
+  
+  if (Multiple with same load?) then (yes)
+    :Apply rank-based selection;
+  endif
+  
+  :Assign supervisor to group;
+repeat while (More groups?)
+
+:Store assignments;
+
+:Display results;
+note right
+  Balances expertise match
+  and workload distribution
+end note
+
+stop
+
+@enduml

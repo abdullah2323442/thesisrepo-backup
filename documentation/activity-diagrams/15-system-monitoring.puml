@@ -1,0 +1,36 @@
+@startuml System Monitoring Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title System Monitoring Process
+
+start
+
+:Administrator accesses monitoring;
+
+:Query performance data;
+
+:Retrieve statistics;
+note right
+  Response times, request counts,
+  error rates, resource usage
+end note
+
+:Calculate metrics;
+
+:Compare with historical data;
+
+:Identify trends and anomalies;
+
+if (Issues detected?) then (yes)
+  :Generate alert;
+  :Display warning;
+endif
+
+:Display monitoring dashboard;
+
+stop
+
+@enduml

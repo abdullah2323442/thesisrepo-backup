@@ -1,0 +1,30 @@
+@startuml Student View Feedback Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Student View Feedback Process
+
+start
+
+:Student clicks notification;
+
+:System verifies access rights;
+
+if (Authorized?) then (yes)
+  :Retrieve annotations from database;
+  :Merge with original PDF;
+  :Display annotated document;
+  
+  if (Download requested?) then (yes)
+    :Provide PDF file;
+  endif
+  
+  stop
+else (no)
+  :Display access denied;
+  stop
+endif
+
+@enduml

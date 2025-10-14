@@ -1,0 +1,39 @@
+@startuml Ranking Based Assignment Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Ranking-Based Supervisor Assignment
+
+start
+
+:Advisor selects ranking strategy;
+
+:Retrieve unassigned groups;
+
+:Retrieve supervisors by designation;
+
+:Sort by rank;
+note right
+  Professor → Associate Professor
+  → Assistant Professor → Lecturer
+end note
+
+repeat
+  :Select next supervisor (round-robin);
+  :Verify capacity;
+  :Assign to next group;
+repeat while (More groups?)
+
+:Store assignments;
+
+:Display results;
+note right
+  Ensures equal distribution
+  Ignores expertise matching
+end note
+
+stop
+
+@enduml

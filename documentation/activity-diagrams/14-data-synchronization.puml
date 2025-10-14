@@ -1,0 +1,41 @@
+@startuml Data Synchronization Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title External Data Synchronization Process
+
+start
+
+:Administrator initiates sync;
+
+:Select data type;
+note right
+  Student data, Faculty data,
+  Batch information, or All
+end note
+
+:Authenticate with External API;
+
+if (Authentication successful?) then (yes)
+  :Request updated data;
+  :Receive data response;
+  :Parse and validate data;
+  
+  if (Valid data?) then (yes)
+    :Compare with existing records;
+    :Update database;
+    :Generate sync report;
+    :Display report;
+    stop
+  else (no)
+    :Display validation error;
+    stop
+  endif
+else (no)
+  :Display connection error;
+  stop
+endif
+
+@enduml

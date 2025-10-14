@@ -1,0 +1,27 @@
+@startuml Student Report Submission Activity Diagram
+skinparam defaultFontSize 10
+skinparam defaultFontName Arial
+skinparam activityBorderColor #000000
+skinparam activityBackgroundColor #FFFFFF
+
+title Student Report Submission Process
+
+start
+
+:Student selects report file;
+
+:System validates file format;
+
+if (Valid format?) then (yes)
+  :Upload file to storage;
+  :Create submission record;
+  :Link to student and report;
+  :Create supervisor notification;
+  :Display success message;
+  stop
+else (no)
+  :Display validation error;
+  stop
+endif
+
+@enduml
