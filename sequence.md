@@ -143,83 +143,68 @@ sequenceDiagram
 ```
 
 ### 3.2 Document Annotation Process
+
+#### 3.2.1 Annotation Creation and Storage
 ```mermaid
 sequenceDiagram
     participant Supervisor
-    participant Frontend
-    participant Controller
+    participant System
     participant Database
-    participant NotificationService
+
+    Supervisor->>System: Access report submission
+    System->>Database: Verify authorization
+    Database-->>System: Confirmed
+    System-->>Supervisor: Display PDF interface
+    
+    loop Annotation process
+        Supervisor->>System: Add annotations
+        System->>System: Store locally
+    end
+    
+    Supervisor->>System: Save annotations
+    System->>Database: Store with version
+    Database-->>System: Saved
+    System-->>Supervisor: Confirmation
+```
+
+#### 3.2.2 Feedback Distribution
+```mermaid
+sequenceDiagram
+    participant Supervisor
+    participant System
+    participant Database
     participant Student
 
-    %% Authorization and Access
-    Supervisor->>Frontend: Navigate to report submission
-    Frontend->>Controller: GET annotation interface
-    Controller->>Database: Verify supervisor authorization
-    Database-->>Controller: Authorization confirmed
-    Controller->>Database: Retrieve existing annotation sessions
-    Database-->>Controller: Return sessions (version-ordered)
-    Controller-->>Frontend: Render annotation interface
-    Frontend-->>Supervisor: Display PDF annotation studio
-
-    %% Annotation Creation
-    Supervisor->>Frontend: Select annotation tool
+    Supervisor->>System: Send feedback
+    System->>Database: Retrieve student list
+    Database-->>System: Return students
     
-    loop For each annotation
-        Supervisor->>Frontend: Add annotation to PDF
-        Frontend->>Frontend: Store in annotations array
-        Frontend->>Frontend: Render on canvas
+    loop For each student
+        System->>Student: Send notification
     end
     
-    Supervisor->>Frontend: Enter feedback message
+    System->>Database: Update status
+    System-->>Supervisor: Sent confirmation
+```
 
-    %% Save Annotations
-    Supervisor->>Frontend: Save annotations
-    Frontend->>Controller: POST annotations data
-    Controller->>Database: Begin transaction
-    Controller->>Database: Get next version number
-    Database-->>Controller: Return version
-    Controller->>Database: Create ReportAnnotationSession
-    Database-->>Controller: Session created with ID
-    Controller->>Database: Commit transaction
-    Controller-->>Frontend: Return success response
-    Frontend-->>Supervisor: Display confirmation
+#### 3.2.3 Student Access to Annotations
+```mermaid
+sequenceDiagram
+    participant Student
+    participant System
+    participant Database
 
-    %% Send Feedback to Students
-    Supervisor->>Frontend: Send feedback
-    Frontend->>Controller: POST send-feedback request
-    Controller->>Database: Verify session not already sent
+    Student->>System: View notification
+    System->>Database: Verify access
+    Database-->>System: Authorized
     
-    alt Not yet sent
-        Controller->>Database: Get group students
-        Database-->>Controller: Return student list
-        
-        loop For each student
-            Controller->>NotificationService: Create notification
-            NotificationService->>Database: Store notification
-            NotificationService->>Student: Trigger dashboard update
-        end
-        
-        Controller->>Database: Update session status (is_sent=true)
-        Controller-->>Frontend: Return success
-        Frontend-->>Supervisor: Feedback sent confirmation
-    else Already sent
-        Controller-->>Frontend: Return error
-        Frontend-->>Supervisor: Already sent message
-    end
-
-    %% Student Access
-    Student->>Frontend: View notification
-    Frontend->>Controller: GET annotation session
-    Controller->>Database: Verify student access
-    Database-->>Controller: Return annotation data
-    Controller-->>Frontend: Render annotated PDF
-    Frontend-->>Student: Display interactive annotations
+    System->>Database: Retrieve annotations
+    Database-->>System: Return data
+    System-->>Student: Display annotated PDF
     
-    opt Download annotated PDF
-        Student->>Frontend: Request download
-        Frontend->>Controller: GET annotated file
-        Controller-->>Student: Download PDF with version
+    opt Download
+        Student->>System: Request download
+        System-->>Student: Provide PDF file
     end
 ```
 
