@@ -231,6 +231,8 @@ sequenceDiagram
 ## 4. Advisor Operations
 
 ### 4.1 Group Formation
+
+#### 4.1.1 Manual Group Creation
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -242,9 +244,62 @@ sequenceDiagram
     System->>External API: Fetch batch students
     External API-->>System: Return student data
     System-->>Advisor: Display available students
+    
     Advisor->>System: Create groups
-    System->>Database: Store group assignments
-    System-->>Advisor: Confirmation
+    System->>Database: Calculate groups needed
+    System->>Database: Store group structures
+    Database-->>System: Groups created
+    
+    loop Manual assignment
+        Advisor->>System: Assign student to group
+        System->>Database: Validate and store
+        Database-->>System: Assignment confirmed
+    end
+    
+    System-->>Advisor: Group formation complete
+```
+
+#### 4.1.2 Excel-Based Group Import
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Advisor->>System: Upload Excel file
+    System->>System: Validate file format
+    System->>System: Parse student-group mappings
+    
+    alt Valid data
+        System->>Database: Clear existing assignments
+        System->>Database: Create missing groups
+        System->>System: Randomize group allocation
+        System->>Database: Bulk insert assignments
+        Database-->>System: Import successful
+        System-->>Advisor: Display import summary
+    else Invalid data
+        System-->>Advisor: Return validation errors
+    end
+```
+
+#### 4.1.3 Template Export for Group Assignment
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant External API
+    participant Database
+
+    Advisor->>System: Request Excel template
+    System->>External API: Fetch batch students
+    External API-->>System: Return student list
+    System->>Database: Retrieve existing groups
+    Database-->>System: Return group data
+    
+    System->>System: Generate Excel template
+    Note over System: Template includes:<br/>• Student IDs and names<br/>• Empty group column<br/>• Available group list
+    
+    System-->>Advisor: Download template file
 ```
 
 ### 4.2 Supervisor Assignment System
@@ -365,26 +420,6 @@ graph TD
     style AOIResult fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
     style RankResult fill:#e3f2fd,stroke:#2196f3,stroke-width:1px
     style HybridResult fill:#fff3e0,stroke:#ff9800,stroke-width:1px
-```
-
-### 4.3 Data Import/Export
-```mermaid
-sequenceDiagram
-    participant Advisor
-    participant System
-    participant Database
-
-    alt Import Process
-        Advisor->>System: Upload spreadsheet
-        System->>System: Validate data format
-        System->>Database: Store group data
-        System-->>Advisor: Import confirmation
-    else Export Process
-        Advisor->>System: Request template
-        System->>Database: Retrieve group data
-        System->>System: Generate spreadsheet
-        System-->>Advisor: Download file
-    end
 ```
 
 ---
