@@ -143,20 +143,343 @@ sequenceDiagram
 ```
 
 ### 3.2 Document Annotation Process
+
+#### 3.2.1 Complete Annotation Workflow
+```mermaid
+sequenceDiagram
+    participant Supervisor
+    participant Frontend
+    participant Controller
+    participant Database
+    participant Storage
+    participant NotificationService
+    participant Student
+
+    Note over Supervisor,Student: Comprehensive PDF Annotation Process
+    
+    %% Phase 1: Access and Verification
+    rect rgb(240, 248, 255)
+        Note over Supervisor,Database: Phase 1: Access & Authorization
+        Supervisor->>Frontend: Navigate to report submission
+        Frontend->>Controller: GET /supervisor/reports/{report}/submissions/{submission}/annotate
+        Controller->>Database: Verify supervisor authorization
+        
+        alt Supervisor authorized
+            Controller->>Database: Check supervisor_id matches group.supervisor_id
+            Database-->>Controller: Authorization confirmed
+            Controller->>Storage: Verify PDF file exists
+            Storage-->>Controller: File validation result
+            
+            alt PDF valid
+                Controller->>Database: Retrieve existing annotation sessions
+                Database-->>Controller: Return sessions (ordered by version desc)
+                Controller-->>Frontend: Render annotation interface
+                Frontend-->>Supervisor: Display PDF annotation studio
+            else PDF invalid
+                Controller-->>Frontend: Return error
+                Frontend-->>Supervisor: Show "PDF not found" message
+            end
+        else Unauthorized
+            Controller-->>Frontend: Return 403 error
+            Frontend-->>Supervisor: Access denied
+        end
+    end
+
+    %% Phase 2: Annotation Creation
+    rect rgb(255, 248, 240)
+        Note over Supervisor,Storage: Phase 2: Interactive Annotation
+        
+        Supervisor->>Frontend: Select annotation tool
+        Note over Frontend: Tools: Comment, Highlight,<br/>Underline, Strikethrough
+        
+        loop For each annotation
+            Supervisor->>Frontend: Click/drag on PDF canvas
+            
+            alt Comment annotation
+                Frontend->>Frontend: Show comment modal
+                Supervisor->>Frontend: Enter comment text
+                Frontend->>Frontend: Create comment object
+                Note over Frontend: {type: 'comment', x, y, page,<br/>comment: text, color}
+            else Highlight/Underline/Strikethrough
+                Frontend->>Frontend: Track mouse coordinates
+                Frontend->>Frontend: Create shape object
+                Note over Frontend: {type, startX, startY,<br/>endX, endY, page, color}
+            end
+            
+            Frontend->>Frontend: Add to annotations array
+            Frontend->>Frontend: Render annotation on canvas
+            Frontend->>Frontend: Update annotation counter
+        end
+        
+        Supervisor->>Frontend: Enter general feedback message (optional)
+        Note over Frontend: Message for all group members
+    end
+
+    %% Phase 3: Save as Draft
+    rect rgb(240, 255, 240)
+        Note over Supervisor,Database: Phase 3: Save Annotations (Draft)
+        
+        Supervisor->>Frontend: Click "Save Annotations"
+        Frontend->>Frontend: Prepare payload
+        Note over Frontend: {annotations: [...],<br/>feedback_message: "..."}
+        
+        Frontend->>Controller: POST /supervisor/reports/{report}/submissions/{submission}/annotations
+        Controller->>Database: Begin transaction
+        
+        Controller->>Database: Get next version number
+        Database-->>Controller: version = MAX(version) + 1
+        
+        Controller->>Database: Create ReportAnnotationSession
+        Note over Database: Fields stored:<br/>• report_id, submission_id<br/>• supervisor_id, version<br/>• message (feedback)<br/>• annotations_json (array)<br/>• is_sent: false<br/>• created_by_type
+        
+        Database-->>Controller: Session created with ID
+        Controller->>Database: Commit transaction
+        
+        Controller-->>Frontend: Return success response
+        Note over Frontend: {success: true,<br/>session_id, version,<br/>is_sent: false}
+        
+        Frontend-->>Supervisor: Show "Saved as draft" message
+        Frontend->>Frontend: Enable "Send Feedback" button
+    end
+
+    %% Phase 4: Send Feedback
+    rect rgb(255, 240, 245)
+        Note over Supervisor,Student: Phase 4: Send Feedback to Students
+        
+        Supervisor->>Frontend: Click "Send Feedback"
+        Frontend->>Frontend: Show confirmation modal
+        Note over Frontend: Display annotation summary:<br/>• Total annotations count<br/>• Comment count<br/>• Feedback preview
+        
+        Supervisor->>Frontend: Confirm send
+        Frontend->>Controller: POST /supervisor/reports/{report}/submissions/{submission}/annotations/{session}/send-feedback
+        
+        Controller->>Database: Begin transaction
+        Controller->>Database: Verify session not already sent
+        
+        alt Not yet sent
+            Controller->>Database: Get all group students
+            Database-->>Controller: Return GroupStudent records
+            
+            loop For each student
+                Controller->>Database: Find User by roll/student_id
+                Database-->>Controller: Return User or null
+                
+                alt User found
+                    Controller->>NotificationService: Create NewReportAnnotation
+                    Note over NotificationService: Notification data:<br/>• type: 'report_annotation'<br/>• report details<br/>• supervisor info<br/>• feedback preview<br/>• version number
+                    
+                    NotificationService->>Database: Store in notifications table
+                    NotificationService->>Student: Trigger real-time update
+                    Note over Student: Dashboard notification badge updates
+                else User not found
+                    Controller->>Controller: Log warning
+                end
+            end
+            
+            Controller->>Database: Update annotation session
+            Note over Database: Set is_sent = true,<br/>sent_at = now()
+            
+            Controller->>Database: Commit transaction
+            Controller-->>Frontend: Return success
+            Frontend-->>Supervisor: "Feedback sent successfully!"
+        else Already sent
+            Controller-->>Frontend: Return error
+            Frontend-->>Supervisor: "Already sent" message
+        end
+    end
+
+    %% Phase 5: Student Access
+    rect rgb(245, 245, 255)
+        Note over Student,Storage: Phase 5: Student Views Feedback
+        
+        Student->>Frontend: Check dashboard notifications
+        Frontend->>Database: Query unread notifications
+        Database-->>Frontend: Return annotation notifications
+        Frontend-->>Student: Display notification badge
+        
+        Student->>Frontend: Click notification
+        Frontend->>Controller: GET /student/reports/{report}/submissions/{submission}/annotations/{session}
+        
+        Controller->>Database: Verify student group membership
+        Database-->>Controller: Confirm access
+        
+        Controller->>Database: Load annotation session
+        Database-->>Controller: Return session with annotations_json
+        
+        Controller-->>Frontend: Render annotation viewer
+        Frontend->>Frontend: Parse annotations_json
+        Frontend->>Storage: Load original PDF
+        Storage-->>Frontend: Return PDF file
+        
+        Frontend->>Frontend: Render PDF with annotations
+        Note over Frontend: Display:<br/>• PDF pages<br/>• Annotation overlays<br/>• Comment boxes<br/>• Supervisor feedback
+        
+        Frontend-->>Student: Interactive annotated PDF view
+        
+        opt Download annotated PDF
+            Student->>Frontend: Click download
+            Frontend->>Controller: GET /student/.../annotations/{session}/download
+            Controller->>Storage: Retrieve annotated file
+            Storage-->>Controller: Return file stream
+            Controller-->>Student: Download "annotated_feedback_v{version}.pdf"
+        end
+    end
+```
+
+#### 3.2.2 Annotation Data Structure
+```mermaid
+graph TD
+    subgraph "Annotation Session"
+        AS[ReportAnnotationSession]
+        AS --> R[report_id]
+        AS --> S[submission_id]
+        AS --> SU[supervisor_id]
+        AS --> V[version: incremental]
+        AS --> M[message: general feedback]
+        AS --> AJ[annotations_json: array]
+        AS --> IS[is_sent: boolean]
+        AS --> SA[sent_at: timestamp]
+        AS --> CT[created_by_type: role]
+    end
+    
+    subgraph "Annotation Object"
+        AJ --> AO[Annotation Item]
+        AO --> T[type: comment/highlight/underline/strikethrough]
+        AO --> P[page: number]
+        AO --> CO[Coordinates]
+        CO --> XY[x, y: for comments]
+        CO --> SE[startX/Y, endX/Y: for shapes]
+        CO --> N[xNorm, yNorm: normalized coords]
+        AO --> TXT[comment/text: string]
+        AO --> COL[color: hex value]
+        AO --> ID[id: timestamp]
+    end
+    
+    subgraph "Notification Data"
+        AS --> ND[Notification]
+        ND --> NT[type: 'report_annotation']
+        ND --> GI[group_id, group_name]
+        ND --> RI[report_id, report_type]
+        ND --> SI[submission_id]
+        ND --> SN[supervisor_name, role]
+        ND --> FP[feedback_preview]
+        ND --> VN[version number]
+    end
+    
+    style AS fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style AO fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style ND fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+```
+
+#### 3.2.3 Multi-Role Annotation Support
+```mermaid
+sequenceDiagram
+    participant User
+    participant System
+    participant Database
+    
+    Note over User,Database: Different roles can annotate
+    
+    alt Supervisor
+        User->>System: Access via /supervisor/reports/.../annotate
+        System->>Database: Set created_by_type = 'supervisor'
+    else Co-Supervisor
+        User->>System: Access via /co-supervisor/reports/.../annotate
+        System->>Database: Set created_by_type = 'co_supervisor'
+    else Panel Member
+        User->>System: Access via /panel-member/reports/.../annotate
+        System->>Database: Set created_by_type = 'panel_member'
+    end
+    
+    System->>Database: Store annotation with role identifier
+    Database-->>System: Session created with role context
+    
+    Note over Database: Students see role-specific<br/>notification titles:<br/>"New Supervisor Feedback"<br/>"New Co-Supervisor Feedback"<br/>"New Panel Member Feedback"
+```
+
+#### 3.2.4 Annotation History Management
 ```mermaid
 sequenceDiagram
     participant Supervisor
     participant System
     participant Database
-
-    Supervisor->>System: Open student submission
-    System->>Database: Retrieve document
-    Supervisor->>System: Add annotations
-    System->>Database: Save annotated version
-    System->>Database: Create notification for students
-    System-->>Supervisor: Save confirmation
+    participant Student
     
-    Note over Database: Students receive in-app notification
+    Note over Supervisor,Student: Version-controlled annotation history
+    
+    Supervisor->>System: View annotation history
+    System->>Database: Query all sessions for submission
+    Database-->>System: Return sessions ordered by version DESC
+    
+    System-->>Supervisor: Display session list
+    Note over Supervisor: Shows for each session:<br/>• Version number<br/>• Creation date<br/>• Annotation count<br/>• Feedback message<br/>• Send status
+    
+    Supervisor->>System: Create new annotation
+    System->>Database: Calculate next version
+    Note over Database: version = MAX(version) + 1
+    
+    System->>Database: Store with new version
+    Database-->>System: Confirm creation
+    
+    parallel Student Access
+        Student->>System: View feedback history
+        System->>Database: Get all sent sessions
+        Database-->>System: Return is_sent=true sessions
+        System-->>Student: Display version timeline
+        
+        Student->>System: Select specific version
+        System->>Database: Load session by version
+        Database-->>System: Return annotation data
+        System-->>Student: Render versioned annotations
+    end
+```
+
+#### 3.2.5 Real-time Annotation Rendering
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant Canvas
+    participant AnnotationLayer
+    participant PDFRenderer
+    
+    Note over Browser,PDFRenderer: Client-side annotation rendering
+    
+    Browser->>PDFRenderer: Load PDF document
+    PDFRenderer->>Canvas: Render PDF page
+    
+    Browser->>Browser: Parse annotations_json
+    
+    loop For each annotation
+        alt Comment type
+            Browser->>AnnotationLayer: Create comment marker
+            Note over AnnotationLayer: Position at (x,y) or (xNorm,yNorm)
+            AnnotationLayer->>AnnotationLayer: Add click handler
+            AnnotationLayer->>Canvas: Overlay comment icon 💬
+        else Shape type (highlight/underline/strikethrough)
+            Browser->>Canvas: Calculate coordinates
+            Note over Canvas: Use normalized or absolute coords
+            
+            alt Highlight
+                Canvas->>Canvas: Draw semi-transparent rectangle
+                Note over Canvas: fillStyle with alpha 0.3
+            else Underline
+                Canvas->>Canvas: Draw line below text
+                Note over Canvas: Green line at bottom
+            else Strikethrough
+                Canvas->>Canvas: Draw line through text
+                Note over Canvas: Red line at middle
+            end
+        end
+    end
+    
+    Browser->>Browser: Track annotation state
+    Note over Browser: • Show/hide annotations<br/>• Page navigation<br/>• Zoom handling
+    
+    opt User interaction
+        Browser->>AnnotationLayer: Click comment marker
+        AnnotationLayer->>Browser: Show comment modal
+        Browser-->>Browser: Display comment text
+    end
 ```
 
 ### 3.3 Meeting Documentation
