@@ -838,36 +838,26 @@ sequenceDiagram
 
     Note over Administrator,Database: Research area management
     
-    alt Create Research Area
+    Administrator->>System: Manage research areas
+    System->>Database: Retrieve existing areas
+    Database-->>System: Return area list
+    System-->>Administrator: Display areas
+    
+    alt Create New Area
         Administrator->>System: Submit new research area
-        System->>System: Validate unique name
-        System->>Database: Create research area record
+        System->>Database: Validate and create area
         Database-->>System: Area created
-        System-->>Administrator: Success message
-    else Bulk Create
-        Administrator->>System: Submit multiple research areas
-        System->>System: Parse input data
-        
-        loop For each area
-            System->>Database: Check if exists
-            alt Not exists
-                System->>Database: Create area
-            else Exists
-                System->>System: Skip duplicate
-            end
-        end
-        
-        System-->>Administrator: Creation summary
-    else Update Research Area
+        System-->>Administrator: Success confirmation
+    else Update Area
         Administrator->>System: Edit area details
-        System->>Database: Update record
-        Database-->>System: Updated
-        System-->>Administrator: Success message
-    else Delete Research Area
+        System->>Database: Update area record
+        Database-->>System: Area updated
+        System-->>Administrator: Update confirmation
+    else Delete Area
         Administrator->>System: Delete area
-        System->>Database: Remove record
-        Database-->>System: Deleted
-        System-->>Administrator: Success message
+        System->>Database: Remove area record
+        Database-->>System: Area deleted
+        System-->>Administrator: Deletion confirmation
     end
 ```
 
