@@ -1065,7 +1065,7 @@ sequenceDiagram
 
 ### 8.2 Collaborative Report Review
 
-Multiple reviewers can annotate the same report simultaneously.
+Multiple reviewers can annotate the same report independently, with each sending notifications to students separately.
 
 ```mermaid
 sequenceDiagram
@@ -1076,30 +1076,35 @@ sequenceDiagram
     participant System
     participant Database
 
-    Note over Student,Database: Collaborative review process
+    Note over Student,Database: Independent review process
     
     Student->>System: Submit report
     System->>Database: Store submission
     
-    par Parallel Review Process
+    par Independent Review Process
         Supervisor->>System: Create annotation session
         System->>Database: Store supervisor annotations
+        Supervisor->>System: Send feedback
+        System->>Database: Mark supervisor session as sent
+        System->>Student: Notify of supervisor feedback
     and
         CoSupervisor->>System: Create annotation session
         System->>Database: Store co-supervisor annotations
+        CoSupervisor->>System: Send feedback
+        System->>Database: Mark co-supervisor session as sent
+        System->>Student: Notify of co-supervisor feedback
     and
         PanelMember->>System: Create annotation session
         System->>Database: Store panel member annotations
+        PanelMember->>System: Send feedback
+        System->>Database: Mark panel member session as sent
+        System->>Student: Notify of panel member feedback
     end
     
-    System->>Database: Compile all annotations
-    Database-->>System: Return merged feedback
-    System->>Student: Notify of available feedback
-    
-    Student->>System: View all annotations
-    System->>Database: Retrieve all sessions
-    Database-->>System: Return categorized feedback
-    System-->>Student: Display feedback with role indicators
+    Student->>System: View annotations
+    System->>Database: Retrieve all annotation sessions
+    Database-->>System: Return sessions with role identifiers
+    System-->>Student: Display feedback categorized by reviewer
 ```
 
 ### 8.3 Hierarchical Approval Process
