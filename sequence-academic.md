@@ -953,57 +953,42 @@ sequenceDiagram
     participant External API
     participant Database
 
-    Note over Administrator,Database: Advisor auto-detection on first student assignment
+    Note over Administrator,Database: Advisor auto-detection workflow
     
     Administrator->>System: Assign student to group
-    System->>Database: Verify student availability
+    System->>Database: Verify student availability and capacity
     
-    alt Student already assigned
-        Database-->>System: Student in another group
-        System-->>Administrator: Error: Student already assigned
-    else Student available
-        System->>Database: Check group capacity
+    alt Student unavailable or group full
+        System-->>Administrator: Error message
+    else Can proceed
+        System->>External API: Fetch student with advisor details
+        External API-->>System: Return student profile
         
-        alt Group full
-            System-->>Administrator: Error: Group at capacity
-        else Has space
-            System->>External API: Fetch student details with advisor
-            External API-->>System: Return student profile
+        alt Group has no advisor
+            System->>Database: Check if advisor exists locally
             
-            alt Group has no advisor
-                System->>Database: Search for advisor locally
-                
-                alt Advisor not found
-                    System->>External API: Fetch advisor from teacher API
-                    
-                    alt Advisor found
-                        System->>Database: Create advisor user
-                        System->>Database: Assign advisor to group
-                    else Advisor not found
-                        System-->>Administrator: Error: Advisor auto-detection failed
-                    end
-                else Advisor exists
-                    System->>Database: Assign advisor to group
-                end
-            else Group has advisor
-                System->>Database: Validate same advisor
-                
-                alt Advisor mismatch
-                    System-->>Administrator: Error: Cannot mix advisors
-                else Advisor matches
-                    System->>Database: Proceed with assignment
-                end
+            alt Advisor not found locally
+                System->>External API: Fetch advisor from teacher API
+                System->>Database: Create advisor user if found
             end
             
-            System->>Database: Create student assignment
-            System-->>Administrator: Success confirmation
+            System->>Database: Assign advisor to group
+        else Group has advisor
+            System->>Database: Validate same advisor
+            
+            alt Advisor mismatch
+                System-->>Administrator: Error: Cannot mix advisors
+            end
         end
+        
+        System->>Database: Create student assignment
+        System-->>Administrator: Success confirmation
     end
     
-    Note over System: Enforces single advisor per group<br/>Auto-creates advisor if needed
+    Note over System: Auto-detects and creates advisor from API<br/>Enforces single advisor per group
 ```
 
-**Figure 7.4.3:** Student assignment workflow with automatic advisor detection from external API
+**Figure 7.4.3:** Student assignment workflow with automatic advisor detection
 
 ### 7.5 Supervisor Management
 
