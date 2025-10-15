@@ -306,7 +306,7 @@ sequenceDiagram
 
 ### 4.2 Annotation and Feedback Process
 
-Co-supervisors provide feedback through PDF annotations and text comments with role-based tracking.
+Co-supervisors provide feedback through PDF annotations and text comments.
 
 ```mermaid
 sequenceDiagram
@@ -315,47 +315,38 @@ sequenceDiagram
     participant Database
     participant Student
 
-    Note over CoSupervisor,Student: Dual feedback mechanism with role tracking
+    Note over CoSupervisor,Student: Co-supervisors provide secondary review feedback
     
     CoSupervisor->>System: Access report submission
     System->>Database: Verify co-supervisor access
-    Database-->>System: Access confirmed
+    Database-->>System: Access granted
     
-    alt PDF Annotation
-        CoSupervisor->>System: Open PDF annotator
-        System-->>CoSupervisor: Display annotation tools
-        
-        loop Annotation process
-            CoSupervisor->>System: Add annotations (highlight, comment, underline)
-            System->>System: Process annotations
-        end
-        
+    alt PDF Annotations
+        CoSupervisor->>System: Add annotations
+        System->>System: Process annotations
         CoSupervisor->>System: Save annotation session
-        System->>Database: Store annotations with co-supervisor role identifier
+        System->>Database: Store annotations with co-supervisor role
         Database-->>System: Session saved
-        
-        CoSupervisor->>System: Send feedback to students
-        System->>Database: Mark session as sent
-        System->>Database: Record timestamp
-        
-    else Text Comment
+    else Text Comments
         CoSupervisor->>System: Submit text comment
-        System->>Database: Store comment with co-supervisor metadata
+        System->>Database: Store comment in system
         Database-->>System: Comment saved
     end
     
-    System->>Database: Create student notifications
+    CoSupervisor->>System: Send feedback
+    System->>Database: Mark feedback as sent
+    System->>Database: Create notifications
     
     loop For each group student
         System->>Student: Send notification
     end
     
-    System-->>CoSupervisor: Feedback delivered
+    System-->>CoSupervisor: Feedback sent
     
-    Note over CoSupervisor: Review-only access<br/>Cannot approve final submissions
+    Note over CoSupervisor: Provides secondary review<br/>Cannot approve final submission
 ```
 
-**Figure 4.2:** Co-supervisor annotation workflow with dual feedback mechanisms (PDF annotations and text comments)
+**Figure 4.2:** Co-supervisor feedback workflow demonstrating dual feedback mechanisms (PDF annotations and text comments) with role-based tracking
 
 ---
 
