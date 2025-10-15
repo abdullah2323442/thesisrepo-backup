@@ -867,7 +867,7 @@ Administrators have comprehensive group management capabilities including creati
 
 #### 7.4.1 Group Creation with Pre-Configuration
 
-Administrators can create groups with optional pre-configuration of supervisors and research areas.
+Administrators can create groups with optional supervisor and research area assignments.
 
 ```mermaid
 sequenceDiagram
@@ -875,60 +875,38 @@ sequenceDiagram
     participant System
     participant Database
 
-    Note over Administrator,Database: Administrative group creation with pre-configuration
-    
-    Administrator->>System: Access group management interface
-    System->>Database: Retrieve available batches
-    Database-->>System: Return batch list
-    System-->>Administrator: Display batch selection
+    Note over Administrator,Database: Administrative group creation
     
     Administrator->>System: Submit group creation form
-    Note over System: Form includes:<br/>• Batch number<br/>• Group name<br/>• Research areas (optional)<br/>• Supervisor (optional)
+    System->>Database: Validate group name uniqueness
     
-    System->>System: Validate input data
-    System->>Database: Check group name uniqueness in batch
-    
-    alt Group name already exists
+    alt Group name exists
         Database-->>System: Duplicate found
-        System-->>Administrator: Error: Group name exists in this batch
-    else Group name available
+        System-->>Administrator: Error: Group already exists
+    else Valid group name
         Database-->>System: Name available
         
         alt Supervisor provided
-            System->>Database: Retrieve supervisor details
-            Database-->>System: Return supervisor capacity
+            System->>Database: Verify supervisor capacity
             
-            alt Supervisor has available slots
-                Database-->>System: Capacity confirmed
-            else Supervisor at capacity
-                Database-->>System: No available slots
-                System-->>Administrator: Error: Supervisor capacity exceeded
+            alt Capacity available
+                System->>Database: Create group with supervisor
+            else Capacity exceeded
+                System-->>Administrator: Error: Supervisor at capacity
             end
+        else No supervisor
+            System->>Database: Create group without supervisor
         end
         
-        System->>Database: Create group record
-        Note over Database: Group attributes:<br/>• Admin-created flag<br/>• Max students: 4<br/>• Advisor: null (auto-detect)<br/>• Created by admin ID
-        
-        alt Research areas selected
-            System->>Database: Associate multiple research areas
-            Database-->>System: Areas linked
-        end
-        
-        alt Supervisor selected
-            System->>Database: Assign supervisor to group
-            System->>Database: Mark as manual assignment
-            System->>Database: Record assignment timestamp
-            Database-->>System: Supervisor assigned
-        end
-        
-        Database-->>System: Group created successfully
-        System-->>Administrator: Display success with configuration summary
+        System->>Database: Associate research areas if provided
+        Database-->>System: Group created
+        System-->>Administrator: Success confirmation
     end
     
-    Note over Database: Admin-created groups:<br/>• Protected from advisor deletion<br/>• Advisor auto-detected on first student<br/>• Support up to 4 students
+    Note over Database: Admin groups support up to 4 students<br/>Advisor auto-detected on first student assignment
 ```
 
-**Figure 7.4.1:** Administrator group creation workflow demonstrating pre-configuration capabilities and validation processes
+**Figure 7.4.1:** Administrator group creation workflow with optional pre-configuration
 
 #### 7.4.2 Cross-Batch Student Pool Management
 
@@ -972,9 +950,9 @@ sequenceDiagram
 
 **Figure 7.4.2:** Cross-batch student pool management demonstrating administrator's unrestricted access to students from multiple batches
 
-#### 7.4.3 Student Assignment with Intelligent Advisor Detection
+#### 7.4.3 Student Assignment with Advisor Auto-Detection
 
-The system automatically detects and assigns advisors based on the first student assigned to an admin-created group.
+The system automatically detects and assigns advisors when the first student is added to an admin-created group.
 
 ```mermaid
 sequenceDiagram
@@ -983,76 +961,57 @@ sequenceDiagram
     participant External API
     participant Database
 
-    Note over Administrator,Database: Intelligent advisor auto-detection workflow
+    Note over Administrator,Database: Advisor auto-detection on first student assignment
     
-    Administrator->>System: Select student for group assignment
-    System->>Database: Verify student not already assigned
+    Administrator->>System: Assign student to group
+    System->>Database: Verify student availability
     
-    alt Student already in a group
-        Database-->>System: Assignment record exists
+    alt Student already assigned
+        Database-->>System: Student in another group
         System-->>Administrator: Error: Student already assigned
     else Student available
-        Database-->>System: Student available
+        System->>Database: Check group capacity
         
-        System->>Database: Check group current capacity
-        Database-->>System: Return student count
-        
-        alt Group at maximum capacity (4 students)
-            System-->>Administrator: Error: Group full
-        else Group has available space
-            System->>External API: Fetch complete student details
-            External API-->>System: Return student profile with advisor
+        alt Group full
+            System-->>Administrator: Error: Group at capacity
+        else Has space
+            System->>External API: Fetch student details with advisor
+            External API-->>System: Return student profile
             
-            alt Group has no advisor assigned
-                System->>Database: Search for advisor by API ID
+            alt Group has no advisor
+                System->>Database: Search for advisor locally
                 
-                alt Advisor exists in local database
-                    Database-->>System: Return advisor user record
-                else Advisor not found locally
+                alt Advisor not found
                     System->>External API: Fetch advisor from teacher API
-                    Note over External API: Query teacher list endpoint<br/>with department filter
                     
-                    alt Advisor found in API
-                        External API-->>System: Return advisor details
-                        System->>Database: Create advisor user account
-                        Note over Database: User attributes:<br/>• API ID<br/>• Name<br/>• Email<br/>• Role: Advisor
-                        Database-->>System: Advisor user created
-                    else Advisor not in API
-                        External API-->>System: Advisor not found
+                    alt Advisor found
+                        System->>Database: Create advisor user
+                        System->>Database: Assign advisor to group
+                    else Advisor not found
                         System-->>Administrator: Error: Advisor auto-detection failed
                     end
+                else Advisor exists
+                    System->>Database: Assign advisor to group
                 end
+            else Group has advisor
+                System->>Database: Validate same advisor
                 
-                System->>Database: Assign advisor to group
-                System->>Database: Set auto-detection flag
-                Database-->>System: Advisor assigned
-            else Group already has advisor
-                System->>System: Validate advisor consistency
-                System->>Database: Compare student advisor with group advisor
-                
-                alt Advisors match
-                    Database-->>System: Same advisor confirmed
-                else Advisors differ
-                    Database-->>System: Advisor mismatch detected
-                    System-->>Administrator: Error: Cannot mix students with different advisors
+                alt Advisor mismatch
+                    System-->>Administrator: Error: Cannot mix advisors
+                else Advisor matches
+                    System->>Database: Proceed with assignment
                 end
             end
             
-            alt Capacity needs expansion
-                System->>Database: Expand max_students to 4
-                Database-->>System: Capacity expanded
-            end
-            
-            System->>Database: Create student-group assignment
-            Database-->>System: Assignment created
-            System-->>Administrator: Success: Student assigned
+            System->>Database: Create student assignment
+            System-->>Administrator: Success confirmation
         end
     end
     
-    Note over System: Key features:<br/>• Enforces single advisor per group<br/>• Auto-creates advisor if needed<br/>• Dynamic capacity expansion<br/>• Comprehensive validation
+    Note over System: Enforces single advisor per group<br/>Auto-creates advisor if needed
 ```
 
-**Figure 7.4.3:** Student assignment workflow with intelligent advisor auto-detection, demonstrating API integration and validation mechanisms
+**Figure 7.4.3:** Student assignment workflow with automatic advisor detection from external API
 
 ### 7.5 Supervisor Management
 
