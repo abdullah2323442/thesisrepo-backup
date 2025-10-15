@@ -304,9 +304,9 @@ sequenceDiagram
     end
 ```
 
-### 4.2 Report Review and Feedback Process
+### 4.2 Annotation and Feedback Process
 
-Co-supervisors can review reports and provide comprehensive feedback through multiple channels, but cannot approve final submissions.
+Co-supervisors provide feedback through PDF annotations and text comments with role-based tracking.
 
 ```mermaid
 sequenceDiagram
@@ -315,23 +315,13 @@ sequenceDiagram
     participant Database
     participant Student
 
-    Note over CoSupervisor,Student: Comprehensive review and feedback workflow
+    Note over CoSupervisor,Student: Dual feedback mechanism with role tracking
     
-    CoSupervisor->>System: Access reports list
-    System->>Database: Get co-supervised groups
-    Database-->>System: Return group identifiers
-    System->>Database: Retrieve group reports
-    Database-->>System: Return reports
-    System-->>CoSupervisor: Display reports
-    
-    CoSupervisor->>System: Select report for review
+    CoSupervisor->>System: Access report submission
     System->>Database: Verify co-supervisor access
     Database-->>System: Access confirmed
-    System-->>CoSupervisor: Display report interface
     
-    Note over CoSupervisor: Review-only access<br/>Cannot approve final submissions
-    
-    alt PDF Annotation Feedback
+    alt PDF Annotation
         CoSupervisor->>System: Open PDF annotator
         System-->>CoSupervisor: Display annotation tools
         
@@ -348,11 +338,10 @@ sequenceDiagram
         System->>Database: Mark session as sent
         System->>Database: Record timestamp
         
-    else Text Comment Feedback
-        CoSupervisor->>System: Submit general text comment
+    else Text Comment
+        CoSupervisor->>System: Submit text comment
         System->>Database: Store comment with co-supervisor metadata
         Database-->>System: Comment saved
-        System-->>CoSupervisor: Comment added to discussion thread
     end
     
     System->>Database: Create student notifications
@@ -361,12 +350,12 @@ sequenceDiagram
         System->>Student: Send notification
     end
     
-    System-->>CoSupervisor: Feedback delivered successfully
+    System-->>CoSupervisor: Feedback delivered
     
-    Note over Database: System tracks all feedback with:<br/>• Role identification<br/>• Timestamp<br/>• Feedback type
+    Note over CoSupervisor: Review-only access<br/>Cannot approve final submissions
 ```
 
-**Figure 4.3:** Co-supervisor report review and feedback workflow demonstrating dual feedback mechanisms (PDF annotations and text comments) with role-based tracking
+**Figure 4.2:** Co-supervisor annotation workflow with dual feedback mechanisms (PDF annotations and text comments)
 
 ---
 
