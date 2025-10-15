@@ -9,6 +9,12 @@
 5. [Panel Member Operations](#5-panel-member-operations)
 6. [Advisor Operations](#6-advisor-operations)
 7. [Administrative Functions](#7-administrative-functions)
+   - 7.1 [Co-Supervisor Assignment](#71-co-supervisor-assignment)
+   - 7.2 [Panel Member Assignment](#72-panel-member-assignment)
+   - 7.3 [Area of Interest Management](#73-area-of-interest-management)
+   - 7.4 [Administrator Group Management](#74-administrator-group-management)
+   - 7.5 [Batch Management](#75-batch-management)
+   - 7.6 [Supervisor Management](#76-supervisor-management)
 8. [Multi-Role Collaboration](#8-multi-role-collaboration)
 9. [External System Integration](#9-external-system-integration)
 
@@ -1001,7 +1007,141 @@ sequenceDiagram
 
 **Figure 7.4.3:** Student assignment workflow with automatic advisor detection
 
-### 7.5 Supervisor Management
+### 7.5 Batch Management
+
+Administrators manage academic batches that serve as the foundation for student grouping and advisor assignments.
+
+#### 7.5.1 Batch Synchronization from External API
+
+Administrators synchronize batch data from the university information system.
+
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant External API
+    participant Database
+
+    Note over Administrator,Database: Batch data synchronization workflow
+    
+    Administrator->>System: Initiate batch sync
+    System->>External API: Request batch list (programID)
+    
+    alt API Success
+        External API-->>System: Return batch data array
+        System->>System: Validate response format
+        
+        loop For each batch
+            System->>Database: Check if batch exists
+            
+            alt Batch exists
+                System->>Database: Update batch metadata
+                System->>Database: Update last_synced_at timestamp
+                Database-->>System: Batch updated
+            else New batch
+                System->>Database: Create new batch record
+                System->>Database: Set is_active = true
+                Database-->>System: Batch created
+            end
+        end
+        
+        System->>System: Calculate sync statistics
+        System-->>Administrator: Display sync results (synced, updated, total)
+    else API Failure
+        External API-->>System: Error response
+        System->>System: Log error details
+        System-->>Administrator: Display error message
+    end
+    
+    Note over Database: Preserves existing is_active status on updates
+```
+
+**Figure 7.5.1:** Batch synchronization workflow with external university API
+
+#### 7.5.2 Batch Status Management
+
+Administrators control batch activation status to manage which batches are available for operations.
+
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Note over Administrator,Database: Batch activation control
+    
+    Administrator->>System: Access batch management
+    System->>Database: Retrieve all batches with statistics
+    Database-->>System: Return batch list
+    System-->>Administrator: Display batch table
+    
+    alt Single Batch Toggle
+        Administrator->>System: Toggle batch status
+        System->>Database: Update is_active flag
+        Database-->>System: Status updated
+        System-->>Administrator: Confirmation message
+    else Bulk Activation
+        Administrator->>System: Select multiple batches
+        Administrator->>System: Apply bulk action (activate/deactivate)
+        System->>System: Validate batch IDs
+        System->>Database: Update multiple batch statuses
+        Database-->>System: Bulk update completed
+        System-->>Administrator: Display affected count
+    else Activate All
+        Administrator->>System: Activate all batches
+        System->>Database: Set all is_active = true
+        Database-->>System: Return updated count
+        System-->>Administrator: Confirmation with count
+    else Deactivate All
+        Administrator->>System: Deactivate all batches
+        System->>Database: Set all is_active = false
+        Database-->>System: Return updated count
+        System-->>Administrator: Confirmation with count
+    end
+    
+    Note over System: Only active batches appear in<br/>advisor/admin student selection
+```
+
+**Figure 7.5.2:** Batch status management with bulk operations
+
+#### 7.5.3 Batch Comparison and Audit
+
+Administrators can compare local batch data with external API to identify discrepancies.
+
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant External API
+    participant Database
+
+    Note over Administrator,Database: Batch data audit workflow
+    
+    Administrator->>System: Request batch comparison
+    System->>External API: Fetch current batch list
+    External API-->>System: Return API batches
+    System->>Database: Retrieve local batches
+    Database-->>System: Return local batch list
+    
+    System->>System: Compare batch lists
+    System->>System: Identify new batches (in API, not local)
+    System->>System: Identify missing batches (in local, not API)
+    System->>System: Calculate statistics
+    
+    System-->>Administrator: Display comparison report
+    
+    Note over Administrator: Report shows:<br/>• New batches available in API<br/>• Local batches not in API<br/>• Total counts for both sources
+    
+    opt Sync New Batches
+        Administrator->>System: Initiate sync
+        System->>System: Execute batch synchronization
+        System-->>Administrator: Sync completed
+    end
+```
+
+**Figure 7.5.3:** Batch comparison and audit workflow for data integrity
+
+### 7.6 Supervisor Management
 
 Administrators manage supervisor profiles and capacities.
 
@@ -1211,17 +1351,18 @@ sequenceDiagram
 
 ### Key System Capabilities
 1. **Role-Based Access Control**: Multi-role authentication with hierarchical permissions
-2. **Group Management**: Student group formation with cross-batch assignment support
-3. **Supervisor Assignment**: Three algorithmic strategies (area-based, ranking-based, hybrid) with manual override
-4. **Dual Feedback Mechanism**: PDF annotations and text comments with role-based tracking
-5. **Draft-Send Workflow**: Two-phase annotation process allowing review before distribution
-6. **Collaborative Review**: Independent parallel review by multiple reviewers with separate notifications
-7. **Hierarchical Approval**: Supervisor-only final approval authority with comprehensive feedback review
-8. **Meeting Management**: Documentation and reporting with conditional co-supervisor access
-9. **Notification System**: Real-time student notifications for reports, annotations, and comments
-10. **Annotation History**: Complete version tracking with role-based categorization and comparison
-11. **Cross-Batch Operations**: Administrator access to students across multiple batches
-12. **Research Area Management**: Multiple area assignments with expertise-based supervisor matching
+2. **Batch Management**: API synchronization, status control, and audit capabilities for academic batches
+3. **Group Management**: Student group formation with cross-batch assignment support
+4. **Supervisor Assignment**: Three algorithmic strategies (area-based, ranking-based, hybrid) with manual override
+5. **Dual Feedback Mechanism**: PDF annotations and text comments with role-based tracking
+6. **Draft-Send Workflow**: Two-phase annotation process allowing review before distribution
+7. **Collaborative Review**: Independent parallel review by multiple reviewers with separate notifications
+8. **Hierarchical Approval**: Supervisor-only final approval authority with comprehensive feedback review
+9. **Meeting Management**: Documentation and reporting with conditional co-supervisor access
+10. **Notification System**: Real-time student notifications for reports, annotations, and comments
+11. **Annotation History**: Complete version tracking with role-based categorization and comparison
+12. **Cross-Batch Operations**: Administrator access to students across multiple batches
+13. **Research Area Management**: Multiple area assignments with expertise-based supervisor matching
 
 ---
 
