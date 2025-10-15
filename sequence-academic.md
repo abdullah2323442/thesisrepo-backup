@@ -570,57 +570,6 @@ sequenceDiagram
     System-->>Advisor: Research areas assigned successfully
 ```
 
-#### 6.1.6 Bulk Remove Research Areas
-
-Advisors can remove all research areas from batch groups.
-
-```mermaid
-sequenceDiagram
-    participant Advisor
-    participant System
-    participant Database
-
-    Advisor->>System: Select batch
-    Advisor->>System: Request remove all research areas
-    
-    System->>Database: Get advisor groups for batch
-    Database-->>System: Return groups
-    
-    loop For each group
-        System->>Database: Clear research area assignments
-    end
-    
-    Database-->>System: Research areas removed
-    System-->>Advisor: Removal complete
-```
-
-#### 6.1.7 Remove All Groups in Batch
-
-Advisors can remove all their groups in a batch.
-
-```mermaid
-sequenceDiagram
-    participant Advisor
-    participant System
-    participant Database
-
-    Note over Advisor,Database: Safe deletion of advisor-created groups
-    
-    Advisor->>System: Request remove all groups
-    System->>Database: Get advisor-created groups
-    Database-->>System: Return advisor groups
-    
-    loop For each group
-        System->>Database: Delete student assignments
-        System->>Database: Delete group record
-    end
-    
-    Database-->>System: Deletion complete
-    System-->>Advisor: Groups removed successfully
-    
-    Note over Database: Administrator-created groups remain protected
-```
-
 ### 6.2 Supervisor Assignment Algorithms
 
 #### 6.2.1 Area of Interest Based Assignment
