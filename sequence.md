@@ -250,33 +250,7 @@ sequenceDiagram
     Note over CoSupervisor: Shows groups where assigned as co-supervisor<br/>Indicates meeting management permissions
 ```
 
-### 4.2 Co-Supervisor Assignment Process
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant System
-    participant Database
-
-    Admin->>System: Select group for co-supervisor
-    System->>Database: Retrieve available supervisors
-    Database-->>System: Return supervisor list
-    System->>System: Filter out main supervisor
-    System-->>Admin: Display eligible co-supervisors
-    
-    Admin->>System: Assign co-supervisor
-    System->>Database: Validate assignment
-    
-    alt Valid assignment
-        System->>Database: Store co-supervisor assignment
-        System->>Database: Set initial permissions
-        Database-->>System: Assignment confirmed
-        System-->>Admin: Success message
-    else Invalid (same as main supervisor)
-        System-->>Admin: Error: Cannot assign same person
-    end
-```
-
-### 4.3 Conditional Meeting Management
+### 4.2 Conditional Meeting Management
 ```mermaid
 sequenceDiagram
     participant Supervisor
@@ -308,7 +282,7 @@ sequenceDiagram
     end
 ```
 
-### 4.4 Co-Supervisor Report Review
+### 4.3 Co-Supervisor Report Review
 ```mermaid
 sequenceDiagram
     participant CoSupervisor
@@ -330,7 +304,7 @@ sequenceDiagram
     Note over CoSupervisor: Can review but cannot approve final projects
 ```
 
-### 4.5 Co-Supervisor Annotation Process
+### 4.4 Co-Supervisor Annotation Process
 ```mermaid
 sequenceDiagram
     participant CoSupervisor
@@ -366,28 +340,7 @@ sequenceDiagram
 
 ## 5. Panel Member Operations
 
-### 5.1 Panel Member Assignment
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant System
-    participant Database
-
-    Admin->>System: Select group for panel member
-    System->>Database: Retrieve available supervisors
-    Database-->>System: Return supervisor list
-    System-->>Admin: Display eligible panel members
-    
-    Admin->>System: Assign panel member
-    System->>Database: Create panel assignment
-    Database-->>System: Store in group_panel_members
-    System->>Database: Record assignment metadata
-    System-->>Admin: Panel member assigned
-    
-    Note over Database: No capacity limits for panel members<br/>Multiple panel members per group allowed
-```
-
-### 5.2 Panel Member Dashboard
+### 5.1 Panel Member Dashboard
 ```mermaid
 sequenceDiagram
     participant PanelMember
@@ -404,7 +357,7 @@ sequenceDiagram
     Note over PanelMember: Review-only access<br/>No meeting management<br/>No report creation/approval
 ```
 
-### 5.3 Panel Member Report Evaluation
+### 5.2 Panel Member Report Evaluation
 ```mermaid
 sequenceDiagram
     participant PanelMember
@@ -425,7 +378,7 @@ sequenceDiagram
     System-->>PanelMember: Review status confirmed
 ```
 
-### 5.4 Panel Member Annotation Process
+### 5.3 Panel Member Annotation Process
 ```mermaid
 sequenceDiagram
     participant PanelMember
@@ -457,7 +410,7 @@ sequenceDiagram
     Note over PanelMember: Provides evaluation perspective<br/>Cannot approve final submission
 ```
 
-### 5.5 Panel Member Access Restrictions
+### 5.4 Panel Member Access Restrictions
 ```mermaid
 sequenceDiagram
     participant PanelMember
@@ -708,6 +661,80 @@ sequenceDiagram
     Database-->>System: Return statistics
     System->>System: Calculate metrics
     System-->>Administrator: Display dashboard
+```
+
+### 7.3 Co-Supervisor Assignment Process
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Note over Administrator,Database: Only administrators can assign co-supervisors
+    
+    Administrator->>System: Access group management
+    System->>Database: Retrieve groups list
+    Database-->>System: Return groups
+    System-->>Administrator: Display groups
+    
+    Administrator->>System: Select group for co-supervisor
+    System->>Database: Retrieve available supervisors
+    Database-->>System: Return supervisor list
+    System->>System: Filter out main supervisor
+    System-->>Administrator: Display eligible co-supervisors
+    
+    Administrator->>System: Assign co-supervisor
+    System->>Database: Validate assignment
+    
+    alt Valid assignment
+        System->>Database: Update group co_supervisor_id
+        System->>Database: Set initial permissions (false)
+        Database-->>System: Assignment confirmed
+        System->>Database: Create notification for co-supervisor
+        System-->>Administrator: Success message
+    else Invalid (same as main supervisor)
+        System-->>Administrator: Error: Cannot assign same person
+    end
+    
+    Note over Database: Co-supervisor gets notified of assignment
+```
+
+### 7.4 Panel Member Assignment Process
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Note over Administrator,Database: Only administrators can assign panel members
+    
+    Administrator->>System: Access group management
+    System->>Database: Retrieve groups list
+    Database-->>System: Return groups
+    System-->>Administrator: Display groups
+    
+    Administrator->>System: Select group for panel member
+    System->>Database: Retrieve available supervisors
+    Database-->>System: Return supervisor list
+    System->>Database: Get existing panel members
+    Database-->>System: Return current panel
+    System-->>Administrator: Display eligible panel members
+    
+    Administrator->>System: Assign panel member
+    System->>Database: Validate assignment
+    
+    alt Valid assignment
+        System->>Database: Create panel assignment
+        System->>Database: Store in group_panel_members
+        System->>Database: Record assignment metadata
+        Database-->>System: Assignment confirmed
+        System->>Database: Create notification for panel member
+        System-->>Administrator: Panel member assigned
+    else Already assigned
+        System-->>Administrator: Error: Already a panel member
+    end
+    
+    Note over Database: No capacity limits for panel members<br/>Multiple panel members per group allowed
 ```
 
 ---
