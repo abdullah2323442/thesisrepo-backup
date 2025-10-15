@@ -90,7 +90,7 @@ sequenceDiagram
 
 ### 2.2 View Feedback and Annotations
 
-Students can view annotated documents with version history and role-based categorization.
+Students can view complete annotation history from all reviewers with role-based categorization.
 
 ```mermaid
 sequenceDiagram
@@ -98,17 +98,28 @@ sequenceDiagram
     participant System
     participant Database
 
-    Student->>System: View notification
+    Note over Student,Database: Multi-reviewer feedback access
+    
+    Student->>System: Access annotation history
     System->>Database: Verify access rights
     Database-->>System: Access authorized
     
-    System->>Database: Retrieve annotation sessions
-    Database-->>System: Return all sessions for submission
+    System->>Database: Retrieve all annotation sessions
+    Database-->>System: Return sessions with metadata
     
-    System->>System: Categorize feedback by reviewer role
+    System->>System: Group feedback by reviewer role
+    System->>System: Sort by timestamp
+    
     Note over System: Feedback categorized by:<br/>• Supervisor (primary reviewer)<br/>• Co-Supervisor (secondary reviewer)<br/>• Panel Member (evaluator)
     
-    System-->>Student: Display annotated PDF with version history
+    System-->>Student: Display categorized annotation history
+    
+    Student->>System: Select specific session
+    System->>Database: Retrieve session details
+    Database-->>System: Return annotations
+    System-->>Student: Display annotated PDF
+    
+    Note over Student: Can compare feedback from different reviewers
 ```
 
 ### 2.3 Dashboard Notification System
@@ -1142,37 +1153,6 @@ sequenceDiagram
     Note over Supervisor: Only main supervisor can approve<br/>Co-supervisors and panel members cannot
 ```
 
-### 8.4 Multi-Reviewer Annotation History
-
-Students can view complete feedback history from all reviewers.
-
-```mermaid
-sequenceDiagram
-    participant Student
-    participant System
-    participant Database
-
-    Note over Student,Database: Complete feedback history view
-    
-    Student->>System: Request annotation history
-    System->>Database: Retrieve all annotation sessions
-    Database-->>System: Return sessions with metadata
-    
-    System->>System: Group feedback by reviewer role
-    System->>System: Sort by timestamp
-    System->>System: Apply role-based categorization
-    
-    Note over System: Visual distinction by role:<br/>• Supervisor feedback<br/>• Co-Supervisor feedback<br/>• Panel Member feedback
-    
-    System-->>Student: Display categorized history
-    
-    Student->>System: Select specific session
-    System->>Database: Retrieve session details
-    Database-->>System: Return annotations
-    System-->>Student: Display annotated document
-    
-    Note over Student: Can compare feedback from different reviewers
-```
 
 ---
 
