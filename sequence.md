@@ -7,9 +7,10 @@
 4. [Co-Supervisor Operations](#4-co-supervisor-operations)
 5. [Panel Member Operations](#5-panel-member-operations)
 6. [Advisor Operations](#6-advisor-operations)
-7. [Administrative Functions](#7-administrative-functions)
-8. [Multi-Role Collaboration](#8-multi-role-collaboration)
-9. [System Architecture](#9-system-architecture)
+7. [Supervisor Assignment Algorithms](#7-supervisor-assignment-algorithms)
+8. [Administrative Functions](#8-administrative-functions)
+9. [Multi-Role Collaboration](#9-multi-role-collaboration)
+10. [System Architecture](#10-system-architecture)
 
 ---
 
@@ -58,6 +59,44 @@ sequenceDiagram
     end
 ```
 
+### 1.3 Enhanced Authentication with Fallback
+```mermaid
+sequenceDiagram
+    participant User
+    participant Controller as AuthController
+    participant TeacherAPI
+    participant StudentAPI
+    participant Database
+
+    Note over User,Database: New diagram showing fallback mechanism
+    
+    User->>Controller: Submit credentials
+    Controller->>Controller: detectLoginType()
+    
+    alt Teacher detected
+        Controller->>TeacherAPI: attemptTeacherLogin()
+        
+        alt Teacher API success
+            TeacherAPI-->>Controller: Return teacher data
+        else Teacher API fails
+            Controller->>StudentAPI: attemptStudentApiForTeacher()
+            StudentAPI-->>Controller: Return data
+            Controller->>Controller: convertStudentToTeacherFormat()
+        end
+        
+        Controller->>Controller: determineTypeId("'1''2''3'")
+        Note over Controller: Parse complex TypeId format
+        Controller->>Database: createOrUpdateTeacherFromApi()
+    else Student detected
+        Controller->>StudentAPI: attemptStudentLogin()
+        StudentAPI-->>Controller: Return student data
+        Controller->>Database: createOrUpdateFromApi()
+    end
+    
+    Controller->>Controller: Create session
+    Controller-->>User: Redirect to dashboard
+```
+
 ---
 
 ## 2. Student Operations
@@ -70,7 +109,7 @@ sequenceDiagram
     participant Database
 
     Student->>System: Upload report document
-    System->>System: Validate document format
+    System->>System: Validate document format (PDF/PPT)
     System->>Database: Store submission
     System->>Database: Create supervisor notification
     System-->>Student: Confirmation message
@@ -84,9 +123,13 @@ sequenceDiagram
     participant Database
 
     Student->>System: Request feedback
-    System->>Database: Retrieve annotations
+    System->>Database: Retrieve annotations by submission_id
     Database-->>System: Return feedback data
-    System-->>Student: Display annotated document
+    
+    System->>System: Group by created_by_type
+    Note over System: Categorize by role:<br/>• Supervisor (blue)<br/>• Co-Supervisor (purple)<br/>• Panel Member (orange)
+    
+    System-->>Student: Display annotated document with role badges
 ```
 
 ### 2.3 Dashboard Notification System
@@ -97,7 +140,7 @@ sequenceDiagram
     participant System
     participant Database
 
-    Note over Student,Database: Notifications appear on student dashboard
+    Note over Student,Database: Real-time notifications with mark-as-read
     
     Student->>Dashboard: Access dashboard
     Dashboard->>System: Check for notifications
@@ -119,6 +162,8 @@ sequenceDiagram
         Student->>Dashboard: Mark as read
         Dashboard->>System: Update notification status
         System->>Database: Mark notifications read
+        Database-->>System: Status updated
+        System-->>Dashboard: Update UI
     else No new notifications
         Database-->>System: Empty result
         System-->>Dashboard: No notifications
@@ -139,7 +184,12 @@ sequenceDiagram
 
     Supervisor->>System: Create report assignment
     System->>Database: Store report details
-    System->>Database: Create student notification
+    System->>Database: Create student notifications
+    
+    loop For each group student
+        System->>Database: Create notification record
+    end
+    
     System-->>Supervisor: Confirmation
     
     Note over Database: Students see notification on dashboard
@@ -147,27 +197,32 @@ sequenceDiagram
 
 ### 3.2 Document Annotation Process
 
-#### 3.2.1 Annotation Creation and Storage
+#### 3.2.1 Annotation Creation with Draft State
 ```mermaid
 sequenceDiagram
     participant Supervisor
     participant System
     participant Database
 
+    Note over Supervisor,Database: Two-phase commit: Draft then Send
+    
     Supervisor->>System: Access report submission
     System->>Database: Verify authorization
     Database-->>System: Confirmed
     System-->>Supervisor: Display PDF interface
     
     loop Annotation process
-        Supervisor->>System: Add annotations
-        System->>System: Store locally
+        Supervisor->>System: Add annotations (highlight, comment, underline)
+        System->>System: Store locally in browser
     end
     
-    Supervisor->>System: Save annotations
-    System->>Database: Store with version
-    Database-->>System: Saved
-    System-->>Supervisor: Confirmation
+    Supervisor->>System: Save annotations as draft
+    System->>Database: Store with is_sent=false
+    System->>Database: Calculate next version number
+    Database-->>System: Draft saved
+    System-->>Supervisor: "Saved as draft" confirmation
+    
+    Note over Supervisor: Can review/edit before sending
 ```
 
 #### 3.2.2 Feedback Distribution
@@ -178,16 +233,22 @@ sequenceDiagram
     participant Database
     participant Student
 
-    Supervisor->>System: Send feedback
-    System->>Database: Retrieve student list
-    Database-->>System: Return students
+    Supervisor->>System: Click "Send Feedback"
+    System->>Database: Verify annotation session exists
+    Database-->>System: Session confirmed
+    
+    System->>Database: Update is_sent=true
+    System->>Database: Set sent_at timestamp
+    
+    System->>Database: Retrieve group students
+    Database-->>System: Return student list
     
     loop For each student
+        System->>Database: Create notification
         System->>Student: Send notification
     end
     
-    System->>Database: Update status
-    System-->>Supervisor: Sent confirmation
+    System-->>Supervisor: "Feedback sent" confirmation
 ```
 
 #### 3.2.3 Student Access to Annotations
@@ -198,16 +259,18 @@ sequenceDiagram
     participant Database
 
     Student->>System: View notification
-    System->>Database: Verify access
+    System->>Database: Verify access rights
     Database-->>System: Authorized
     
-    System->>Database: Retrieve annotations
-    Database-->>System: Return data
-    System-->>Student: Display annotated PDF
+    System->>Database: Retrieve annotation sessions
+    Database-->>System: Return all sessions for submission
+    
+    System->>System: Filter by is_sent=true
+    System-->>Student: Display annotated PDF with version history
     
     opt Download
         Student->>System: Request download
-        System-->>Student: Provide PDF file
+        System-->>Student: Provide annotated PDF file
     end
 ```
 
@@ -225,7 +288,8 @@ sequenceDiagram
     alt Generate report
         Supervisor->>System: Request meeting report
         System->>Database: Compile meeting history
-        System-->>Supervisor: Generate PDF report
+        System->>System: Generate PDF using Spatie\LaravelPdf
+        System-->>Supervisor: Download PDF report
     end
 ```
 
@@ -244,7 +308,7 @@ sequenceDiagram
     System->>Database: Verify co-supervisor role
     Database-->>System: Return assigned groups
     System->>Database: Check meeting permissions
-    Database-->>System: Return permission status
+    Database-->>System: Return co_supervisor_can_manage_meetings status
     System-->>CoSupervisor: Display dashboard with groups
     
     Note over CoSupervisor: Shows groups where assigned as co-supervisor<br/>Indicates meeting management permissions
@@ -336,11 +400,39 @@ sequenceDiagram
     Note over Database: Tracks annotation origin for role distinction
 ```
 
+### 4.5 Dual Feedback Mechanism
+```mermaid
+sequenceDiagram
+    participant CoSupervisor
+    participant System
+    participant ReportCommentController
+    participant ReportAnnotationController
+    participant Database
+
+    Note over CoSupervisor,Database: Two types of feedback available
+    
+    CoSupervisor->>System: Access report page
+    
+    alt PDF Annotation
+        CoSupervisor->>ReportAnnotationController: Create annotation session
+        ReportAnnotationController->>Database: Store with created_by_type='co_supervisor'
+        Database-->>ReportAnnotationController: Saved
+        ReportAnnotationController-->>CoSupervisor: Annotation tools displayed
+    else General Comment
+        CoSupervisor->>ReportCommentController: Submit text comment
+        ReportCommentController->>Database: Store in report_comments table
+        Database-->>ReportCommentController: Comment saved
+        ReportCommentController-->>CoSupervisor: Comment added to thread
+    end
+    
+    Note over Database: Both feedback types tracked separately
+```
+
 ---
 
 ## 5. Panel Member Operations
 
-### 5.1 Panel Member Dashboard
+### 5.1 Panel Member Dashboard (Evaluation-Only Access)
 ```mermaid
 sequenceDiagram
     participant PanelMember
@@ -378,7 +470,7 @@ sequenceDiagram
     System-->>PanelMember: Review status confirmed
 ```
 
-### 5.3 Panel Member Annotation Process
+### 5.3 Panel Member Annotation with Dual Feedback
 ```mermaid
 sequenceDiagram
     participant PanelMember
@@ -386,19 +478,26 @@ sequenceDiagram
     participant Database
     participant Student
 
+    Note over PanelMember,Student: Panel members provide evaluation feedback
+    
     PanelMember->>System: Access report submission
     System->>Database: Verify panel member assignment
     Database-->>System: Access granted
-    System-->>PanelMember: Display PDF annotator
     
-    PanelMember->>System: Add evaluation annotations
-    System->>System: Process annotations
-    PanelMember->>System: Save annotation session
-    System->>Database: Store with created_by_type='panel_member'
-    Database-->>System: Session saved
+    alt PDF Annotations
+        PanelMember->>System: Add evaluation annotations
+        System->>System: Process annotations
+        PanelMember->>System: Save annotation session
+        System->>Database: Store with created_by_type='panel_member'
+        Database-->>System: Session saved
+    else General Comments
+        PanelMember->>System: Submit evaluation comment
+        System->>Database: Store in report_comments table
+        Database-->>System: Comment saved
+    end
     
     PanelMember->>System: Send evaluation feedback
-    System->>Database: Mark session as sent
+    System->>Database: Mark as sent
     System->>Database: Create notifications
     
     loop For each group student
@@ -408,29 +507,6 @@ sequenceDiagram
     System-->>PanelMember: Evaluation feedback sent
     
     Note over PanelMember: Provides evaluation perspective<br/>Cannot approve final submission
-```
-
-### 5.4 Panel Member Access Restrictions
-```mermaid
-sequenceDiagram
-    participant PanelMember
-    participant System
-
-    Note over PanelMember,System: Panel members have limited access
-    
-    alt Attempting to create report
-        PanelMember->>System: Try to create report
-        System-->>PanelMember: Access denied
-    else Attempting to manage meetings
-        PanelMember->>System: Try to create meeting
-        System-->>PanelMember: Access denied
-    else Attempting to approve project
-        PanelMember->>System: Try to finalize report
-        System-->>PanelMember: Access denied
-    else Accessing review features
-        PanelMember->>System: Access annotation tools
-        System-->>PanelMember: Access granted
-    end
 ```
 
 ---
@@ -450,40 +526,47 @@ sequenceDiagram
     Advisor->>System: Request student list
     System->>External API: Fetch batch students
     External API-->>System: Return student data
+    System->>System: Filter by advisor_id
     System-->>Advisor: Display available students
     
     Advisor->>System: Create groups
-    System->>Database: Calculate groups needed
-    System->>Database: Store group structures
+    System->>Database: Calculate groups needed (ceil(count/3))
+    System->>Database: Store group structures with created_by_type='advisor'
     Database-->>System: Groups created
     
     loop Manual assignment
         Advisor->>System: Assign student to group
-        System->>Database: Validate and store
+        System->>Database: Validate no duplicates across batches
+        System->>Database: Store assignment
         Database-->>System: Assignment confirmed
     end
     
     System-->>Advisor: Group formation complete
 ```
 
-#### 6.1.2 Excel-Based Group Import
+#### 6.1.2 Excel-Based Group Import with Randomization
 ```mermaid
 sequenceDiagram
     participant Advisor
     participant System
     participant Database
 
+    Note over Advisor,Database: Enhanced with auto-detection and randomization
+    
     Advisor->>System: Upload Excel file
+    System->>System: detectColumnStructure()
     System->>System: Validate file format
     System->>System: Parse student-group mappings
     
     alt Valid data
         System->>Database: Clear existing assignments
-        System->>Database: Create missing groups
-        System->>System: Randomize group allocation
-        System->>Database: Bulk insert assignments
+        System->>Database: Create missing groups if needed
+        System->>System: shuffle(availableGroupIds)
+        Note over System: Randomize for fairness
+        System->>Database: Bulk insert randomized assignments
         Database-->>System: Import successful
-        System-->>Advisor: Display import summary
+        System->>System: Log group mapping for audit
+        System-->>Advisor: Display import summary with mapping
     else Invalid data
         System-->>Advisor: Return validation errors
     end
@@ -500,6 +583,7 @@ sequenceDiagram
     Advisor->>System: Request Excel template
     System->>External API: Fetch batch students
     External API-->>System: Return student list
+    System->>System: Filter by advisor_id
     System->>Database: Retrieve existing groups
     Database-->>System: Return group data
     
@@ -509,161 +593,240 @@ sequenceDiagram
     System-->>Advisor: Download template file
 ```
 
-### 6.2 Supervisor Assignment System
-
-#### 6.2.1 Automated Assignment Process
+#### 6.1.4 Cross-Batch Student Assignment
 ```mermaid
 sequenceDiagram
     participant Advisor
     participant System
+    participant StudentAPI
     participant Database
 
-    Advisor->>System: Initiate assignment process
-    System->>System: Select assignment strategy
-    System->>Database: Retrieve eligible groups
-    System->>Database: Retrieve available supervisors
-    System->>System: Execute assignment algorithm
-    System->>Database: Store assignments
-    System-->>Advisor: Display results
+    Note over Advisor,Database: Assign students from any advisor's batch
+    
+    Advisor->>System: Select student for assignment
+    System->>StudentAPI: getAllAvailableStudents(advisorApiId)
+    
+    loop For each advisor batch
+        StudentAPI->>StudentAPI: Fetch batch students
+        StudentAPI->>StudentAPI: Filter by advisor_id
+        StudentAPI->>StudentAPI: Exclude already assigned
+    end
+    
+    StudentAPI-->>System: Return all available students
+    System-->>Advisor: Display students (current batch first)
+    
+    Advisor->>System: Assign to group
+    System->>Database: Validate no duplicate across all batches
+    
+    alt Valid assignment
+        System->>Database: Create GroupStudent record
+        Database-->>System: Assignment confirmed
+        System-->>Advisor: Success message
+    else Already assigned
+        System-->>Advisor: Error: Student in batch X group Y
+    end
 ```
 
-#### 6.2.2 Area of Interest Based Assignment
+#### 6.1.5 Assign Area of Interest to Group
 ```mermaid
 sequenceDiagram
     participant Advisor
     participant System
     participant Database
 
-    Note over Advisor,Database: Strategy: Match groups with supervisor expertise
+    Note over Advisor,Database: Multi-select AOI assignment
     
-    Advisor->>System: Select AOI-based assignment
-    System->>Database: Retrieve unassigned groups
-    System->>Database: Retrieve supervisors with expertise areas
+    Advisor->>System: Select group
+    System->>Database: Verify group ownership
+    Database-->>System: Confirmed (created_by_type='advisor')
+    
+    Advisor->>System: Select multiple AOIs
+    System->>System: Validate AOI IDs
+    System->>Database: syncAreasOfInterest(areaIds)
+    
+    Note over Database: Sync operation:<br/>• Adds new AOIs<br/>• Removes unselected AOIs<br/>• Updates pivot table
+    
+    Database-->>System: Sync completed
+    System-->>Advisor: AOIs assigned successfully
+```
+
+#### 6.1.6 Bulk Remove AOIs from Batch
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Advisor->>System: Select batch
+    Advisor->>System: Click "Remove All AOIs"
+    
+    System->>Database: Get advisor-created groups for batch
+    Database-->>System: Return groups
     
     loop For each group
-        System->>System: Identify group's area of interest
-        System->>System: Find matching supervisors
-        System->>System: Random selection from matches
-        System->>Database: Assign supervisor to group
+        System->>Database: Clear area_of_interest_id
+        System->>Database: Clear pivot table entries
     end
     
-    System-->>Advisor: Display assignment results
-    
-    Note over System: Ensures expertise alignment<br/>May result in uneven distribution
+    Database-->>System: AOIs removed
+    System-->>Advisor: Removed from X groups
 ```
 
-#### 6.2.3 Ranking Based Assignment
+#### 6.1.7 Remove All Groups in Batch
 ```mermaid
 sequenceDiagram
     participant Advisor
     participant System
     participant Database
 
-    Note over Advisor,Database: Strategy: Fair distribution by designation rank
+    Note over Advisor,Database: Safe deletion - only advisor-created groups
     
-    Advisor->>System: Select ranking-based assignment
-    System->>Database: Retrieve unassigned groups
-    System->>Database: Retrieve supervisors by designation
-    System->>System: Sort by rank (Professor to Lecturer)
-    
-    loop Round-robin assignment
-        System->>System: Select next supervisor in rotation
-        System->>System: Verify supervisor capacity
-        System->>Database: Assign supervisor to group
-        System->>System: Move to next supervisor
-        
-        Note over System: Each supervisor gets one group<br/>before anyone gets second
-    end
-    
-    System-->>Advisor: Display assignment results
-    
-    Note over System: Ensures equal distribution<br/>Ignores expertise matching
-```
-
-#### 6.2.4 Hybrid Assignment Strategy
-```mermaid
-sequenceDiagram
-    participant Advisor
-    participant System
-    participant Database
-
-    Note over Advisor,Database: Strategy: Balance expertise and fair distribution
-    
-    Advisor->>System: Select hybrid assignment
-    System->>Database: Retrieve unassigned groups
-    System->>Database: Retrieve supervisors with expertise
+    Advisor->>System: Request remove all groups
+    System->>Database: Get groups where created_by_type='advisor'
+    Database-->>System: Return advisor groups
     
     loop For each group
-        System->>System: Find area-matching supervisors
-        System->>System: Check assignment counts
-        System->>System: Select supervisor with minimum load
-        
-        alt Multiple candidates with same load
-            System->>System: Apply rank-based selection
-        end
-        
-        System->>Database: Assign supervisor to group
+        System->>Database: Delete GroupStudent records
+        System->>Database: Delete Group record
     end
     
-    System-->>Advisor: Display assignment results
+    Database-->>System: Deletion complete
+    System-->>Advisor: Removed X groups, Y assignments
     
-    Note over System: Optimizes both expertise match<br/>and workload distribution
-```
-
-#### 6.2.5 Assignment Strategy Comparison
-```mermaid
-graph TD
-    Start[Assignment Strategy Selection]
-    
-    Start --> AOI[Area-Based Strategy]
-    Start --> Rank[Ranking-Based Strategy]
-    Start --> Hybrid[Hybrid Strategy]
-    
-    AOI --> AOIResult[Expertise-focused<br/>Random within matches<br/>Possible uneven load]
-    Rank --> RankResult[Equal distribution<br/>Round-robin assignment<br/>Ignores expertise]
-    Hybrid --> HybridResult[Balanced approach<br/>Expertise with fairness<br/>Optimal distribution]
-    
-    style Start fill:#f9f,stroke:#333,stroke-width:2px
-    style AOIResult fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
-    style RankResult fill:#e3f2fd,stroke:#2196f3,stroke-width:1px
-    style HybridResult fill:#fff3e0,stroke:#ff9800,stroke-width:1px
+    Note over Database: Admin-created groups remain untouched
 ```
 
 ---
 
-## 7. Administrative Functions
+## 7. Supervisor Assignment Algorithms
 
-### 7.1 External Data Synchronization
+### 7.1 AOI-Based Assignment with Randomization
 ```mermaid
 sequenceDiagram
-    participant Administrator
+    participant Advisor
     participant System
-    participant External API
+    participant Service as SupervisorAssignmentService
     participant Database
 
-    Administrator->>System: Initiate synchronization
-    System->>External API: Request updated data
-    External API-->>System: Return data
-    System->>System: Process updates
-    System->>Database: Update records
-    System-->>Administrator: Synchronization report
+    Note over Advisor,Database: Random selection within expertise matches
+    
+    Advisor->>System: Select AOI-based assignment
+    System->>Service: runAOIAssignment(groups)
+    
+    Service->>Database: Retrieve unassigned groups
+    Service->>Database: Retrieve supervisors with AOIs
+    
+    loop For each group
+        Service->>Service: Get group AOIs (primary + fallback)
+        Service->>Service: Find matching supervisors
+        Service->>Service: array_rand() for selection
+        Service->>Service: Exclude last assigned supervisor
+        Service->>Database: Assign supervisor to group
+        Service->>Database: Record in AssignmentHistory
+    end
+    
+    Service-->>System: Return assignment results
+    System-->>Advisor: Display results with statistics
+    
+    Note over Service: Ensures expertise alignment<br/>Prevents consecutive assignments
 ```
 
-### 7.2 System Monitoring
+### 7.2 Ranking-Based Assignment with Round-Robin
 ```mermaid
 sequenceDiagram
-    participant Administrator
+    participant Advisor
     participant System
+    participant Service as SupervisorAssignmentService
     participant Database
 
-    Administrator->>System: Request system metrics
-    System->>Database: Query performance data
-    Database-->>System: Return statistics
-    System->>System: Calculate metrics
-    System-->>Administrator: Display dashboard
+    Note over Advisor,Database: Proper round-robin implementation
+    
+    Advisor->>System: Select ranking-based assignment
+    System->>Service: runRankingAssignment(groups)
+    
+    Service->>Database: Get supervisors ordered by rank
+    Service->>Service: Initialize round-robin tracker
+    
+    loop For each group
+        Service->>Service: Select next supervisor in rotation
+        Service->>Service: Check assigned_count <= currentRound
+        
+        alt Can assign
+            Service->>Database: Assign supervisor
+            Service->>Service: Increment assigned_count
+        else Move to next round
+            Service->>Service: currentRound++
+            Service->>Service: Reset to first supervisor
+        end
+    end
+    
+    Service-->>System: Return results
+    System-->>Advisor: Display distribution statistics
+    
+    Note over Service: Everyone gets 1 before anyone gets 2
 ```
 
-### 7.3 Co-Supervisor Assignment Process
+### 7.3 Hybrid Assignment Strategy
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Service as SupervisorAssignmentService
+    participant Database
+
+    Note over Advisor,Database: Per-area fairness with ranking
+    
+    Advisor->>System: Select hybrid assignment
+    System->>Service: runCombinedAssignment(groups)
+    
+    Service->>Database: Get groups with AOIs
+    Service->>Database: Get supervisors with expertise
+    
+    loop For each group
+        Service->>Service: Get area supervisors
+        Service->>Service: Find minimum assignment count in area
+        Service->>Service: Filter to supervisors with min count
+        
+        alt Multiple candidates
+            Service->>Service: Apply ranking (Professor > Lecturer)
+        end
+        
+        Service->>Database: Assign best candidate
+        Service->>Service: Update per-area tracking
+    end
+    
+    Service-->>System: Return results
+    System-->>Advisor: Display balanced distribution
+    
+    Note over Service: NO ONE in ML gets 2<br/>before EVERYONE in ML gets 1
+```
+
+### 7.4 Assignment Algorithm Comparison
+```mermaid
+graph TD
+    Start[Assignment Strategy Selection]
+    
+    Start --> AOI[AOI-Based Strategy]
+    Start --> Rank[Ranking-Based Strategy]
+    Start --> Hybrid[Hybrid Strategy]
+    
+    AOI --> AOIFeatures[Features:<br/>✓ Expertise match<br/>✓ Random selection<br/>✓ Exclude last assigned<br/>✗ May be uneven]
+    
+    Rank --> RankFeatures[Features:<br/>✓ Equal distribution<br/>✓ Round-robin fairness<br/>✗ Ignores expertise<br/>✗ No randomization]
+    
+    Hybrid --> HybridFeatures[Features:<br/>✓ Expertise match<br/>✓ Per-area fairness<br/>✓ Ranking priority<br/>✓ Optimal balance]
+    
+    style Start fill:#f9f,stroke:#333,stroke-width:2px
+    style AOIFeatures fill:#e8f5e9,stroke:#4caf50,stroke-width:1px
+    style RankFeatures fill:#e3f2fd,stroke:#2196f3,stroke-width:1px
+    style HybridFeatures fill:#fff3e0,stroke:#ff9800,stroke-width:1px
+```
+
+---
+
+## 8. Administrative Functions
+
+### 8.1 Co-Supervisor Assignment Process
 ```mermaid
 sequenceDiagram
     participant Administrator
@@ -688,7 +851,7 @@ sequenceDiagram
     
     alt Valid assignment
         System->>Database: Update group co_supervisor_id
-        System->>Database: Set initial permissions (false)
+        System->>Database: Set co_supervisor_can_manage_meetings=false
         Database-->>System: Assignment confirmed
         System->>Database: Create notification for co-supervisor
         System-->>Administrator: Success message
@@ -696,17 +859,17 @@ sequenceDiagram
         System-->>Administrator: Error: Cannot assign same person
     end
     
-    Note over Database: Co-supervisor gets notified of assignment
+    Note over Database: Initial permission set to false
 ```
 
-### 7.4 Panel Member Assignment Process
+### 8.2 Panel Member Assignment Process
 ```mermaid
 sequenceDiagram
     participant Administrator
     participant System
     participant Database
 
-    Note over Administrator,Database: Only administrators can assign panel members
+    Note over Administrator,Database: Multiple panel members per group allowed
     
     Administrator->>System: Access group management
     System->>Database: Retrieve groups list
@@ -721,11 +884,11 @@ sequenceDiagram
     System-->>Administrator: Display eligible panel members
     
     Administrator->>System: Assign panel member
-    System->>Database: Validate assignment
+    System->>Database: Validate not already assigned
     
     alt Valid assignment
         System->>Database: Create panel assignment
-        System->>Database: Store in group_panel_members
+        System->>Database: Store in group_panel_members table
         System->>Database: Record assignment metadata
         Database-->>System: Assignment confirmed
         System->>Database: Create notification for panel member
@@ -734,14 +897,114 @@ sequenceDiagram
         System-->>Administrator: Error: Already a panel member
     end
     
-    Note over Database: No capacity limits for panel members<br/>Multiple panel members per group allowed
+    Note over Database: No capacity limits for panel members
+```
+
+### 8.3 Area of Interest Management
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Note over Administrator,Database: CRUD operations for AOIs
+    
+    alt Create AOI
+        Administrator->>System: Submit new AOI
+        System->>System: Validate unique name
+        System->>Database: Create area_of_interests record
+        Database-->>System: AOI created
+        System-->>Administrator: Success message
+    else Bulk Create
+        Administrator->>System: Submit multiple AOIs (textarea)
+        System->>System: Parse line-separated values
+        
+        loop For each AOI
+            System->>Database: Check if exists
+            alt Not exists
+                System->>Database: Create AOI
+            else Exists
+                System->>System: Skip and count
+            end
+        end
+        
+        System-->>Administrator: Created X, Skipped Y
+    else Update AOI
+        Administrator->>System: Edit AOI details
+        System->>Database: Update record
+        Database-->>System: Updated
+        System-->>Administrator: Success message
+    else Delete AOI
+        Administrator->>System: Delete AOI
+        System->>Database: Remove record
+        Database-->>System: Deleted
+        System-->>Administrator: Success message
+    end
+```
+
+### 8.4 Admin Group Creation with AOI & Supervisor
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Note over Administrator,Database: Admin creates pre-configured groups
+    
+    Administrator->>System: Create new group
+    System->>System: Validate group name uniqueness
+    
+    Administrator->>System: Assign AOIs (multi-select)
+    Administrator->>System: Assign supervisor (optional)
+    
+    System->>Database: Create group with created_by_type='admin'
+    System->>Database: Sync AOIs to pivot table
+    System->>Database: Set supervisor_id if provided
+    
+    Database-->>System: Group created
+    System-->>Administrator: Group created with configurations
+    
+    Note over Database: Admin groups protected from advisor deletion
+```
+
+### 8.5 Supervisor Management
+```mermaid
+sequenceDiagram
+    participant Administrator
+    participant System
+    participant Database
+
+    Administrator->>System: Access supervisor management
+    System->>Database: Retrieve supervisors with stats
+    Database-->>System: Return list with capacity/assignments
+    System-->>Administrator: Display supervisor table
+    
+    alt Toggle AOI
+        Administrator->>System: Toggle supervisor AOI
+        System->>Database: Check current assignment
+        
+        alt Currently assigned
+            System->>Database: Detach AOI
+            Database-->>System: Removed
+        else Not assigned
+            System->>Database: Attach AOI
+            Database-->>System: Added
+        end
+        
+        System-->>Administrator: AOI toggled
+    else Set Thesis Limit
+        Administrator->>System: Update thesis limit
+        System->>Database: Update supervisor record
+        Database-->>System: Limit updated
+        System-->>Administrator: Capacity updated
+    end
 ```
 
 ---
 
-## 8. Multi-Role Collaboration
+## 9. Multi-Role Collaboration
 
-### 8.1 Teacher Role Switching
+### 9.1 Teacher Role Switching
 ```mermaid
 sequenceDiagram
     participant Teacher
@@ -771,7 +1034,7 @@ sequenceDiagram
     end
 ```
 
-### 8.2 Collaborative Report Review
+### 9.2 Collaborative Report Review
 ```mermaid
 sequenceDiagram
     participant Student
@@ -781,7 +1044,7 @@ sequenceDiagram
     participant System
     participant Database
 
-    Note over Student,Database: Multiple reviewers can annotate the same report
+    Note over Student,Database: Multiple reviewers annotate same report
     
     Student->>System: Submit report
     System->>Database: Store submission
@@ -810,7 +1073,7 @@ sequenceDiagram
     System-->>Student: Display with role indicators
 ```
 
-### 8.3 Hierarchical Approval Process
+### 9.3 Hierarchical Approval Process
 ```mermaid
 sequenceDiagram
     participant Student
@@ -852,62 +1115,26 @@ sequenceDiagram
     end
 ```
 
-### 8.4 Permission-Based Meeting Coordination
-```mermaid
-sequenceDiagram
-    participant Supervisor
-    participant CoSupervisor
-    participant System
-    participant Database
-    participant Student
-
-    Note over Supervisor,Student: Meeting management with conditional permissions
-    
-    Supervisor->>System: Schedule meeting
-    System->>Database: Create meeting record
-    System->>Student: Send meeting notification
-    
-    Supervisor->>System: Grant co-supervisor meeting permission
-    System->>Database: Update co_supervisor_can_manage_meetings=true
-    System->>CoSupervisor: Notify of permission grant
-    
-    CoSupervisor->>System: Schedule additional meeting
-    System->>Database: Check permission status
-    Database-->>System: Permission granted
-    System->>Database: Create meeting record
-    System->>Student: Send meeting notification
-    
-    Note over CoSupervisor: Can now manage meetings independently
-    
-    opt Permission Revoked
-        Supervisor->>System: Revoke meeting permission
-        System->>Database: Update co_supervisor_can_manage_meetings=false
-        System->>CoSupervisor: Notify of permission change
-        
-        CoSupervisor->>System: Try to schedule meeting
-        System->>Database: Check permission status
-        Database-->>System: Permission denied
-        System-->>CoSupervisor: Access denied
-    end
-```
-
-### 8.5 Multi-Reviewer Annotation History
+### 9.4 Multi-Reviewer Annotation History
 ```mermaid
 sequenceDiagram
     participant Student
     participant System
     participant Database
 
+    Note over Student,Database: View all feedback with role identification
+    
     Student->>System: Request annotation history
     System->>Database: Retrieve all annotation sessions
     Database-->>System: Return sessions with metadata
     
-    System->>System: Group by reviewer role
+    System->>System: Group by created_by_type
     System->>System: Sort by timestamp
+    System->>System: Apply role-based styling
+    
+    Note over System: Color coding:<br/>• Supervisor: Blue badge<br/>• Co-Supervisor: Purple badge<br/>• Panel Member: Orange badge
     
     System-->>Student: Display categorized history
-    
-    Note over Student: History shows:<br/>• Supervisor annotations (blue)<br/>• Co-Supervisor annotations (purple)<br/>• Panel Member annotations (orange)<br/>• Timestamps and versions
     
     Student->>System: Select specific session
     System->>Database: Retrieve session details
@@ -919,43 +1146,99 @@ sequenceDiagram
 
 ---
 
-## 9. System Architecture
+## 10. System Architecture
 
-### 9.1 Request Processing Flow
+### 10.1 Service Layer Architecture
 ```mermaid
 sequenceDiagram
     participant Client
-    participant Web Server
-    participant Application
+    participant Controller
+    participant Service
+    participant Model
     participant Database
 
-    Client->>Web Server: HTTP Request
-    Web Server->>Application: Route request
-    Application->>Application: Process business logic
-    Application->>Database: Data operation
-    Database-->>Application: Return data
-    Application-->>Web Server: Generate response
-    Web Server-->>Client: HTTP Response
+    Note over Client,Database: Laravel MVC with Service Layer
+    
+    Client->>Controller: HTTP Request
+    Controller->>Controller: Validate request
+    Controller->>Service: Delegate business logic
+    
+    Service->>Model: Interact with data layer
+    Model->>Database: Execute query
+    Database-->>Model: Return results
+    Model-->>Service: Return domain objects
+    
+    Service->>Service: Apply business rules
+    Service-->>Controller: Return processed data
+    
+    Controller->>Controller: Format response
+    Controller-->>Client: HTTP Response
+    
+    Note over Service: Key Services:<br/>• SupervisorAssignmentService<br/>• StudentApiService<br/>• SupervisorApiService<br/>• PerformanceMonitoringService
 ```
 
-### 9.2 File Management
+### 10.2 External API Integration
 ```mermaid
 sequenceDiagram
-    participant User
     participant System
-    participant Storage
-    participant Database
+    participant StudentApiService
+    participant SupervisorApiService
+    participant ExternalAPI
 
-    User->>System: Upload file
-    System->>System: Validate file
+    Note over System,ExternalAPI: Integration with university systems
     
-    alt Valid file
-        System->>Storage: Store file
-        System->>Database: Save metadata
-        System-->>User: Upload successful
-    else Invalid file
-        System-->>User: Validation error
+    alt Student Data Sync
+        System->>StudentApiService: Request batch students
+        StudentApiService->>ExternalAPI: GET /api/students?batch=X
+        ExternalAPI-->>StudentApiService: Return student array
+        StudentApiService->>StudentApiService: Filter by advisor
+        StudentApiService-->>System: Return filtered students
+    else Supervisor Data Sync
+        System->>SupervisorApiService: Request supervisor list
+        SupervisorApiService->>ExternalAPI: GET /api/teachers
+        ExternalAPI-->>SupervisorApiService: Return teacher array
+        SupervisorApiService->>SupervisorApiService: Map to supervisor model
+        SupervisorApiService-->>System: Return supervisors
+    else Batch Information
+        System->>StudentApiService: Get advisor batches
+        StudentApiService->>ExternalAPI: GET /api/advisor/batches
+        ExternalAPI-->>StudentApiService: Return batch list
+        StudentApiService-->>System: Return active batches
     end
+    
+    Note over ExternalAPI: Base URL: http://puc.ac.bd:8012/api
+```
+
+### 10.3 Notification System Architecture
+```mermaid
+sequenceDiagram
+    participant Event
+    participant NotificationClass
+    participant Queue
+    participant Database
+    participant User
+
+    Note over Event,User: Database-driven notification system
+    
+    Event->>NotificationClass: Trigger notification
+    NotificationClass->>NotificationClass: Prepare notification data
+    
+    alt Queued notification
+        NotificationClass->>Queue: Dispatch to queue
+        Queue->>Queue: Process in background
+        Queue->>Database: Store in notifications table
+    else Immediate notification
+        NotificationClass->>Database: Store directly
+    end
+    
+    Database->>Database: Set user_id, type, data
+    
+    User->>System: Check notifications
+    System->>Database: Query unread notifications
+    Database-->>System: Return notifications
+    System-->>User: Display in dashboard
+    
+    Note over NotificationClass: Types:<br/>• NewReportAssigned<br/>• NewReportAnnotation<br/>• NewReportComment<br/>• ReportUpdated
 ```
 
 ---
@@ -965,9 +1248,13 @@ sequenceDiagram
 ### Core Components
 - **Client**: End-user interface (web browser)
 - **System**: Application server handling business logic
-- **Database**: Persistent data storage
-- **External API**: University information systems
-- **Storage**: File storage service
+- **Controller**: Request handling and response formatting
+- **Service**: Business logic layer (SupervisorAssignmentService, StudentApiService, etc.)
+- **Model**: Data access layer using Eloquent ORM
+- **Database**: MySQL/SQLite persistent data storage
+- **External API**: University information systems (http://puc.ac.bd:8012/api)
+- **Queue**: Background job processing for notifications
+- **Storage**: File storage for PDF documents and submissions
 
 ### User Roles
 - **Student**: Thesis/project students submitting reports and receiving feedback
@@ -975,24 +1262,41 @@ sequenceDiagram
 - **Co-Supervisor**: Secondary supervisors assisting main supervisors with conditional meeting management permissions
 - **Panel Member**: Faculty members providing evaluation and feedback without management capabilities
 - **Advisor**: Faculty coordinating student groups and supervisor assignments
-- **Administrator**: System administrators managing users and system configuration
+- **Administrator**: System administrators managing users, AOIs, and system configuration
 - **Teacher**: Umbrella role for faculty who can switch between supervisor, co-supervisor, and panel member roles
 
 ### Key Features
-1. **Authentication**: Multi-role authentication with external API integration
-2. **Group Management**: Formation and assignment of student groups with multiple supervision levels
-3. **Report Workflow**: Creation, submission, and multi-reviewer annotation system
-4. **Meeting Documentation**: Recording and tracking with permission-based co-supervisor access
-5. **Automated Assignment**: Algorithmic supervisor-group matching with AOI, ranking, and hybrid strategies
-6. **Data Synchronization**: Integration with university systems for student and faculty data
-7. **In-App Notifications**: Dashboard-based notifications for all user roles
-8. **Collaborative Review**: Multiple reviewers can annotate reports with role-based tracking
-9. **Hierarchical Approval**: Only main supervisors can approve final projects
-10. **Permission Management**: Granular control over co-supervisor meeting permissions
-11. **Role Switching**: Teachers can seamlessly switch between different supervision roles
-12. **Annotation History**: Complete tracking of all feedback with reviewer role identification
+1. **Enhanced Authentication**: Multi-role authentication with fallback mechanism and TypeId parsing
+2. **Group Management**: Formation and assignment with cross-batch validation and randomization
+3. **Dual Feedback System**: PDF annotations and general text comments
+4. **Report Workflow**: Draft-send pattern for quality control
+5. **Meeting Documentation**: Recording and tracking with permission-based co-supervisor access
+6. **Intelligent Assignment**: Three algorithms (AOI, Ranking, Hybrid) with fairness guarantees
+7. **Data Synchronization**: Integration with university systems for student and faculty data
+8. **Real-time Notifications**: Database-driven notifications with mark-as-read functionality
+9. **Collaborative Review**: Multiple reviewers annotate reports with role-based tracking
+10. **Hierarchical Approval**: Only main supervisors can approve final projects
+11. **Permission Management**: Granular control over co-supervisor meeting permissions
+12. **Role Switching**: Teachers can seamlessly switch between different supervision roles
+13. **Annotation History**: Complete tracking with role identification and color coding
+14. **Cross-Batch Management**: Advisors can assign students from any of their batches
+15. **Audit Trail**: Assignment history tracking and logging for accountability
+
+### Technical Implementation Details
+- **Framework**: Laravel 12 with PHP 8.2+
+- **Frontend**: Blade templates with Tailwind CSS and Alpine.js
+- **Build Tool**: Vite for asset compilation
+- **Testing**: PHPUnit/Pest with RefreshDatabase trait
+- **Code Standards**: PSR-12 enforced by Laravel Pint
+- **Security**: CSRF protection, parameterized queries, rate limiting
 
 ---
 
 ## Notes
-These sequence diagrams illustrate the primary interactions within the Thesis Repository Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and focus on essential system behaviors rather than implementation details.
+These sequence diagrams illustrate the primary interactions within the Thesis Repository Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and IEEE documentation guidelines, focusing on essential system behaviors with implementation-specific details based on actual code analysis.
+
+### Revision History
+- **Version 2.0**: Added 12 new diagrams based on code analysis
+- **Version 2.1**: Enhanced with implementation details from controller and service analysis
+- **Version 2.2**: Added dual feedback mechanisms and cross-batch validation
+- **Version 2.3**: Incorporated randomization, draft-send pattern, and audit trail features
