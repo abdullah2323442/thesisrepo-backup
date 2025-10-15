@@ -910,7 +910,7 @@ sequenceDiagram
 
 #### 7.4.2 Cross-Batch Student Pool Management
 
-Administrators can access and assign students from any active batch, providing flexibility beyond advisor restrictions.
+Administrators can access and assign students from any active batch, unlike advisors who are restricted to their own batches.
 
 ```mermaid
 sequenceDiagram
@@ -919,36 +919,28 @@ sequenceDiagram
     participant External API
     participant Database
 
-    Note over Administrator,Database: Cross-batch student eligibility system
+    Note over Administrator,Database: Cross-batch student access
     
     Administrator->>System: Select batch for group management
-    System->>Database: Retrieve selected batch number
-    Database-->>System: Return batch information
-    
-    System->>Database: Query all assigned students
+    System->>Database: Query assigned students
     Database-->>System: Return assigned student IDs
     
-    System->>Database: Get active batches less than selected batch
-    Database-->>System: Return prior batch list
+    System->>Database: Get prior active batches
+    Database-->>System: Return batch list
     
     loop For each prior batch
         System->>External API: Request students for batch
-        External API-->>System: Return student data array
-        
+        External API-->>System: Return student data
         System->>System: Filter out assigned students
-        System->>System: Extract student details
-        Note over System: Student data includes:<br/>• Roll number<br/>• Name<br/>• Batch<br/>• Advisor ID<br/>• Advisor name
-        
-        System->>System: Add to eligible student pool
+        System->>System: Add to eligible pool
     end
     
-    System->>System: Sort students by batch and name
-    System-->>Administrator: Display eligible student pool
+    System-->>Administrator: Display eligible students from all batches
     
-    Note over Administrator: Administrator privileges:<br/>• Access ANY active batch < selected<br/>• Assign students with different advisors<br/>• No advisor-specific restrictions<br/>• Cross-batch flexibility
+    Note over Administrator: Administrator can access ANY active batch<br/>No advisor-specific restrictions
 ```
 
-**Figure 7.4.2:** Cross-batch student pool management demonstrating administrator's unrestricted access to students from multiple batches
+**Figure 7.4.2:** Cross-batch student pool management demonstrating administrator's unrestricted batch access
 
 #### 7.4.3 Student Assignment with Advisor Auto-Detection
 
