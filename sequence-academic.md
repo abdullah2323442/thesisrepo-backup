@@ -1196,42 +1196,32 @@ sequenceDiagram
 
 ## System Components Description
 
-### Core Components
-- **Client**: End-user interface (web browser)
-- **System**: Application server handling business logic
-- **Controller**: Request handling and response formatting
-- **Service**: Business logic layer for complex operations
-- **Model**: Data access layer for database interactions
-- **Database**: Persistent data storage system
-- **External API**: University information systems for data synchronization
-- **Queue**: Background job processing for asynchronous tasks
-- **Storage**: File storage for documents and submissions
+### System Actors
+- **Student**: Submits thesis reports, receives feedback, and views annotations from multiple reviewers
+- **Supervisor**: Primary thesis supervisor with report assignment, annotation, meeting management, and final approval authority
+- **Co-Supervisor**: Secondary supervisor providing feedback and optional meeting management (permission-based)
+- **Panel Member**: Evaluation-focused reviewer providing assessment feedback without approval authority
+- **Advisor**: Coordinates group formation, student assignments, and supervisor allocation for batches
+- **Administrator**: Manages system configuration, user assignments (co-supervisors, panel members), and research areas
+- **Teacher**: Faculty member who may hold multiple roles simultaneously (supervisor, co-supervisor, panel member)
 
-### User Roles
-- **Student**: Thesis/project students submitting reports and receiving feedback
-- **Supervisor**: Faculty members with primary supervision responsibilities and final approval authority
-- **Co-Supervisor**: Secondary supervisors assisting main supervisors with conditional permissions
-- **Panel Member**: Faculty members providing evaluation and feedback without management capabilities
-- **Advisor**: Faculty coordinating student groups and supervisor assignments
-- **Administrator**: System administrators managing users, research areas, and system configuration
-- **Teacher**: Faculty members who can have multiple roles (supervisor, co-supervisor, panel member)
+### External Systems
+- **University API**: External information system providing student data, teacher data, and batch information for synchronization
+- **Database**: Persistent storage for all system data including users, groups, reports, annotations, and notifications
 
-### Key System Features
-1. **Multi-Role Authentication**: Support for multiple user types with role-based access control
-2. **Group Management**: Formation and assignment of student groups with validation
-3. **Dual Feedback System**: PDF annotations and text comments for comprehensive feedback
-4. **Report Workflow**: Draft and send pattern for quality control
-5. **Meeting Documentation**: Recording and tracking of supervision meetings
-6. **Intelligent Assignment**: Multiple algorithms for fair supervisor distribution
-7. **Data Synchronization**: Integration with external university systems
-8. **Real-time Notifications**: Event-driven notification system
-9. **Collaborative Review**: Multiple reviewers can provide feedback on the same report
-10. **Hierarchical Approval**: Structured approval process with role-based permissions
-11. **Permission Management**: Granular control over user capabilities
-12. **Role Switching**: Seamless transition between different user roles
-13. **Annotation History**: Complete tracking of all feedback with timestamps
-14. **Cross-Batch Management**: Support for students from different academic batches
-15. **Audit Trail**: Comprehensive logging for accountability and tracking
+### Key System Capabilities
+1. **Role-Based Access Control**: Multi-role authentication with hierarchical permissions
+2. **Group Management**: Student group formation with cross-batch assignment support
+3. **Supervisor Assignment**: Three algorithmic strategies (area-based, ranking-based, hybrid) with manual override
+4. **Dual Feedback Mechanism**: PDF annotations and text comments with role-based tracking
+5. **Draft-Send Workflow**: Two-phase annotation process allowing review before distribution
+6. **Collaborative Review**: Independent parallel review by multiple reviewers with separate notifications
+7. **Hierarchical Approval**: Supervisor-only final approval authority with comprehensive feedback review
+8. **Meeting Management**: Documentation and reporting with conditional co-supervisor access
+9. **Notification System**: Real-time student notifications for reports, annotations, and comments
+10. **Annotation History**: Complete version tracking with role-based categorization and comparison
+11. **Cross-Batch Operations**: Administrator access to students across multiple batches
+12. **Research Area Management**: Multiple area assignments with expertise-based supervisor matching
 
 ---
 
