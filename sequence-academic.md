@@ -17,71 +17,56 @@
 
 ## 1. System Authentication
 
-### 1.1 Unified Authentication Process with Fallback Mechanism
+### 1.1 Authentication and Authorization Framework
 
-This diagram illustrates the comprehensive authentication flow for all user types accessing the system through external university APIs, incorporating a robust fallback mechanism to ensure system reliability during service disruptions.
+The system implements a robust authentication mechanism with automatic failover capabilities to ensure continuous service availability. This section presents the authentication workflow and role-based access control mechanisms.
+
+#### 1.1.1 User Authentication Flow
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant System
-    participant Primary API
-    participant Secondary API
-    participant Database
+    participant U as User
+    participant S as System
+    participant API as External API
+    participant DB as Database
 
-    Note over User,Database: Resilient authentication with automatic failover
+    U->>S: Submit credentials
+    S->>API: Validate credentials
     
-    User->>System: Submit credentials
-    System->>System: Identify user type (Student/Faculty)
-    
-    alt Faculty Authentication
-        System->>Primary API: Validate faculty credentials
-        
-        alt Primary API Available
-            Primary API-->>System: Return faculty profile
-        else Primary API Unavailable
-            Note over System: Automatic failover to secondary API
-            System->>Secondary API: Attempt fallback authentication
-            Secondary API-->>System: Return user data
-            System->>System: Normalize data format
-        end
-        
-        System->>System: Map faculty roles (Supervisor/Co-Supervisor/Panel/Advisor)
-    else Student Authentication
-        System->>Primary API: Validate student credentials
-        Primary API-->>System: Return student data
-        System->>System: Process student profile
+    alt Primary API success
+        API-->>S: Return user profile
+    else API failure
+        S->>API: Attempt secondary endpoint
+        API-->>S: Return user data
     end
     
-    System->>Database: Store or update user record
-    System->>System: Create authenticated session
-    System->>System: Apply role-based permissions
-    System-->>User: Redirect to role-specific dashboard
-    
-    Note over System: Session includes role permissions and access scope
+    S->>DB: Update user record
+    S->>S: Generate session token
+    S-->>U: Grant access with role permissions
 ```
 
-### 1.2 Role-Based Access Control
+**Figure 1.1:** User authentication sequence with failover mechanism
 
-This diagram demonstrates the system's role-based permission enforcement mechanism for resource access control.
+#### 1.1.2 Role-Based Access Control
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant System
-    participant Database
+    participant U as User
+    participant S as System
+    participant DB as Database
 
-    User->>System: Request resource
-    System->>Database: Verify user permissions
+    U->>S: Request resource
+    S->>DB: Verify permissions
+    DB-->>S: Return access rights
     
     alt Authorized
-        Database-->>System: Permission granted
-        System-->>User: Display resource
+        S-->>U: Grant resource access
     else Unauthorized
-        Database-->>System: Permission denied
-        System-->>User: Access denied message
+        S-->>U: Deny access (403)
     end
 ```
+
+**Figure 1.2:** Role-based access control verification process
 
 ---
 
