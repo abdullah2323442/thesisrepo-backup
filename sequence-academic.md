@@ -8,10 +8,9 @@
 4. [Co-Supervisor Operations](#4-co-supervisor-operations)
 5. [Panel Member Operations](#5-panel-member-operations)
 6. [Advisor Operations](#6-advisor-operations)
-7. [Supervisor Assignment Algorithms](#7-supervisor-assignment-algorithms)
-8. [Administrative Functions](#8-administrative-functions)
-9. [Multi-Role Collaboration](#9-multi-role-collaboration)
-10. [System Architecture](#10-system-architecture)
+7. [Administrative Functions](#7-administrative-functions)
+8. [Multi-Role Collaboration](#8-multi-role-collaboration)
+9. [System Architecture](#9-system-architecture)
 
 ---
 
@@ -571,10 +570,60 @@ sequenceDiagram
     System-->>Advisor: Research areas assigned successfully
 ```
 
+#### 6.1.6 Bulk Remove Research Areas
 
-## 7. Supervisor Assignment Algorithms
+Advisors can remove all research areas from batch groups.
 
-### 7.1 Area of Interest Based Assignment
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Advisor->>System: Select batch
+    Advisor->>System: Request remove all research areas
+    
+    System->>Database: Get advisor groups for batch
+    Database-->>System: Return groups
+    
+    loop For each group
+        System->>Database: Clear research area assignments
+    end
+    
+    Database-->>System: Research areas removed
+    System-->>Advisor: Removal complete
+```
+
+#### 6.1.7 Remove All Groups in Batch
+
+Advisors can remove all their groups in a batch.
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Safe deletion of advisor-created groups
+    
+    Advisor->>System: Request remove all groups
+    System->>Database: Get advisor-created groups
+    Database-->>System: Return advisor groups
+    
+    loop For each group
+        System->>Database: Delete student assignments
+        System->>Database: Delete group record
+    end
+    
+    Database-->>System: Deletion complete
+    System-->>Advisor: Groups removed successfully
+    
+    Note over Database: Administrator-created groups remain protected
+```
+
+### 6.2 Supervisor Assignment Algorithms
+
+#### 6.2.1 Area of Interest Based Assignment
 
 The system assigns supervisors based on matching research expertise.
 
@@ -608,7 +657,7 @@ sequenceDiagram
     Note over Assignment Service: Ensures expertise alignment<br/>Prevents consecutive assignments
 ```
 
-### 7.2 Ranking-Based Assignment
+#### 6.2.2 Ranking-Based Assignment
 
 The system uses academic ranking for fair distribution.
 
@@ -646,7 +695,7 @@ sequenceDiagram
     Note over Assignment Service: Ensures equal distribution before repetition
 ```
 
-### 7.3 Hybrid Assignment Strategy
+#### 6.2.3 Hybrid Assignment Strategy
 
 The system combines expertise matching with fair distribution.
 
@@ -684,7 +733,7 @@ sequenceDiagram
     Note over Assignment Service: Ensures fairness within each research area
 ```
 
-### 7.4 Assignment Algorithm Comparison
+#### 6.2.4 Assignment Algorithm Comparison
 
 ```mermaid
 graph TD
@@ -708,9 +757,9 @@ graph TD
 
 ---
 
-## 8. Administrative Functions
+## 7. Administrative Functions
 
-### 8.1 Co-Supervisor Assignment
+### 7.1 Co-Supervisor Assignment
 
 Administrators assign co-supervisors to groups.
 
@@ -749,7 +798,7 @@ sequenceDiagram
     Note over Database: Initial permissions set conservatively
 ```
 
-### 8.2 Panel Member Assignment
+### 7.2 Panel Member Assignment
 
 Administrators can assign multiple panel members to groups.
 
@@ -789,7 +838,7 @@ sequenceDiagram
     Note over Database: No capacity limits for panel members
 ```
 
-### 8.3 Area of Interest Management
+### 7.3 Area of Interest Management
 
 Administrators manage research areas in the system.
 
@@ -834,7 +883,7 @@ sequenceDiagram
     end
 ```
 
-### 8.4 Administrator Group Creation
+### 7.4 Administrator Group Creation
 
 Administrators can create pre-configured groups.
 
@@ -862,7 +911,7 @@ sequenceDiagram
     Note over Database: Administrator groups protected from advisor deletion
 ```
 
-### 8.5 Supervisor Management
+### 7.5 Supervisor Management
 
 Administrators manage supervisor profiles and capacities.
 
@@ -900,9 +949,9 @@ sequenceDiagram
 
 ---
 
-## 9. Multi-Role Collaboration
+## 8. Multi-Role Collaboration
 
-### 9.1 Teacher Role Switching
+### 8.1 Teacher Role Switching
 
 Teachers can switch between different supervision roles.
 
@@ -935,7 +984,7 @@ sequenceDiagram
     end
 ```
 
-### 9.2 Collaborative Report Review
+### 8.2 Collaborative Report Review
 
 Multiple reviewers can annotate the same report simultaneously.
 
@@ -977,7 +1026,7 @@ sequenceDiagram
     System-->>Student: Display feedback with role indicators
 ```
 
-### 9.3 Hierarchical Approval Process
+### 8.3 Hierarchical Approval Process
 
 Only main supervisors have final approval authority.
 
@@ -1022,7 +1071,7 @@ sequenceDiagram
     end
 ```
 
-### 9.4 Multi-Reviewer Annotation History
+### 8.4 Multi-Reviewer Annotation History
 
 Students can view complete feedback history from all reviewers.
 
@@ -1056,9 +1105,9 @@ sequenceDiagram
 
 ---
 
-## 10. System Architecture
+## 9. System Architecture
 
-### 10.1 Service Layer Architecture
+### 9.1 Service Layer Architecture
 
 The system implements a clean service layer architecture for business logic separation.
 
@@ -1090,7 +1139,7 @@ sequenceDiagram
     Note over Service: Core Services:<br/>• Supervisor Assignment Service<br/>• Student Data Service<br/>• Performance Monitoring Service
 ```
 
-### 10.2 External API Integration
+### 9.2 External API Integration
 
 The system integrates with university information systems for data synchronization.
 
@@ -1125,7 +1174,7 @@ sequenceDiagram
     Note over University API: External university information system
 ```
 
-### 10.3 Notification System Architecture
+### 9.3 Notification System Architecture
 
 The system implements a comprehensive notification system for all user roles.
 
