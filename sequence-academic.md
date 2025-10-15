@@ -269,27 +269,7 @@ sequenceDiagram
 
 ## 4. Co-Supervisor Operations
 
-### 4.1 Co-Supervisor Dashboard Access
-
-Co-supervisors have access to groups where they are assigned as secondary supervisors.
-
-```mermaid
-sequenceDiagram
-    participant CoSupervisor
-    participant System
-    participant Database
-
-    CoSupervisor->>System: Access co-supervisor dashboard
-    System->>Database: Verify co-supervisor role
-    Database-->>System: Return assigned groups
-    System->>Database: Check meeting management permissions
-    Database-->>System: Return permission status
-    System-->>CoSupervisor: Display dashboard with groups
-    
-    Note over CoSupervisor: Dashboard shows assigned groups<br/>and meeting management permissions
-```
-
-### 4.2 Conditional Meeting Management
+### 4.1 Conditional Meeting Management
 
 Main supervisors control whether co-supervisors can manage meetings.
 
@@ -324,34 +304,9 @@ sequenceDiagram
     end
 ```
 
-### 4.3 Co-Supervisor Report Review
+### 4.2 Report Review and Feedback Process
 
-Co-supervisors can review reports but cannot approve final submissions.
-
-```mermaid
-sequenceDiagram
-    participant CoSupervisor
-    participant System
-    participant Database
-
-    CoSupervisor->>System: Access reports list
-    System->>Database: Get co-supervised groups
-    Database-->>System: Return group identifiers
-    System->>Database: Retrieve group reports
-    Database-->>System: Return reports
-    System-->>CoSupervisor: Display reports
-    
-    CoSupervisor->>System: View report details
-    System->>Database: Verify co-supervisor access
-    Database-->>System: Access confirmed
-    System-->>CoSupervisor: Display report
-    
-    Note over CoSupervisor: Can review but cannot approve final projects
-```
-
-### 4.4 Co-Supervisor Annotation Process
-
-Co-supervisors can provide feedback through annotations.
+Co-supervisors can review reports and provide comprehensive feedback through multiple channels, but cannot approve final submissions.
 
 ```mermaid
 sequenceDiagram
@@ -360,84 +315,64 @@ sequenceDiagram
     participant Database
     participant Student
 
-    CoSupervisor->>System: Access report submission
+    Note over CoSupervisor,Student: Comprehensive review and feedback workflow
+    
+    CoSupervisor->>System: Access reports list
+    System->>Database: Get co-supervised groups
+    Database-->>System: Return group identifiers
+    System->>Database: Retrieve group reports
+    Database-->>System: Return reports
+    System-->>CoSupervisor: Display reports
+    
+    CoSupervisor->>System: Select report for review
     System->>Database: Verify co-supervisor access
-    Database-->>System: Access granted
-    System-->>CoSupervisor: Display PDF annotator
+    Database-->>System: Access confirmed
+    System-->>CoSupervisor: Display report interface
     
-    CoSupervisor->>System: Add annotations
-    System->>System: Process annotations
-    CoSupervisor->>System: Save annotation session
-    System->>Database: Store annotations with co-supervisor role
-    Database-->>System: Session saved
+    Note over CoSupervisor: Review-only access<br/>Cannot approve final submissions
     
-    CoSupervisor->>System: Send feedback
-    System->>Database: Mark session as sent
-    System->>Database: Create notifications
+    alt PDF Annotation Feedback
+        CoSupervisor->>System: Open PDF annotator
+        System-->>CoSupervisor: Display annotation tools
+        
+        loop Annotation process
+            CoSupervisor->>System: Add annotations (highlight, comment, underline)
+            System->>System: Process annotations
+        end
+        
+        CoSupervisor->>System: Save annotation session
+        System->>Database: Store annotations with co-supervisor role identifier
+        Database-->>System: Session saved
+        
+        CoSupervisor->>System: Send feedback to students
+        System->>Database: Mark session as sent
+        System->>Database: Record timestamp
+        
+    else Text Comment Feedback
+        CoSupervisor->>System: Submit general text comment
+        System->>Database: Store comment with co-supervisor metadata
+        Database-->>System: Comment saved
+        System-->>CoSupervisor: Comment added to discussion thread
+    end
+    
+    System->>Database: Create student notifications
     
     loop For each group student
         System->>Student: Send notification
     end
     
-    System-->>CoSupervisor: Feedback sent
+    System-->>CoSupervisor: Feedback delivered successfully
     
-    Note over Database: System tracks annotation origin for role identification
+    Note over Database: System tracks all feedback with:<br/>• Role identification<br/>• Timestamp<br/>• Feedback type
 ```
 
-### 4.5 Dual Feedback Mechanism
-
-Co-supervisors can provide both PDF annotations and text comments.
-
-```mermaid
-sequenceDiagram
-    participant CoSupervisor
-    participant System
-    participant Database
-
-    Note over CoSupervisor,Database: Two types of feedback available
-    
-    CoSupervisor->>System: Access report page
-    
-    alt PDF Annotation
-        CoSupervisor->>System: Create annotation session
-        System->>Database: Store PDF annotations with role identifier
-        Database-->>System: Annotations saved
-        System-->>CoSupervisor: Annotation tools displayed
-    else General Comment
-        CoSupervisor->>System: Submit text comment
-        System->>Database: Store comment in system
-        Database-->>System: Comment saved
-        System-->>CoSupervisor: Comment added to discussion thread
-    end
-    
-    Note over Database: Both feedback types tracked separately
-```
+**Figure 4.3:** Co-supervisor report review and feedback workflow demonstrating dual feedback mechanisms (PDF annotations and text comments) with role-based tracking
 
 ---
 
 ## 5. Panel Member Operations
 
-### 5.1 Panel Member Dashboard
-
-Panel members have evaluation-only access to assigned groups.
-
-```mermaid
-sequenceDiagram
-    participant PanelMember
-    participant System
-    participant Database
-
-    PanelMember->>System: Access panel member dashboard
-    System->>Database: Get panel assignments
-    Database-->>System: Return assigned groups
-    System->>Database: Get group reports
-    Database-->>System: Return report list
-    System-->>PanelMember: Display dashboard
-    
-    Note over PanelMember: Review-only access<br/>No meeting management<br/>No report approval authority
-```
-
-### 5.2 Panel Member Report Evaluation
+### 5.1 Panel Member Report Evaluation
 
 Panel members evaluate reports and mark their review status.
 
@@ -461,7 +396,7 @@ sequenceDiagram
     System-->>PanelMember: Review status confirmed
 ```
 
-### 5.3 Panel Member Feedback
+### 5.2 Panel Member Feedback
 
 Panel members provide evaluation feedback through annotations and comments.
 
