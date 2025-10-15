@@ -624,7 +624,7 @@ sequenceDiagram
     System->>Assignment Service: Run area-based assignment
     
     Assignment Service->>Database: Retrieve unassigned groups
-    Note over Assignment Service: Exclude groups with:<br/>• supervisor_id IS NOT NULL<br/>• is_manual_assignment = true
+    Note over Assignment Service: Exclude manually assigned groups<br/>from lottery process
     Assignment Service->>Database: Retrieve supervisors with matching expertise
     
     loop For each group
@@ -659,7 +659,7 @@ sequenceDiagram
     System->>Assignment Service: Run ranking assignment
     
     Assignment Service->>Database: Get unassigned groups only
-    Note over Assignment Service: Exclude manually assigned groups
+    Note over Assignment Service: Filter out groups with existing<br/>manual supervisor assignments
     Assignment Service->>Database: Get supervisors ordered by rank
     Assignment Service->>Assignment Service: Initialize round-robin tracker
     
@@ -699,7 +699,7 @@ sequenceDiagram
     System->>Assignment Service: Run combined assignment
     
     Assignment Service->>Database: Get unassigned groups with research areas
-    Note over Assignment Service: Exclude manually assigned groups
+    Note over Assignment Service: Filter out groups with existing<br/>manual supervisor assignments
     Assignment Service->>Database: Get supervisors with expertise
     
     loop For each group
