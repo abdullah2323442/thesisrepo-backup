@@ -91,7 +91,7 @@ sequenceDiagram
 
 ### 2.2 View Feedback and Annotations
 
-Students can view feedback from multiple reviewers with role-based categorization.
+Students can view annotated documents with version history and role-based categorization.
 
 ```mermaid
 sequenceDiagram
@@ -99,14 +99,17 @@ sequenceDiagram
     participant System
     participant Database
 
-    Student->>System: Request feedback
-    System->>Database: Retrieve annotations for submission
-    Database-->>System: Return feedback data
+    Student->>System: View notification
+    System->>Database: Verify access rights
+    Database-->>System: Access authorized
+    
+    System->>Database: Retrieve annotation sessions
+    Database-->>System: Return all sessions for submission
     
     System->>System: Categorize feedback by reviewer role
     Note over System: Feedback categorized by:<br/>• Supervisor (primary reviewer)<br/>• Co-Supervisor (secondary reviewer)<br/>• Panel Member (evaluator)
     
-    System-->>Student: Display annotated document with role indicators
+    System-->>Student: Display annotated PDF with version history
 ```
 
 ### 2.3 Dashboard Notification System
@@ -238,26 +241,6 @@ sequenceDiagram
     end
     
     System-->>Supervisor: Feedback sent confirmation
-```
-
-#### 3.2.3 Student Access to Annotations
-
-Students can view annotated documents with version history.
-
-```mermaid
-sequenceDiagram
-    participant Student
-    participant System
-    participant Database
-
-    Student->>System: View notification
-    System->>Database: Verify access rights
-    Database-->>System: Access authorized
-    
-    System->>Database: Retrieve annotation sessions
-    Database-->>System: Return all sessions for submission
-    
-    System-->>Student: Display annotated PDF with version history
 ```
 
 ### 3.3 Meeting Documentation
