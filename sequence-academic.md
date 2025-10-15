@@ -1080,9 +1080,6 @@ sequenceDiagram
     
     Student->>System: Submit report
     System->>Database: Store submission
-    System->>Supervisor: Notify main supervisor
-    System->>CoSupervisor: Notify co-supervisor
-    System->>PanelMember: Notify panel members
     
     par Parallel Review Process
         Supervisor->>System: Create annotation session
