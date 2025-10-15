@@ -1082,7 +1082,7 @@ sequenceDiagram
 
 #### 7.5.2 Batch Status Management
 
-Administrators control batch activation status to manage which batches are available for operations.
+Administrators control batch activation status to regulate which academic cohorts are available for thesis management operations.
 
 ```mermaid
 sequenceDiagram
@@ -1090,41 +1090,43 @@ sequenceDiagram
     participant System
     participant Database
 
-    Note over Administrator,Database: Batch activation control
+    Note over Administrator,Database: Batch activation control mechanism
     
-    Administrator->>System: Access batch management
-    System->>Database: Retrieve all batches with statistics
-    Database-->>System: Return batch list
-    System-->>Administrator: Display batch table
+    Administrator->>System: Access batch management interface
+    System->>Database: Retrieve batch records with statistics
+    Database-->>System: Return batch information
+    System-->>Administrator: Display batch overview
     
-    alt Single Batch Toggle
-        Administrator->>System: Toggle batch status
-        System->>Database: Update is_active flag
-        Database-->>System: Status updated
-        System-->>Administrator: Confirmation message
-    else Bulk Activation
+    alt Individual Batch Control
+        Administrator->>System: Toggle batch activation status
+        System->>Database: Update batch availability status
+        Database-->>System: Status modification confirmed
+        System-->>Administrator: Display confirmation message
+    else Multiple Batch Control
         Administrator->>System: Select multiple batches
-        Administrator->>System: Apply bulk action (activate/deactivate)
-        System->>System: Validate batch IDs
-        System->>Database: Update multiple batch statuses
-        Database-->>System: Bulk update completed
-        System-->>Administrator: Display affected count
-    else Activate All
+        Administrator->>System: Apply batch operation (activate/deactivate)
+        System->>System: Validate batch identifiers
+        System->>Database: Update batch availability statuses
+        Database-->>System: Batch operation completed
+        System-->>Administrator: Display operation summary
+    else Global Activation
         Administrator->>System: Activate all batches
-        System->>Database: Set all is_active = true
-        Database-->>System: Return updated count
-        System-->>Administrator: Confirmation with count
-    else Deactivate All
+        System->>Database: Enable all batch records
+        Database-->>System: Return modification count
+        System-->>Administrator: Display activation summary
+    else Global Deactivation
         Administrator->>System: Deactivate all batches
-        System->>Database: Set all is_active = false
-        Database-->>System: Return updated count
-        System-->>Administrator: Confirmation with count
+        System->>Database: Disable all batch records
+        Database-->>System: Return modification count
+        System-->>Administrator: Display deactivation summary
     end
     
-    Note over System: Only active batches appear in<br/>advisor/admin student selection
+    Note over System: Only activated batches are visible<br/>in student assignment operations
 ```
 
-**Figure 7.5.2:** Batch status management with bulk operations
+**Figure 7.5.2:** Batch status management workflow with individual and bulk operations
+
+**Core Purpose**: Enable administrators to control the availability of academic batches within the system, ensuring that only relevant cohorts are accessible for group formation and student assignment operations.
 
 ### 7.6 Supervisor Management
 
