@@ -3,20 +3,56 @@
 
 ## Table of Contents
 1. [System Authentication](#1-system-authentication)
+   - 1.1 [Authentication and Authorization Framework](#11-authentication-and-authorization-framework)
+     - 1.1.1 [User Authentication Flow](#111-user-authentication-flow)
+     - 1.1.2 [Role-Based Access Control](#112-role-based-access-control)
 2. [Student Operations](#2-student-operations)
+   - 2.1 [Report Submission Process](#21-report-submission-process)
+   - 2.2 [View Feedback and Annotations](#22-view-feedback-and-annotations)
+   - 2.3 [Dashboard Notification System](#23-dashboard-notification-system)
 3. [Supervisor Operations](#3-supervisor-operations)
+   - 3.1 [Report Management](#31-report-management)
+   - 3.2 [Document Annotation Process](#32-document-annotation-process)
+     - 3.2.1 [Annotation Creation with Draft State](#321-annotation-creation-with-draft-state)
+     - 3.2.2 [Feedback Distribution](#322-feedback-distribution)
+   - 3.3 [Meeting Documentation](#33-meeting-documentation)
 4. [Co-Supervisor Operations](#4-co-supervisor-operations)
+   - 4.1 [Conditional Meeting Management](#41-conditional-meeting-management)
+   - 4.2 [Annotation and Feedback Process](#42-annotation-and-feedback-process)
 5. [Panel Member Operations](#5-panel-member-operations)
+   - 5.1 [Panel Member Report Evaluation](#51-panel-member-report-evaluation)
+   - 5.2 [Panel Member Feedback](#52-panel-member-feedback)
 6. [Advisor Operations](#6-advisor-operations)
+   - 6.1 [Group Formation](#61-group-formation)
+     - 6.1.1 [Manual Group Creation](#611-manual-group-creation)
+     - 6.1.2 [Excel-Based Group Import](#612-excel-based-group-import)
+     - 6.1.3 [Template Export for Group Assignment](#613-template-export-for-group-assignment)
+     - 6.1.4 [Cross-Batch Student Assignment](#614-cross-batch-student-assignment)
+     - 6.1.5 [Assign Area of Interest to Group](#615-assign-area-of-interest-to-group)
+   - 6.2 [Supervisor Assignment](#62-supervisor-assignment)
+     - 6.2.1 [Manual Supervisor Assignment](#621-manual-supervisor-assignment)
+     - 6.2.2 [Area of Interest Based Assignment](#622-area-of-interest-based-assignment)
+     - 6.2.3 [Ranking-Based Assignment](#623-ranking-based-assignment)
+     - 6.2.4 [Hybrid Assignment Strategy](#624-hybrid-assignment-strategy)
+     - 6.2.5 [Assignment Algorithm Comparison](#625-assignment-algorithm-comparison)
 7. [Administrative Functions](#7-administrative-functions)
    - 7.1 [Co-Supervisor Assignment](#71-co-supervisor-assignment)
    - 7.2 [Panel Member Assignment](#72-panel-member-assignment)
    - 7.3 [Area of Interest Management](#73-area-of-interest-management)
    - 7.4 [Administrator Group Management](#74-administrator-group-management)
+     - 7.4.1 [Group Creation with Pre-Configuration](#741-group-creation-with-pre-configuration)
+     - 7.4.2 [Cross-Batch Student Pool Management](#742-cross-batch-student-pool-management)
+     - 7.4.3 [Student Assignment with Advisor Auto-Detection](#743-student-assignment-with-advisor-auto-detection)
    - 7.5 [Batch Management](#75-batch-management)
+     - 7.5.1 [Batch Synchronization from External API](#751-batch-synchronization-from-external-api)
+     - 7.5.2 [Batch Status Management](#752-batch-status-management)
    - 7.6 [Supervisor Management](#76-supervisor-management)
 8. [Multi-Role Collaboration](#8-multi-role-collaboration)
+   - 8.1 [Teacher Role Switching](#81-teacher-role-switching)
+   - 8.2 [Collaborative Report Review](#82-collaborative-report-review)
+   - 8.3 [Hierarchical Approval Process](#83-hierarchical-approval-process)
 9. [External System Integration](#9-external-system-integration)
+   - 9.1 [University API Integration](#91-university-api-integration)
 
 ---
 
@@ -1103,43 +1139,6 @@ sequenceDiagram
 ```
 
 **Figure 7.5.2:** Batch status management with bulk operations
-
-#### 7.5.3 Batch Comparison and Audit
-
-Administrators can compare local batch data with external API to identify discrepancies.
-
-```mermaid
-sequenceDiagram
-    participant Administrator
-    participant System
-    participant External API
-    participant Database
-
-    Note over Administrator,Database: Batch data audit workflow
-    
-    Administrator->>System: Request batch comparison
-    System->>External API: Fetch current batch list
-    External API-->>System: Return API batches
-    System->>Database: Retrieve local batches
-    Database-->>System: Return local batch list
-    
-    System->>System: Compare batch lists
-    System->>System: Identify new batches (in API, not local)
-    System->>System: Identify missing batches (in local, not API)
-    System->>System: Calculate statistics
-    
-    System-->>Administrator: Display comparison report
-    
-    Note over Administrator: Report shows:<br/>• New batches available in API<br/>• Local batches not in API<br/>• Total counts for both sources
-    
-    opt Sync New Batches
-        Administrator->>System: Initiate sync
-        System->>System: Execute batch synchronization
-        System-->>Administrator: Sync completed
-    end
-```
-
-**Figure 7.5.3:** Batch comparison and audit workflow for data integrity
 
 ### 7.6 Supervisor Management
 
