@@ -4,9 +4,12 @@
 1. [System Authentication](#1-system-authentication)
 2. [Student Operations](#2-student-operations)
 3. [Supervisor Operations](#3-supervisor-operations)
-4. [Advisor Operations](#4-advisor-operations)
-5. [Administrative Functions](#5-administrative-functions)
-6. [System Architecture](#6-system-architecture)
+4. [Co-Supervisor Operations](#4-co-supervisor-operations)
+5. [Panel Member Operations](#5-panel-member-operations)
+6. [Advisor Operations](#6-advisor-operations)
+7. [Administrative Functions](#7-administrative-functions)
+8. [Multi-Role Collaboration](#8-multi-role-collaboration)
+9. [System Architecture](#9-system-architecture)
 
 ---
 
@@ -228,11 +231,262 @@ sequenceDiagram
 
 ---
 
-## 4. Advisor Operations
+## 4. Co-Supervisor Operations
 
-### 4.1 Group Formation
+### 4.1 Co-Supervisor Dashboard Access
+```mermaid
+sequenceDiagram
+    participant CoSupervisor
+    participant System
+    participant Database
 
-#### 4.1.1 Manual Group Creation
+    CoSupervisor->>System: Access co-supervisor dashboard
+    System->>Database: Verify co-supervisor role
+    Database-->>System: Return assigned groups
+    System->>Database: Check meeting permissions
+    Database-->>System: Return permission status
+    System-->>CoSupervisor: Display dashboard with groups
+    
+    Note over CoSupervisor: Shows groups where assigned as co-supervisor<br/>Indicates meeting management permissions
+```
+
+### 4.2 Co-Supervisor Assignment Process
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant System
+    participant Database
+
+    Admin->>System: Select group for co-supervisor
+    System->>Database: Retrieve available supervisors
+    Database-->>System: Return supervisor list
+    System->>System: Filter out main supervisor
+    System-->>Admin: Display eligible co-supervisors
+    
+    Admin->>System: Assign co-supervisor
+    System->>Database: Validate assignment
+    
+    alt Valid assignment
+        System->>Database: Store co-supervisor assignment
+        System->>Database: Set initial permissions
+        Database-->>System: Assignment confirmed
+        System-->>Admin: Success message
+    else Invalid (same as main supervisor)
+        System-->>Admin: Error: Cannot assign same person
+    end
+```
+
+### 4.3 Conditional Meeting Management
+```mermaid
+sequenceDiagram
+    participant Supervisor
+    participant System
+    participant Database
+    participant CoSupervisor
+
+    Note over Supervisor,CoSupervisor: Main supervisor controls co-supervisor permissions
+    
+    Supervisor->>System: Toggle meeting permission
+    System->>Database: Update co_supervisor_can_manage_meetings
+    Database-->>System: Permission updated
+    System-->>Supervisor: Status changed
+    
+    CoSupervisor->>System: Access meeting management
+    System->>Database: Check permission status
+    
+    alt Permission granted
+        Database-->>System: Allowed
+        System-->>CoSupervisor: Display meeting interface
+        
+        CoSupervisor->>System: Create/Edit meeting
+        System->>Database: Store meeting data
+        Database-->>System: Meeting saved
+        System-->>CoSupervisor: Confirmation
+    else Permission denied
+        Database-->>System: Not allowed
+        System-->>CoSupervisor: Access denied message
+    end
+```
+
+### 4.4 Co-Supervisor Report Review
+```mermaid
+sequenceDiagram
+    participant CoSupervisor
+    participant System
+    participant Database
+
+    CoSupervisor->>System: Access reports list
+    System->>Database: Get co-supervised groups
+    Database-->>System: Return group IDs
+    System->>Database: Retrieve group reports
+    Database-->>System: Return reports
+    System-->>CoSupervisor: Display reports
+    
+    CoSupervisor->>System: View report details
+    System->>Database: Verify co-supervisor access
+    Database-->>System: Access confirmed
+    System-->>CoSupervisor: Display report
+    
+    Note over CoSupervisor: Can review but cannot approve final projects
+```
+
+### 4.5 Co-Supervisor Annotation Process
+```mermaid
+sequenceDiagram
+    participant CoSupervisor
+    participant System
+    participant Database
+    participant Student
+
+    CoSupervisor->>System: Access report submission
+    System->>Database: Verify co-supervisor access
+    Database-->>System: Access granted
+    System-->>CoSupervisor: Display PDF annotator
+    
+    CoSupervisor->>System: Add annotations
+    System->>System: Process annotations
+    CoSupervisor->>System: Save annotation session
+    System->>Database: Store with created_by_type='co_supervisor'
+    Database-->>System: Session saved
+    
+    CoSupervisor->>System: Send feedback
+    System->>Database: Mark session as sent
+    System->>Database: Create notifications
+    
+    loop For each group student
+        System->>Student: Send notification
+    end
+    
+    System-->>CoSupervisor: Feedback sent
+    
+    Note over Database: Tracks annotation origin for role distinction
+```
+
+---
+
+## 5. Panel Member Operations
+
+### 5.1 Panel Member Assignment
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant System
+    participant Database
+
+    Admin->>System: Select group for panel member
+    System->>Database: Retrieve available supervisors
+    Database-->>System: Return supervisor list
+    System-->>Admin: Display eligible panel members
+    
+    Admin->>System: Assign panel member
+    System->>Database: Create panel assignment
+    Database-->>System: Store in group_panel_members
+    System->>Database: Record assignment metadata
+    System-->>Admin: Panel member assigned
+    
+    Note over Database: No capacity limits for panel members<br/>Multiple panel members per group allowed
+```
+
+### 5.2 Panel Member Dashboard
+```mermaid
+sequenceDiagram
+    participant PanelMember
+    participant System
+    participant Database
+
+    PanelMember->>System: Access panel member dashboard
+    System->>Database: Get panel assignments
+    Database-->>System: Return assigned groups
+    System->>Database: Get group reports
+    Database-->>System: Return report list
+    System-->>PanelMember: Display dashboard
+    
+    Note over PanelMember: Review-only access<br/>No meeting management<br/>No report creation/approval
+```
+
+### 5.3 Panel Member Report Evaluation
+```mermaid
+sequenceDiagram
+    participant PanelMember
+    participant System
+    participant Database
+
+    PanelMember->>System: Access assigned reports
+    System->>Database: Verify panel member access
+    Database-->>System: Access confirmed
+    System->>Database: Retrieve report submissions
+    Database-->>System: Return submissions
+    System-->>PanelMember: Display reports for review
+    
+    PanelMember->>System: Mark report under review
+    System->>Database: Update review status
+    System->>Database: Set reviewed_by_type='panel_member'
+    Database-->>System: Status updated
+    System-->>PanelMember: Review status confirmed
+```
+
+### 5.4 Panel Member Annotation Process
+```mermaid
+sequenceDiagram
+    participant PanelMember
+    participant System
+    participant Database
+    participant Student
+
+    PanelMember->>System: Access report submission
+    System->>Database: Verify panel member assignment
+    Database-->>System: Access granted
+    System-->>PanelMember: Display PDF annotator
+    
+    PanelMember->>System: Add evaluation annotations
+    System->>System: Process annotations
+    PanelMember->>System: Save annotation session
+    System->>Database: Store with created_by_type='panel_member'
+    Database-->>System: Session saved
+    
+    PanelMember->>System: Send evaluation feedback
+    System->>Database: Mark session as sent
+    System->>Database: Create notifications
+    
+    loop For each group student
+        System->>Student: Send notification
+    end
+    
+    System-->>PanelMember: Evaluation feedback sent
+    
+    Note over PanelMember: Provides evaluation perspective<br/>Cannot approve final submission
+```
+
+### 5.5 Panel Member Access Restrictions
+```mermaid
+sequenceDiagram
+    participant PanelMember
+    participant System
+
+    Note over PanelMember,System: Panel members have limited access
+    
+    alt Attempting to create report
+        PanelMember->>System: Try to create report
+        System-->>PanelMember: Access denied
+    else Attempting to manage meetings
+        PanelMember->>System: Try to create meeting
+        System-->>PanelMember: Access denied
+    else Attempting to approve project
+        PanelMember->>System: Try to finalize report
+        System-->>PanelMember: Access denied
+    else Accessing review features
+        PanelMember->>System: Access annotation tools
+        System-->>PanelMember: Access granted
+    end
+```
+
+---
+
+## 6. Advisor Operations
+
+### 6.1 Group Formation
+
+#### 6.1.1 Manual Group Creation
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -259,7 +513,7 @@ sequenceDiagram
     System-->>Advisor: Group formation complete
 ```
 
-#### 4.1.2 Excel-Based Group Import
+#### 6.1.2 Excel-Based Group Import
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -282,7 +536,7 @@ sequenceDiagram
     end
 ```
 
-#### 4.1.3 Template Export for Group Assignment
+#### 6.1.3 Template Export for Group Assignment
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -302,9 +556,9 @@ sequenceDiagram
     System-->>Advisor: Download template file
 ```
 
-### 4.2 Supervisor Assignment System
+### 6.2 Supervisor Assignment System
 
-#### 4.2.1 Automated Assignment Process
+#### 6.2.1 Automated Assignment Process
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -320,7 +574,7 @@ sequenceDiagram
     System-->>Advisor: Display results
 ```
 
-#### 4.2.2 Area of Interest Based Assignment
+#### 6.2.2 Area of Interest Based Assignment
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -345,7 +599,7 @@ sequenceDiagram
     Note over System: Ensures expertise alignment<br/>May result in uneven distribution
 ```
 
-#### 4.2.3 Ranking Based Assignment
+#### 6.2.3 Ranking Based Assignment
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -373,7 +627,7 @@ sequenceDiagram
     Note over System: Ensures equal distribution<br/>Ignores expertise matching
 ```
 
-#### 4.2.4 Hybrid Assignment Strategy
+#### 6.2.4 Hybrid Assignment Strategy
 ```mermaid
 sequenceDiagram
     participant Advisor
@@ -403,7 +657,7 @@ sequenceDiagram
     Note over System: Optimizes both expertise match<br/>and workload distribution
 ```
 
-#### 4.2.5 Assignment Strategy Comparison
+#### 6.2.5 Assignment Strategy Comparison
 ```mermaid
 graph TD
     Start[Assignment Strategy Selection]
@@ -424,9 +678,9 @@ graph TD
 
 ---
 
-## 5. Administrative Functions
+## 7. Administrative Functions
 
-### 5.1 External Data Synchronization
+### 7.1 External Data Synchronization
 ```mermaid
 sequenceDiagram
     participant Administrator
@@ -442,7 +696,7 @@ sequenceDiagram
     System-->>Administrator: Synchronization report
 ```
 
-### 5.2 System Monitoring
+### 7.2 System Monitoring
 ```mermaid
 sequenceDiagram
     participant Administrator
@@ -458,9 +712,189 @@ sequenceDiagram
 
 ---
 
-## 6. System Architecture
+## 8. Multi-Role Collaboration
 
-### 6.1 Request Processing Flow
+### 8.1 Teacher Role Switching
+```mermaid
+sequenceDiagram
+    participant Teacher
+    participant System
+    participant Database
+
+    Teacher->>System: Access teacher dashboard
+    System->>Database: Check all assigned roles
+    Database-->>System: Return role assignments
+    
+    Note over System: Teacher can be:<br/>• Supervisor for some groups<br/>• Co-Supervisor for others<br/>• Panel Member for evaluation
+    
+    System-->>Teacher: Display role selection panel
+    
+    alt Select Supervisor Role
+        Teacher->>System: Access supervisor panel
+        System->>Database: Get supervised groups
+        System-->>Teacher: Supervisor dashboard
+    else Select Co-Supervisor Role
+        Teacher->>System: Access co-supervisor panel
+        System->>Database: Get co-supervised groups
+        System-->>Teacher: Co-supervisor dashboard
+    else Select Panel Member Role
+        Teacher->>System: Access panel member panel
+        System->>Database: Get panel assignments
+        System-->>Teacher: Panel member dashboard
+    end
+```
+
+### 8.2 Collaborative Report Review
+```mermaid
+sequenceDiagram
+    participant Student
+    participant Supervisor
+    participant CoSupervisor
+    participant PanelMember
+    participant System
+    participant Database
+
+    Note over Student,Database: Multiple reviewers can annotate the same report
+    
+    Student->>System: Submit report
+    System->>Database: Store submission
+    System->>Supervisor: Notify main supervisor
+    System->>CoSupervisor: Notify co-supervisor
+    System->>PanelMember: Notify panel members
+    
+    par Parallel Review Process
+        Supervisor->>System: Create annotation session
+        System->>Database: Store with created_by_type='supervisor'
+    and
+        CoSupervisor->>System: Create annotation session
+        System->>Database: Store with created_by_type='co_supervisor'
+    and
+        PanelMember->>System: Create annotation session
+        System->>Database: Store with created_by_type='panel_member'
+    end
+    
+    System->>Database: Compile all annotations
+    Database-->>System: Return merged feedback
+    System->>Student: Notify of available feedback
+    
+    Student->>System: View all annotations
+    System->>Database: Retrieve all sessions
+    Database-->>System: Return categorized feedback
+    System-->>Student: Display with role indicators
+```
+
+### 8.3 Hierarchical Approval Process
+```mermaid
+sequenceDiagram
+    participant Student
+    participant PanelMember
+    participant CoSupervisor
+    participant Supervisor
+    participant System
+    participant Database
+
+    Note over Student,Database: Only main supervisor can give final approval
+    
+    Student->>System: Submit final report
+    System->>Database: Store submission
+    
+    PanelMember->>System: Review and annotate
+    System->>Database: Store evaluation feedback
+    System->>Student: Notify of panel review
+    
+    CoSupervisor->>System: Review and recommend
+    System->>Database: Store recommendation
+    System->>Student: Notify of co-supervisor review
+    
+    Note over CoSupervisor: Can recommend but not approve
+    
+    Supervisor->>System: Review all feedback
+    System->>Database: Retrieve all reviews
+    Database-->>System: Return compiled feedback
+    System-->>Supervisor: Display comprehensive review
+    
+    alt Approve
+        Supervisor->>System: Approve final project
+        System->>Database: Update status to 'approved'
+        System->>Student: Send approval notification
+        System->>Database: Publish to repository
+    else Request Revision
+        Supervisor->>System: Request changes
+        System->>Database: Update status to 'needs_revision'
+        System->>Student: Send revision request
+    end
+```
+
+### 8.4 Permission-Based Meeting Coordination
+```mermaid
+sequenceDiagram
+    participant Supervisor
+    participant CoSupervisor
+    participant System
+    participant Database
+    participant Student
+
+    Note over Supervisor,Student: Meeting management with conditional permissions
+    
+    Supervisor->>System: Schedule meeting
+    System->>Database: Create meeting record
+    System->>Student: Send meeting notification
+    
+    Supervisor->>System: Grant co-supervisor meeting permission
+    System->>Database: Update co_supervisor_can_manage_meetings=true
+    System->>CoSupervisor: Notify of permission grant
+    
+    CoSupervisor->>System: Schedule additional meeting
+    System->>Database: Check permission status
+    Database-->>System: Permission granted
+    System->>Database: Create meeting record
+    System->>Student: Send meeting notification
+    
+    Note over CoSupervisor: Can now manage meetings independently
+    
+    opt Permission Revoked
+        Supervisor->>System: Revoke meeting permission
+        System->>Database: Update co_supervisor_can_manage_meetings=false
+        System->>CoSupervisor: Notify of permission change
+        
+        CoSupervisor->>System: Try to schedule meeting
+        System->>Database: Check permission status
+        Database-->>System: Permission denied
+        System-->>CoSupervisor: Access denied
+    end
+```
+
+### 8.5 Multi-Reviewer Annotation History
+```mermaid
+sequenceDiagram
+    participant Student
+    participant System
+    participant Database
+
+    Student->>System: Request annotation history
+    System->>Database: Retrieve all annotation sessions
+    Database-->>System: Return sessions with metadata
+    
+    System->>System: Group by reviewer role
+    System->>System: Sort by timestamp
+    
+    System-->>Student: Display categorized history
+    
+    Note over Student: History shows:<br/>• Supervisor annotations (blue)<br/>• Co-Supervisor annotations (purple)<br/>• Panel Member annotations (orange)<br/>• Timestamps and versions
+    
+    Student->>System: Select specific session
+    System->>Database: Retrieve session details
+    Database-->>System: Return annotations
+    System-->>Student: Display annotated document
+    
+    Note over Student: Can compare feedback from different reviewers
+```
+
+---
+
+## 9. System Architecture
+
+### 9.1 Request Processing Flow
 ```mermaid
 sequenceDiagram
     participant Client
@@ -477,7 +911,7 @@ sequenceDiagram
     Web Server-->>Client: HTTP Response
 ```
 
-### 6.2 File Management
+### 9.2 File Management
 ```mermaid
 sequenceDiagram
     participant User
@@ -509,19 +943,27 @@ sequenceDiagram
 - **Storage**: File storage service
 
 ### User Roles
-- **Student**: Thesis/project students
-- **Supervisor**: Faculty members supervising groups
-- **Advisor**: Faculty coordinating student groups
-- **Administrator**: System administrators
+- **Student**: Thesis/project students submitting reports and receiving feedback
+- **Supervisor**: Faculty members with primary supervision responsibilities and final approval authority
+- **Co-Supervisor**: Secondary supervisors assisting main supervisors with conditional meeting management permissions
+- **Panel Member**: Faculty members providing evaluation and feedback without management capabilities
+- **Advisor**: Faculty coordinating student groups and supervisor assignments
+- **Administrator**: System administrators managing users and system configuration
+- **Teacher**: Umbrella role for faculty who can switch between supervisor, co-supervisor, and panel member roles
 
 ### Key Features
 1. **Authentication**: Multi-role authentication with external API integration
-2. **Group Management**: Formation and assignment of student groups
-3. **Report Workflow**: Creation, submission, and review of reports
-4. **Meeting Documentation**: Recording and tracking of supervision meetings
-5. **Automated Assignment**: Algorithmic supervisor-group matching
-6. **Data Synchronization**: Integration with university systems
-7. **In-App Notifications**: Dashboard-based notifications for students on report updates
+2. **Group Management**: Formation and assignment of student groups with multiple supervision levels
+3. **Report Workflow**: Creation, submission, and multi-reviewer annotation system
+4. **Meeting Documentation**: Recording and tracking with permission-based co-supervisor access
+5. **Automated Assignment**: Algorithmic supervisor-group matching with AOI, ranking, and hybrid strategies
+6. **Data Synchronization**: Integration with university systems for student and faculty data
+7. **In-App Notifications**: Dashboard-based notifications for all user roles
+8. **Collaborative Review**: Multiple reviewers can annotate reports with role-based tracking
+9. **Hierarchical Approval**: Only main supervisors can approve final projects
+10. **Permission Management**: Granular control over co-supervisor meeting permissions
+11. **Role Switching**: Teachers can seamlessly switch between different supervision roles
+12. **Annotation History**: Complete tracking of all feedback with reviewer role identification
 
 ---
 
