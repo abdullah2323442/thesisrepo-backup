@@ -570,11 +570,46 @@ sequenceDiagram
     System-->>Advisor: Research areas assigned successfully
 ```
 
-### 6.2 Supervisor Assignment Algorithms
+### 6.2 Supervisor Assignment
 
-#### 6.2.1 Area of Interest Based Assignment
+#### 6.2.1 Manual Supervisor Assignment
 
-The system assigns supervisors based on matching research expertise.
+Advisors can manually assign supervisors to specific groups.
+
+```mermaid
+sequenceDiagram
+    participant Advisor
+    participant System
+    participant Database
+
+    Note over Advisor,Database: Direct supervisor assignment
+    
+    Advisor->>System: Select group for assignment
+    System->>Database: Retrieve available supervisors
+    Database-->>System: Return supervisor list with capacity
+    System-->>Advisor: Display supervisors
+    
+    Advisor->>System: Select supervisor
+    System->>Database: Verify supervisor capacity
+    
+    alt Has available slots
+        System->>Database: Assign supervisor to group
+        System->>Database: Mark as manual assignment
+        System->>Database: Record assignment timestamp
+        Database-->>System: Assignment confirmed
+        System-->>Advisor: Success message
+    else No available slots
+        System-->>Advisor: Error: Supervisor at capacity
+    end
+    
+    Note over Database: Manual assignments excluded from lottery
+```
+
+**Figure 6.2.1:** Manual supervisor assignment workflow with capacity verification
+
+#### 6.2.2 Area of Interest Based Assignment
+
+The system assigns supervisors based on matching research expertise, excluding manually assigned groups.
 
 ```mermaid
 sequenceDiagram
@@ -589,6 +624,7 @@ sequenceDiagram
     System->>Assignment Service: Run area-based assignment
     
     Assignment Service->>Database: Retrieve unassigned groups
+    Note over Assignment Service: Exclude groups with:<br/>• supervisor_id IS NOT NULL<br/>• is_manual_assignment = true
     Assignment Service->>Database: Retrieve supervisors with matching expertise
     
     loop For each group
@@ -606,9 +642,9 @@ sequenceDiagram
     Note over Assignment Service: Ensures expertise alignment<br/>Prevents consecutive assignments
 ```
 
-#### 6.2.2 Ranking-Based Assignment
+#### 6.2.3 Ranking-Based Assignment
 
-The system uses academic ranking for fair distribution.
+The system uses academic ranking for fair distribution, excluding manually assigned groups.
 
 ```mermaid
 sequenceDiagram
@@ -622,6 +658,8 @@ sequenceDiagram
     Advisor->>System: Select ranking-based assignment
     System->>Assignment Service: Run ranking assignment
     
+    Assignment Service->>Database: Get unassigned groups only
+    Note over Assignment Service: Exclude manually assigned groups
     Assignment Service->>Database: Get supervisors ordered by rank
     Assignment Service->>Assignment Service: Initialize round-robin tracker
     
@@ -644,9 +682,9 @@ sequenceDiagram
     Note over Assignment Service: Ensures equal distribution before repetition
 ```
 
-#### 6.2.3 Hybrid Assignment Strategy
+#### 6.2.4 Hybrid Assignment Strategy
 
-The system combines expertise matching with fair distribution.
+The system combines expertise matching with fair distribution, excluding manually assigned groups.
 
 ```mermaid
 sequenceDiagram
@@ -660,7 +698,8 @@ sequenceDiagram
     Advisor->>System: Select hybrid assignment
     System->>Assignment Service: Run combined assignment
     
-    Assignment Service->>Database: Get groups with research areas
+    Assignment Service->>Database: Get unassigned groups with research areas
+    Note over Assignment Service: Exclude manually assigned groups
     Assignment Service->>Database: Get supervisors with expertise
     
     loop For each group
@@ -682,7 +721,7 @@ sequenceDiagram
     Note over Assignment Service: Ensures fairness within each research area
 ```
 
-#### 6.2.4 Assignment Algorithm Comparison
+#### 6.2.5 Assignment Algorithm Comparison
 
 ```mermaid
 graph TD
