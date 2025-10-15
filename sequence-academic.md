@@ -242,7 +242,7 @@ sequenceDiagram
 
 #### 3.2.3 Student Access to Annotations
 
-Students can view and download annotated documents with version history.
+Students can view annotated documents with version history.
 
 ```mermaid
 sequenceDiagram
@@ -257,13 +257,7 @@ sequenceDiagram
     System->>Database: Retrieve annotation sessions
     Database-->>System: Return all sessions for submission
     
-    System->>System: Filter sent annotations only
     System-->>Student: Display annotated PDF with version history
-    
-    opt Download
-        Student->>System: Request download
-        System-->>Student: Provide annotated PDF file
-    end
 ```
 
 ### 3.3 Meeting Documentation
