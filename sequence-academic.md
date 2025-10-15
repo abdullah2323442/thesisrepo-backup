@@ -1049,7 +1049,7 @@ Administrators manage academic batches that serve as the foundation for student 
 
 #### 7.5.1 Batch Synchronization from External API
 
-Administrators synchronize batch data from the university information system.
+The system synchronizes academic batch data from the university information system to maintain current student enrollment information.
 
 ```mermaid
 sequenceDiagram
@@ -1058,41 +1058,27 @@ sequenceDiagram
     participant External API
     participant Database
 
-    Note over Administrator,Database: Batch data synchronization workflow
-    
     Administrator->>System: Initiate batch sync
-    System->>External API: Request batch list (programID)
+    System->>External API: Request batch list
     
     alt API Success
-        External API-->>System: Return batch data array
-        System->>System: Validate response format
+        External API-->>System: Return batch data
         
         loop For each batch
-            System->>Database: Check if batch exists
-            
-            alt Batch exists
-                System->>Database: Update batch metadata
-                System->>Database: Update last_synced_at timestamp
-                Database-->>System: Batch updated
-            else New batch
-                System->>Database: Create new batch record
-                System->>Database: Set is_active = true
-                Database-->>System: Batch created
-            end
+            System->>Database: Update or create batch
+            Database-->>System: Confirmation
         end
         
-        System->>System: Calculate sync statistics
-        System-->>Administrator: Display sync results (synced, updated, total)
+        System-->>Administrator: Display sync results
     else API Failure
         External API-->>System: Error response
-        System->>System: Log error details
         System-->>Administrator: Display error message
     end
-    
-    Note over Database: Preserves existing is_active status on updates
 ```
 
 **Figure 7.5.1:** Batch synchronization workflow with external university API
+
+**Core Purpose**: Synchronize academic batch information from the university system to ensure the thesis management system has current enrollment data for student grouping and advisor assignments.
 
 #### 7.5.2 Batch Status Management
 
