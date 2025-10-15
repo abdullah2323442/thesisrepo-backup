@@ -10,7 +10,7 @@
 6. [Advisor Operations](#6-advisor-operations)
 7. [Administrative Functions](#7-administrative-functions)
 8. [Multi-Role Collaboration](#8-multi-role-collaboration)
-9. [System Architecture](#9-system-architecture)
+9. [External System Integration](#9-external-system-integration)
 
 ---
 
@@ -1156,41 +1156,9 @@ sequenceDiagram
 
 ---
 
-## 9. System Architecture
+## 9. External System Integration
 
-### 9.1 Service Layer Architecture
-
-The system implements a clean service layer architecture for business logic separation.
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Controller
-    participant Service
-    participant Model
-    participant Database
-
-    Note over Client,Database: Model-View-Controller with Service Layer
-    
-    Client->>Controller: HTTP Request
-    Controller->>Controller: Validate request
-    Controller->>Service: Delegate business logic
-    
-    Service->>Model: Interact with data layer
-    Model->>Database: Execute query
-    Database-->>Model: Return results
-    Model-->>Service: Return domain objects
-    
-    Service->>Service: Apply business rules
-    Service-->>Controller: Return processed data
-    
-    Controller->>Controller: Format response
-    Controller-->>Client: HTTP Response
-    
-    Note over Service: Core Services:<br/>• Supervisor Assignment Service<br/>• Student Data Service<br/>• Performance Monitoring Service
-```
-
-### 9.2 External API Integration
+### 9.1 University API Integration
 
 The system integrates with university information systems for data synchronization.
 
@@ -1225,42 +1193,6 @@ sequenceDiagram
     Note over University API: External university information system
 ```
 
-### 9.3 Notification System Architecture
-
-The system implements a comprehensive notification system for all user roles.
-
-```mermaid
-sequenceDiagram
-    participant Event
-    participant Notification System
-    participant Queue
-    participant Database
-    participant User
-
-    Note over Event,User: Event-driven notification system
-    
-    Event->>Notification System: Trigger notification
-    Notification System->>Notification System: Prepare notification data
-    
-    alt Queued notification
-        Notification System->>Queue: Dispatch to queue
-        Queue->>Queue: Process in background
-        Queue->>Database: Store notification
-    else Immediate notification
-        Notification System->>Database: Store directly
-    end
-    
-    Database->>Database: Record notification details
-    
-    User->>System: Check notifications
-    System->>Database: Query unread notifications
-    Database-->>System: Return notifications
-    System-->>User: Display in dashboard
-    
-    Note over Notification System: Notification types:<br/>• New report assigned<br/>• New annotations available<br/>• New comments added<br/>• Report status updated
-```
-
----
 
 ## System Components Description
 
