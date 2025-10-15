@@ -861,9 +861,9 @@ sequenceDiagram
     end
 ```
 
-### 7.4 Administrator Group Creation
+### 7.4 Administrator Group Management
 
-Administrators can create pre-configured groups.
+Administrators have comprehensive group management capabilities including creating groups, assigning students from any active batch, and configuring supervisors and research areas.
 
 ```mermaid
 sequenceDiagram
