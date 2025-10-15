@@ -1109,47 +1109,37 @@ sequenceDiagram
 
 ### 8.3 Hierarchical Approval Process
 
-Only main supervisors have final approval authority.
+Only main supervisors have final approval authority for thesis submissions.
 
 ```mermaid
 sequenceDiagram
-    participant Student
-    participant PanelMember
-    participant CoSupervisor
     participant Supervisor
     participant System
     participant Database
 
-    Note over Student,Database: Hierarchical approval workflow
+    Note over Supervisor,Database: Supervisor-only approval authority
     
-    Student->>System: Submit final report
-    System->>Database: Store submission
-    
-    PanelMember->>System: Review and annotate
-    System->>Database: Store evaluation feedback
-    System->>Student: Notify of panel review
-    
-    CoSupervisor->>System: Review and recommend
-    System->>Database: Store recommendation
-    System->>Student: Notify of co-supervisor review
-    
-    Note over CoSupervisor: Can recommend but not approve
-    
-    Supervisor->>System: Review all feedback
-    System->>Database: Retrieve all reviews
-    Database-->>System: Return compiled feedback
+    Supervisor->>System: Access final report
+    System->>Database: Retrieve all reviewer feedback
+    Database-->>System: Return feedback from all reviewers
     System-->>Supervisor: Display comprehensive review
     
-    alt Approve
-        Supervisor->>System: Approve final project
+    Note over Supervisor: Reviews feedback from:<br/>• Co-Supervisor (recommendations)<br/>• Panel Members (evaluations)<br/>• Own assessment
+    
+    alt Approve Final Project
+        Supervisor->>System: Approve submission
         System->>Database: Update status to approved
-        System->>Student: Send approval notification
         System->>Database: Publish to repository
+        Database-->>System: Approval confirmed
+        System-->>Supervisor: Success confirmation
     else Request Revision
         Supervisor->>System: Request changes
         System->>Database: Update status to needs revision
-        System->>Student: Send revision request
+        Database-->>System: Status updated
+        System-->>Supervisor: Revision request confirmed
     end
+    
+    Note over Supervisor: Only main supervisor can approve<br/>Co-supervisors and panel members cannot
 ```
 
 ### 8.4 Multi-Reviewer Annotation History
