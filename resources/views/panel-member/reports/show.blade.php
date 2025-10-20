@@ -256,8 +256,8 @@
             <form action="{{ route('teacher.reports.comments.store', $report) }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label for="comment" class="block text-sm font-medium text-gray-700 mb-2">Expert Evaluation</label>
-                    <textarea name="comment" id="comment" rows="4" required
+                    <label for="body" class="block text-sm font-medium text-gray-700 mb-2">Expert Evaluation</label>
+                    <textarea name="body" id="body" rows="4" required
                               class="w-full border-gray-300 rounded-md shadow-sm focus:border-orange-500 focus:ring-orange-500"
                               placeholder="Provide your expert evaluation and recommendations from your area of expertise..."></textarea>
                 </div>

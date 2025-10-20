@@ -26,10 +26,10 @@ class ReportCommentController extends Controller
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
-        // Check if the teacher is the supervisor of the group
+        // Check if the teacher is authorized (main supervisor, co-supervisor, or panel member)
         $supervisor = Supervisor::where('email', auth()->user()->email)->first();
         
-        if (!$supervisor || $report->group->supervisor_id !== $supervisor->id) {
+        if (!$supervisor || !$report->group->canSupervisorAccess($supervisor->id)) {
             return back()->with('error', 'You are not authorized to comment on this report.');
         }
 
