@@ -37,6 +37,15 @@ class NewReportComment extends Notification
         $reportType = ucfirst($report->type);
         $groupName = $report->group->name;
         
+        // Determine the commenter's role
+        $role = $this->comment->getCommenterRole();
+        $roleLabel = match($role) {
+            'main_supervisor' => 'supervisor',
+            'co_supervisor' => 'co-supervisor',
+            'panel_member' => 'panel member',
+            default => 'supervisor',
+        };
+        
         return [
             'type' => 'report_comment',
             'report_id' => $report->id,
@@ -45,9 +54,11 @@ class NewReportComment extends Notification
             'group_id' => $report->group_id,
             'group_name' => $groupName,
             'title' => "New Comment on {$reportType} Report",
-            'message' => "Your supervisor commented on your {$reportType} Report",
+            'message' => "Your {$roleLabel} commented on your {$reportType} Report",
             'comment_preview' => \Str::limit($this->comment->body, 100),
             'teacher_name' => $this->comment->teacher->name,
+            'supervisor_name' => $this->comment->teacher->name, // For notification bell compatibility
+            'teacher_role' => $roleLabel,
             'created_at' => $this->comment->created_at->toISOString(),
         ];
     }

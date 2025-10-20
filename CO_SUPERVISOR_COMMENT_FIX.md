@@ -161,6 +161,22 @@ To improve clarity and transparency, role badges have been added to show who mad
 
 This enhancement helps students and other supervisors quickly identify the source and context of each comment.
 
+## Enhancement: Role-Aware Notifications
+
+Students now receive more informative notifications that specify which type of supervisor commented:
+
+**Implementation:**
+- Updated `NewReportComment` notification to determine the commenter's role
+- Notification message now says:
+  - "Your **supervisor** commented..." (for main supervisor)
+  - "Your **co-supervisor** commented..." (for co-supervisor)
+  - "Your **panel member** commented..." (for panel member)
+
+**Benefits:**
+- Students can immediately identify the source of feedback
+- Helps students understand the context and authority of the comment
+- Improves transparency in the multi-supervisor system
+
 ## Impact
 
 - ✅ Co-supervisors can now comment on reports for their assigned groups
@@ -169,6 +185,7 @@ This enhancement helps students and other supervisors quickly identify the sourc
 - ✅ Authorization is properly enforced for all supervisor types
 - ✅ Students receive notifications when any supervisor type comments
 - ✅ Role badges clearly identify who made each comment (Main Supervisor, Co-Supervisor, or Panel Member)
+- ✅ Notifications specify the supervisor role (e.g., "Your co-supervisor commented...")
 
 ## Notes
 
