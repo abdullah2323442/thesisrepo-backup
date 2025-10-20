@@ -227,7 +227,12 @@
                     @foreach($report->comments as $comment)
                         <div class="border-l-4 border-blue-400 pl-4 py-2">
                             <div class="flex items-center justify-between mb-2">
-                                <div class="font-medium text-gray-900">{{ $comment->user->name }}</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-gray-900">{{ $comment->user->name }}</span>
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full {{ $comment->role_badge_color }}">
+                                        {{ $comment->role_label }}
+                                    </span>
+                                </div>
                                 <div class="text-sm text-gray-500">{{ $comment->created_at->format('M d, Y h:i A') }}</div>
                             </div>
                             <p class="text-gray-700">{{ $comment->body }}</p>

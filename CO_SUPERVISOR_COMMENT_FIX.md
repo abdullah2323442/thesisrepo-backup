@@ -140,6 +140,27 @@ public function canSupervisorAccess(int $supervisorId): bool
 
 This method provides a centralized way to check if any type of supervisor (main, co, or panel) can access a group.
 
+## Enhancement: Role Badges for Comments
+
+To improve clarity and transparency, role badges have been added to show who made each comment:
+
+**Implementation:**
+- Added helper methods to `ReportComment` model:
+  - `getCommenterRole()` - Determines if commenter is main supervisor, co-supervisor, or panel member
+  - `getRoleLabelAttribute` - Returns human-readable role label
+  - `getRoleBadgeColorAttribute` - Returns Tailwind CSS classes for role-specific badge colors
+
+**Badge Colors:**
+- **Main Supervisor**: Blue badge (`bg-blue-100 text-blue-800`)
+- **Co-Supervisor**: Purple badge (`bg-purple-100 text-purple-800`)
+- **Panel Member**: Orange badge (`bg-orange-100 text-orange-800`)
+
+**Views Updated:**
+- `resources/views/co-supervisor/reports/show.blade.php` - Shows role badges for all comments
+- `resources/views/panel-member/reports/show.blade.php` - Shows role badges for all comments
+
+This enhancement helps students and other supervisors quickly identify the source and context of each comment.
+
 ## Impact
 
 - ✅ Co-supervisors can now comment on reports for their assigned groups
@@ -147,6 +168,7 @@ This method provides a centralized way to check if any type of supervisor (main,
 - ✅ Main supervisors continue to work as before
 - ✅ Authorization is properly enforced for all supervisor types
 - ✅ Students receive notifications when any supervisor type comments
+- ✅ Role badges clearly identify who made each comment (Main Supervisor, Co-Supervisor, or Panel Member)
 
 ## Notes
 

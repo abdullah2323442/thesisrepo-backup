@@ -52,4 +52,68 @@ class ReportComment extends Model
     {
         return $this->created_at->format('M d, Y h:i A');
     }
+
+    /**
+     * Get the role of the commenter for this report's group
+     * Returns: 'main_supervisor', 'co_supervisor', 'panel_member', or null
+     */
+    public function getCommenterRole(): ?string
+    {
+        $group = $this->report->group;
+        $teacherId = $this->teacher_id;
+
+        // Find the supervisor record for this teacher
+        $supervisor = \App\Models\Supervisor::where('email', $this->teacher->email)->first();
+        
+        if (!$supervisor) {
+            return null;
+        }
+
+        // Check if main supervisor
+        if ($group->supervisor_id === $supervisor->id) {
+            return 'main_supervisor';
+        }
+
+        // Check if co-supervisor
+        if ($group->co_supervisor_id === $supervisor->id) {
+            return 'co_supervisor';
+        }
+
+        // Check if panel member
+        if ($group->panelMembers()->where('supervisor_id', $supervisor->id)->exists()) {
+            return 'panel_member';
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the role label for display
+     */
+    public function getRoleLabelAttribute(): string
+    {
+        $role = $this->getCommenterRole();
+        
+        return match($role) {
+            'main_supervisor' => 'Main Supervisor',
+            'co_supervisor' => 'Co-Supervisor',
+            'panel_member' => 'Panel Member',
+            default => 'Teacher',
+        };
+    }
+
+    /**
+     * Get the role badge color classes
+     */
+    public function getRoleBadgeColorAttribute(): string
+    {
+        $role = $this->getCommenterRole();
+        
+        return match($role) {
+            'main_supervisor' => 'bg-blue-100 text-blue-800',
+            'co_supervisor' => 'bg-purple-100 text-purple-800',
+            'panel_member' => 'bg-orange-100 text-orange-800',
+            default => 'bg-gray-100 text-gray-800',
+        };
+    }
 }
