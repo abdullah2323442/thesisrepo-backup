@@ -50,16 +50,49 @@ This caused validation errors when co-supervisors or panel members tried to subm
 <textarea name="body" id="body" ...>
 ```
 
+### Issue 3: Missing Relationship in Model
+**Location:** `app/Models/ReportComment.php`
+
+**Problem:** The views were trying to access `$comment->user->name` but the `ReportComment` model only had a `teacher()` relationship, not a `user()` relationship. This caused the error:
+```
+Call to undefined relationship [user] on model [App\Models\ReportComment].
+```
+
+**Solution:** Added a `user()` relationship as an alias for `teacher()` in the model:
+```php
+/**
+ * Get the user who made the comment (alias for teacher)
+ */
+public function user(): BelongsTo
+{
+    return $this->belongsTo(User::class, 'teacher_id');
+}
+```
+
+### Issue 4: Comment Body Display Mismatch
+**Locations:**
+- `resources/views/co-supervisor/reports/show.blade.php`
+- `resources/views/panel-member/reports/show.blade.php`
+
+**Problem:** The views were trying to display `$comment->comment` but the database column is `body`.
+
+**Solution:** Changed the display from `$comment->comment` to `$comment->body` in both views.
+
 ## Files Modified
 
 1. **app/Http/Controllers/Teacher/ReportCommentController.php**
    - Line 28-32: Updated authorization check to use `canSupervisorAccess()`
 
-2. **resources/views/co-supervisor/reports/show.blade.php**
-   - Line 238-241: Changed textarea name from "comment" to "body"
+2. **app/Models/ReportComment.php**
+   - Added `user()` relationship as an alias for `teacher()`
 
-3. **resources/views/panel-member/reports/show.blade.php**
+3. **resources/views/co-supervisor/reports/show.blade.php**
    - Line 238-241: Changed textarea name from "comment" to "body"
+   - Line 223: Changed `$comment->comment` to `$comment->body`
+
+4. **resources/views/panel-member/reports/show.blade.php**
+   - Line 238-241: Changed textarea name from "comment" to "body"
+   - Line 223: Changed `$comment->comment` to `$comment->body`
 
 ## Testing Recommendations
 

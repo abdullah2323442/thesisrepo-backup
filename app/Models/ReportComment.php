@@ -38,6 +38,14 @@ class ReportComment extends Model
     }
 
     /**
+     * Get the user who made the comment (alias for teacher)
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    /**
      * Get formatted date for display
      */
     public function getFormattedDateAttribute(): string

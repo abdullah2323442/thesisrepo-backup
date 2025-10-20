@@ -246,7 +246,7 @@
                                 <div class="font-medium text-gray-900">{{ $comment->user->name }}</div>
                                 <div class="text-sm text-gray-500">{{ $comment->created_at->format('M d, Y h:i A') }}</div>
                             </div>
-                            <p class="text-gray-700">{{ $comment->comment }}</p>
+                            <p class="text-gray-700">{{ $comment->body }}</p>
                         </div>
                     @endforeach
                 </div>
