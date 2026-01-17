@@ -1,445 +1,519 @@
-# University Thesis Management System Notebook
+# University Thesis Management System
 
-This document serves as a complete, comprehensive notebook for the University Thesis Management System project. It includes an in-depth overview, detailed setup instructions, exhaustive feature descriptions, architecture breakdown, and a highly detailed analysis of key components (Controllers, Middleware, Views, Models, Services, Routes, and Database). The analysis is derived from the project's file structure, code listings, route definitions, migration schemas, and inferred logic from Laravel best practices. The system utilizes SQLite for the database in development and testing environments, with seamless support for MySQL or PostgreSQL in production for enhanced scalability.
+A comprehensive Laravel-based thesis management platform for academic institutions to manage student groups, supervisor assignments, report submissions, and thesis evaluations. The system integrates with an external university API for real-time authentication and data synchronization.
 
-## 🚀 Quick Start
+## 📋 Table of Contents
+- [Features](#-features)
+- [Technology Stack](#-technology-stack)
+- [Requirements](#-requirements)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Testing](#-testing)
+- [Production Deployment](#-production-deployment)
+- [API Integration](#-api-integration)
+- [Security](#-security)
+- [Documentation](#-documentation)
+- [Contributing](#-contributing)
 
-To get the system up and running quickly, follow these steps. Ensure you have PHP 8.2+, Composer, Node.js 18+, and NPM installed.
+## ✨ Features
+
+### Core Functionality
+- **Multi-Role Authentication**: Admin, Advisor, Supervisor, Co-Supervisor, Panel Member, Student, and Teacher roles
+- **Intelligent Supervisor Assignment**: Three lottery algorithms (AOI-based, Ranking-based, Combined) with fairness guarantees
+- **Group Management**: Automated group creation with student assignments and area of interest matching
+- **Report Management**: Draft, submission, review, and approval workflow with version control
+- **PDF Annotation System**: Supervisors can annotate student submissions with feedback sessions
+- **Meeting Scheduler**: Create, track, and export meetings with attendance management
+- **Performance Monitoring**: Real-time system metrics, database health, and API performance tracking
+- **Excel Integration**: Import/export group assignments with validation
+
+### Role-Specific Capabilities
+| Role | Key Features |
+|------|-------------|
+| **Admin** | Manage supervisors, batches, areas of interest, system monitoring |
+| **Advisor** | Create groups, assign supervisors (manual/lottery), manage student assignments |
+| **Supervisor** | Manage groups, create reports, annotate submissions, schedule meetings |
+| **Co-Supervisor** | View groups, optionally manage meetings (permission-based) |
+| **Panel Member** | Review and annotate reports without full supervisor privileges |
+| **Teacher** | Multi-role access (can be supervisor + panel member simultaneously) |
+| **Student** | Submit reports, view annotations, access meeting schedules |
+
+## 🛠 Technology Stack
+
+### Backend
+- **Laravel 12** (PHP 8.2+)
+- **Eloquent ORM** for database interactions
+- **Laravel Breeze** for authentication scaffolding
+- **Pest PHP 3.8** for testing
+- **PDF Generation**: DomPDF and Spatie Laravel PDF
+- **Excel**: Maatwebsite Excel 3.1
+- **Queue Support**: Sync (development), Redis/Database (production)
+- **Caching**: File (development), Redis (recommended for production)
+
+### Frontend
+- **Tailwind CSS 3.1** for styling
+- **Alpine.js 3.4.2** for interactivity
+- **Vite 6.2.4** for asset bundling
+- **Axios 1.8.2** for API calls
+
+### Database
+- **SQLite** (development/testing)
+- **MySQL 8.0+** or **PostgreSQL 13+** (production)
+- **22 migrations** covering all entities
+
+## 📋 Requirements
+
+- PHP 8.2 or higher
+- Composer 2.x
+- Node.js 18+ and NPM 9+
+- MySQL 8.0+ or PostgreSQL 13+ (production)
+- SQLite 3 (development)
+
+### Required PHP Extensions
+- PDO
+- mbstring
+- xml
+- ctype
+- json
+- bcmath
+- fileinfo
+- tokenizer
+
+## 🚀 Installation
+
+### Development Setup
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd thesisrepo-backup
 
-# Install PHP and JavaScript dependencies
-composer install && npm install
+# Install dependencies
+composer install
+npm install
 
-# Copy and configure the environment file
+# Create environment file
 cp .env.example .env
-# Edit .env to set DB_CONNECTION=sqlite (default) or other database configurations
+
+# Generate application key
 php artisan key:generate
 
-# Run database migrations and seed initial data
+# Create SQLite database (for development)
+touch database/database.sqlite
+
+# Run migrations and seed data
 php artisan migrate --seed
 
-# Build frontend assets (compiles Tailwind CSS and Alpine.js)
+# Build frontend assets
 npm run build
 
-# Start the development server
+# Start development server
 php artisan serve
-# Alternatively, for concurrent development: composer dev (runs server, queue, logs, and Vite)
 ```
 
-Access the application at `http://localhost:8000`. For frontend development, run `npm run dev` in a separate terminal.
+Access the application at `http://localhost:8000`.
 
-## 📋 System Overview
+### Development with Hot Reload
 
-The University Thesis Management System is a robust, role-based web application designed to streamline thesis project management in a university setting. It facilitates group formation, supervisor assignments via advanced algorithms, report submissions, annotations, meetings, and performance monitoring, all integrated with an external university API for real-time data synchronization.
+For concurrent development with live reload:
 
-### Key Features (Expanded)
-
-- **🔐 Multi-Role Authentication**: Supports Admin, Advisor, Supervisor, Student, Teacher, Co-Supervisor, and Panel Member roles with granular permissions. Uses Laravel Sanctum for API authentication and external API for user data validation.
-- **👥 Group Management**: Automated group creation with numbering, student assignment, area of interest matching, and Excel-based bulk imports/exports. Supports manual and algorithmic supervisor assignments.
-- **🎯 Supervisor Assignment**: Implements three sophisticated lottery algorithms (AOI-based, Ranking-based, Combined) with capacity limits, priority queuing, and preview modes.
-- **📊 Dashboard Analytics**: Role-specific dashboards with real-time metrics, including group status, assignment statistics, meeting schedules, and system health indicators.
-- **📁 Excel Integration**: Maatwebsite/Excel for importing group assignments and exporting templates, ensuring data integrity with validation.
-- **🔌 External API Integration**: Syncs student, teacher, and batch data from `http://puc.ac.bd:8012/api` endpoints, with rate limiting to prevent abuse.
-- **🛡️ Security Features**: Comprehensive protections including API throttling (e.g., 60 requests/minute), CSRF tokens on all forms, bcrypt password hashing, secure session management, and input sanitization.
-- **📱 Responsive Design**: Utilizes Tailwind CSS for mobile-first, responsive interfaces with Alpine.js for interactive components, ensuring usability across devices.
-- **Additional Features**: Notification system, report annotation with PDF feedback, meeting attendance tracking, and performance monitoring dashboard.
-
-### User Roles (Detailed)
-
-| Role | Description | Key Permissions | Dashboard Access |
-|------|-------------|-----------------|------------------|
-| **Admin** | Oversees entire system | User/group management, data syncing, performance monitoring | Full system metrics, batch/supervisor controls |
-| **Advisor** | Manages student groups and assignments | Group creation, student assignment, lottery execution | Student lists, group overviews, assignment previews |
-| **Supervisor** | Guides thesis projects | Meeting scheduling, report reviews, annotations | Assigned groups, reports, meeting calendars |
-| **Student** | Participates in thesis | Report submissions, view feedback, attend meetings | Personal group info, submission history, notifications |
-| **Teacher** | Faculty with multiple roles (e.g., Supervisor/Panel) | Role-specific actions like commenting on reports | Multi-role dashboard switching |
-| **Co-Supervisor** | Assists primary supervisor | Limited meeting management, report annotations | Subset of supervisor views |
-| **Panel Member** | Evaluates theses | Report reviews and annotations | Assigned reports and groups |
-
-Roles are enforced via middleware and stored in the `users` table's `login_type` field.
-
-## 🏗️ Architecture
-
-### Technology Stack (Detailed)
-
-- **Backend**: Laravel 11.x on PHP 8.2+, leveraging Eloquent ORM, Sanctum for auth, Queue for background jobs, and Excel package for imports/exports.
-- **Frontend**: Blade templating engine with Tailwind CSS (utility-first styling), Alpine.js (lightweight JS for interactivity), and Vite for asset bundling.
-- **Database**: SQLite for quick setup in dev/test (file-based, no server needed); MySQL 8.0+ or PostgreSQL 13+ for production with better concurrency. All queries use parameterized bindings via Eloquent to prevent SQL injection.
-- **Authentication**: Hybrid system combining Laravel's built-in auth with external API validation for real-time user data.
-- **Testing**: PHPUnit/Pest framework with RefreshDatabase trait, factories for seeding, and coverage reporting.
-- **Other Tools**: Composer for PHP dependencies, NPM for JS, Pint for code styling (PSR-12), and PlantUML for diagrams in documentation.
-
-### Project Structure (Expanded)
-
-```
-thesisrepo-backup/
-├── app/                    # Core application code
-│   ├── Http/              # HTTP-related classes
-│   │   ├── Controllers/   # Role-based request handlers (e.g., Admin/, Student/)
-│   │   ├── Middleware/    # Authorization filters (e.g., EnsureUserIsAdmin.php)
-│   │   └── Requests/      # Form request validation classes
-│   ├── Models/            # Eloquent database models with relationships
-│   ├── Services/          # Business logic encapsulation (e.g., API syncing, algorithms)
-│   └── Providers/         # Service providers (e.g., AppServiceProvider.php)
-├── database/              # Database setup
-│   ├── factories/         # Model factories for testing/seeding
-│   ├── migrations/        # Schema definitions (e.g., create_users_table.php)
-│   └── seeders/           # Data seeders (e.g., DatabaseSeeder.php)
-├── resources/             # Frontend assets
-│   ├── css/               # Styles (processed by Vite)
-│   ├── js/                # Scripts (Alpine.js integrations)
-│   └── views/             # Blade templates, organized by role
-├── routes/                # Route definitions (web.php, auth.php)
-├── tests/                 # Unit/Feature tests (PHPUnit/Pest)
-├── documentation/         # Extensive docs with diagrams (PlantUML)
-└── public/                # Public assets (index.php, favicon.ico)
+```bash
+composer dev
 ```
 
-Adheres to MVC pattern with a service layer for complex logic.
+This runs the server, queue listener, logs, and Vite concurrently.
 
-## 📚 Documentation
+Alternatively, run separately:
+```bash
+# Terminal 1
+php artisan serve
 
-The `/documentation` folder contains over 200 pages of detailed guides, diagrams, and reports:
+# Terminal 2
+npm run dev
+```
 
-- **[Setup Guide](documentation/PROJECT_SETUP_GUIDE.md)**: Step-by-step installation, environment configuration, troubleshooting.
-- **[Features Guide](documentation/FEATURES_GUIDE.md)**: User manuals for each role, with screenshots.
-- **[Developer Guide](documentation/DEVELOPER_GUIDE.md)**: Code structure, API endpoints, extension points.
-- **[Testing Guide](documentation/TESTING_GUIDE.md)**: Test running, writing new tests, coverage analysis.
-- **[API Documentation](documentation/DEVELOPER_GUIDE.md#api-integration)**: External API specs, error handling.
-- **Diagrams**: Activity, sequence, use-case, and data flow diagrams in PlantUML format.
+## ⚙️ Configuration
 
-## 🔒 Security
+### Environment Variables
 
-### Implemented Security Measures (Detailed)
+Key configuration in `.env`:
 
-- ✅ **Rate Limiting**: Applied to 12+ endpoints (e.g., login: 5/min, API sync: 60/hour) using Laravel's throttle middleware to mitigate brute-force and DDoS attacks.
-- ✅ **CSRF Protection**: Laravel's built-in VerifyCsrfToken middleware on all POST/PUT/DELETE routes.
-- ✅ **Password Security**: Bcrypt hashing with automatic salt generation; password reset tokens expire after 60 minutes.
-- ✅ **Session Management**: Secure, HTTP-only cookies with regeneration on login; idle timeout configurable in config/session.php.
-- ✅ **Input Validation**: Form Requests with rules for all inputs; sanitization via Purifier.
-- ✅ **SQL Injection Prevention**: Exclusive use of Eloquent ORM with bound parameters; no raw SQL queries.
-- **Additional**: XSS prevention via Blade escaping, secure file uploads with validation, and role-based access control (RBAC).
+```env
+# Application
+APP_NAME="Thesis Management System"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
 
-Regular security audits recommended; see TESTING_GUIDE.md for security test suites.
+# Database (Development)
+DB_CONNECTION=sqlite
+# DB_DATABASE=/absolute/path/to/database.sqlite
+
+# Database (Production)
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=thesis_management
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# External API Configuration
+EXTERNAL_API_BASE_URL=http://puc.ac.bd:8012/api
+EXTERNAL_API_TIMEOUT=30
+EXTERNAL_API_DEPARTMENT_ID=1
+EXTERNAL_API_MAX_RETRIES=3
+EXTERNAL_API_RETRY_DELAY=1000
+
+# Cache (Production: use redis)
+CACHE_STORE=file
+# CACHE_STORE=redis
+
+# Queue (Production: use redis or database)
+QUEUE_CONNECTION=sync
+# QUEUE_CONNECTION=redis
+
+# Mail Configuration
+MAIL_MAILER=smtp
+MAIL_HOST=mailhog
+MAIL_PORT=1025
+```
+
+### Rate Limiting Configuration
+
+The system implements rate limiting on external API calls:
+- Student Dashboard: 10 requests/minute
+- Advisor Dashboard: 20 requests/minute
+- Batch Sync: 60 requests/hour
+- Supervisor Sync: 120 requests/hour
+
+Configure in `config/external_api.php`.
+
+## 👤 Usage
+
+### Default Accounts
+
+Pre-seeded accounts for development (change passwords in production):
+
+| Role | Email | Password | Access |
+|------|-------|----------|--------|
+| Admin | admin@example.com | password | Full system access |
+| Advisor | advisor@example.com | password | Group and assignment management |
+| Supervisor | supervisor@example.com | password | Report and meeting management |
+| Student | john.student@example.com | password | Submissions and annotations |
+
+### Common Tasks
+
+**For Advisors:**
+1. Navigate to `/advisor/students` to view synced students
+2. Go to `/advisor/groups` to create groups
+3. Use `/advisor/supervisor-assignment` to run the lottery
+4. Preview assignments before confirming
+
+**For Supervisors:**
+1. Access `/supervisor/groups` to view assigned groups
+2. Create reports at `/supervisor/reports/create`
+3. Annotate submissions from group reports
+4. Schedule meetings at `/supervisor/meetings`
+
+**For Students:**
+1. View assigned group at `/student/dashboard`
+2. Submit reports at `/student/reports/{report}/submissions/create`
+3. View annotations and feedback
+4. Check meeting schedules
+
+**For Admins:**
+1. Sync supervisors: `/admin/supervisors` → "Sync from API"
+2. Manage batches: `/admin/batches`
+3. Monitor performance: `/admin/performance`
+4. Configure areas of interest: `/admin/areas-of-interest`
 
 ## 🧪 Testing
 
-### Test Coverage (Detailed)
-
-- **34 Working Tests**: Covering authentication, dashboards, assignments, API integrations, and UI interactions with 542 assertions.
-- **100% Security Coverage**: Tests for auth flows, rate limiting, CSRF, and permission checks.
-- **95% UI Coverage**: Browser tests (if using Dusk) or feature tests for all views and forms.
-- **90% API Coverage**: Mocks external API responses to test syncing and error handling.
-
-### Running Tests (Expanded)
+### Running Tests
 
 ```bash
-# Run all tests with parallel processing
+# Run all tests
+php artisan test
+
+# Run with coverage (requires Xdebug/PCOV)
+php artisan test --coverage
+
+# Run specific test
+php artisan test --filter=StudentDashboardTest
+
+# Run tests in parallel
 php artisan test --parallel
-
-# Run specific tests with filters
-php artisan test --filter=LogoutFunctionalityTest  # Tests logout across roles
-php artisan test --filter=StudentDashboardTest     # Verifies student dashboard loads
-php artisan test --filter=ComprehensiveApiRateLimitingTest  # Checks throttling
-
-# Generate coverage report (requires Xdebug/PCOV)
-php artisan test --coverage --min=90  # Fails if coverage below 90%
 ```
 
-Use `RefreshDatabase` trait for isolated tests; factories in database/factories/ for data generation.
+### Test Structure
 
-## 🎯 Key Algorithms
+- **40+ Feature Tests**: Authentication, dashboards, group management, assignments
+- **9+ Unit Tests**: Business logic, services, algorithms
+- **Security Tests**: CSRF, authorization, rate limiting
+- **API Integration Tests**: External API calls with mocking
 
-### Supervisor Assignment Algorithm (Detailed)
+Tests use SQLite in-memory database and are reset between runs (`RefreshDatabase` trait).
 
-The core of the system, implemented in SupervisorAssignmentService.php, supports three modes:
+## 🚀 Production Deployment
 
-1. **AOI-based Lottery**: Matches groups to supervisors based on Area of Interest (AOI), randomizes within matches, respects capacity (e.g., max 5 groups/supervisor).
-2. **Ranking-based Lottery**: Round-robin assignment by supervisor academic rank, ensuring fair distribution.
-3. **Combined Lottery**: Hybrid of AOI and ranking, with weighted priorities and avoidance of consecutive assignments.
+### Server Requirements
 
-- **Features**: Deterministic ordering (by group ID), dry-run previews, history logging in assignment_history table, capacity checks, and manual overrides.
-- **Edge Cases**: Handles uneven distributions, inactive supervisors, and group priorities.
-- **Performance**: O(n log n) for sorting, efficient for 1000+ groups.
+- **Web Server**: Apache 2.4+ or Nginx 1.18+
+- **PHP 8.2+** with required extensions
+- **Database**: MySQL 8.0+ or PostgreSQL 13+
+- **Redis** (recommended for cache and queues)
+- **Supervisor** (for queue workers)
+- **SSL Certificate** (Let's Encrypt recommended)
 
-See SUPERVISOR_ASSIGNMENT_ALGORITHM.md for pseudocode and flowcharts.
-
-## 📊 Performance Monitoring
-
-Accessible at `/admin/performance`, this dashboard (powered by PerformanceMonitoringService.php) provides:
-
-- **System Health**: Checks database connectivity, API status, cache health.
-- **Metrics**: Average response times, CPU/memory usage, query counts.
-- **API Monitoring**: Latency tracking for external API calls, error rates.
-- **Security Logs**: Tracks failed logins, rate limit hits, anomalies.
-- **Error Tracking**: Integrates with logging channels for real-time alerts.
-
-Exportable reports in CSV/JSON; automated alerts for thresholds (e.g., >500ms response time).
-
-## 🚀 Deployment
-
-### Production Requirements (Detailed)
-
-- **Server**: PHP 8.2+ with extensions (pdo, mbstring, xml, etc.); Apache/Nginx.
-- **Database**: MySQL 8.0+ (InnoDB engine) or PostgreSQL 13+; configure in .env.
-- **Dependencies**: Composer 2.x, Node.js 18+, NPM 9+; optional Redis for caching/queues.
-- **Environment**: Set APP_ENV=production, APP_DEBUG=false for security.
-
-### Production Setup (Step-by-Step)
+### Production Setup
 
 ```bash
-# Install dependencies without dev packages
+# Install production dependencies
 composer install --optimize-autoloader --no-dev
-npm ci && npm run build  # Production build
+npm ci
+npm run build
 
-# Environment configuration
+# Configure environment
 cp .env.example .env.production
-# Edit .env.production: Set DB_* vars, APP_KEY, external API credentials
+# Edit .env.production with production values
 
-# Database setup
-php artisan migrate --force  # No prompts in production
+# Set production environment
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
 
-# Optimize for performance
+# Database configuration (MySQL example)
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_DATABASE=thesis_production
+DB_USERNAME=thesis_user
+DB_PASSWORD=<secure-password>
+
+# Cache and Queue
+CACHE_STORE=redis
+QUEUE_CONNECTION=redis
+REDIS_HOST=127.0.0.1
+
+# Run migrations
+php artisan migrate --force
+
+# Optimize for production
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+php artisan optimize
 
-# Permissions (ensure web server user owns these)
+# Set permissions
 chmod -R 755 storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
-
-# Queue worker (if using queues for notifications)
-php artisan queue:work --daemon
 ```
 
-Use Supervisor or systemd for process management; enable HTTPS with Let's Encrypt.
+### Queue Worker Setup
 
-## 👥 Default Accounts
+Create supervisor configuration `/etc/supervisor/conf.d/thesis-worker.conf`:
 
-Pre-seeded for development/testing (passwords hashed in seeders):
+```ini
+[program:thesis-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/path/to/storage/logs/worker.log
+stopwaitsecs=3600
+```
 
-| Role | Email | Password | Notes |
-|------|-------|----------|-------|
-| Admin | admin@example.com | password | Full access |
-| Advisor | advisor@example.com | password | Group management |
-| Supervisor | supervisor@example.com | password | Report oversight |
-| Student | john.student@example.com | password | Submission testing |
-| Teacher | teacher@example.com | password | Multi-role access |
+Reload supervisor:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start thesis-worker:*
+```
 
-Change passwords in production; use `php artisan tinker` for manual updates.
+### Web Server Configuration
+
+**Nginx Example:**
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name yourdomain.com;
+    root /path/to/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+
+    charset utf-8;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+```
+
+### Performance Optimization
+
+**Database Indexing:**
+Indexes are automatically created via migrations on:
+- `groups.supervisor_id`, `groups.batch_number`
+- `group_students.student_id`, `group_students.group_id`
+- `reports.group_id`, `reports.status`
+- `student_report_submissions.report_id`
+
+**Caching Strategy:**
+- Batch list: 60 minutes
+- Student list: 30 minutes
+- Supervisor list: 30 minutes
+- Use Redis for production
+
+**Query Optimization:**
+Controllers use eager loading (`->with()`) to prevent N+1 queries.
+
+## 🔌 API Integration
+
+### External University API
+
+The system integrates with `http://puc.ac.bd:8012/api` for:
+
+**Authentication Endpoints:**
+- `POST /Login/LoginAction` - Student login
+- `POST /Teacher/Login` - Teacher login
+
+**Data Sync Endpoints:**
+- `GET /Teacher/TeacherList` - Fetch all teachers (supervisors)
+- `GET /Student/batchwiseStudentList` - Fetch students by batch
+- `GET /Student/programwiseBatch` - Fetch available batches
+
+**Configuration:**
+- Base URL: Configurable in `.env` (`EXTERNAL_API_BASE_URL`)
+- Timeout: 30 seconds (configurable)
+- Retries: 3 attempts with 1000ms delay
+- Department ID: 1 (CSE, configurable)
+
+**Response Caching:**
+- Student list: 30 minutes
+- Batch list: 60 minutes
+- Prevents excessive API calls
+
+**Error Handling:**
+- Timeout errors logged and cached
+- Failed syncs return graceful errors
+- Retry logic for transient failures
+
+### Services
+
+- **`StudentApiService`**: Handles student data fetching and caching
+- **`SupervisorApiService`**: Manages teacher/supervisor synchronization
+- **`BatchApiService`**: Syncs batch information
+- **`PerformanceMonitoringService`**: Tracks API performance metrics
+
+## 🔒 Security
+
+### Authentication
+- External API validation for user credentials
+- Secure password generation for synced users
+- Laravel Breeze scaffolding with email verification
+- Session-based authentication with secure cookies
+
+### Authorization
+- Role-based middleware: `admin`, `advisor`, `teacher`, `student`
+- Permission checks in controllers and Blade templates
+- CSRF protection on all state-changing requests
+- Email verification required for sensitive actions
+
+### Data Protection
+- **Password Hashing**: Bcrypt with automatic salting
+- **SQL Injection Prevention**: Eloquent ORM with parameter binding
+- **XSS Protection**: Blade template escaping by default
+- **File Upload Validation**: MIME type and size checks
+- **Input Sanitization**: Laravel validation rules
+
+### Rate Limiting
+Configured throttling on API routes:
+- Login: 5 attempts per minute
+- External API calls: 10-120 requests per hour
+- Student dashboard: 10 requests per minute
+- Advisor operations: 20 requests per minute
+
+### Security Headers
+Configure in `config/cors.php` and web server:
+- `X-Frame-Options: SAMEORIGIN`
+- `X-Content-Type-Options: nosniff`
+- `Content-Security-Policy` (configure as needed)
+
+### Monitoring
+Admin performance dashboard tracks:
+- Failed login attempts
+- Rate limit violations
+- API errors and timeouts
+- Database health and query performance
+
+## 📖 Documentation
+
+Comprehensive documentation available in the `/documentation` folder:
+- **Setup Guide**: Detailed installation and configuration
+- **Features Guide**: User manuals for each role
+- **Developer Guide**: Code structure and API specifications
+- **Testing Guide**: Test execution and coverage analysis
+- **Architecture Diagrams**: PlantUML activity, sequence, and DFD diagrams
+
+### Key Algorithms
+
+**Supervisor Assignment Service** (`app/Services/SupervisorAssignmentService.php`):
+
+1. **AOI-based Lottery**: Matches groups to supervisors based on Area of Interest, respects capacity limits
+2. **Ranking-based Lottery**: Round-robin assignment by academic rank (Professor → Associate → Assistant → Lecturer)
+3. **Combined Lottery**: Hybrid approach with AOI matching and ranking priorities
+
+Features include deterministic ordering, dry-run previews, history logging, and manual overrides.
 
 ## 🤝 Contributing
 
-1. Fork the repository on GitHub.
-2. Create a feature branch: `git checkout -b feature/amazing-feature`.
-3. Commit changes: `git commit -m 'Add amazing feature'` (follow conventional commits).
-4. Push: `git push origin feature/amazing-feature`.
-5. Open a Pull Request with detailed description and tests.
-
-Adhere to code style (run `vendor/bin/pint` before committing).
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Make changes and test thoroughly
+4. Run code style fixer: `vendor/bin/pint`
+5. Ensure tests pass: `php artisan test`
+6. Commit with clear messages
+7. Push and create a Pull Request
 
 ## 📄 License
 
-Proprietary software for university use. All rights reserved by the University IT Department.
+Proprietary software for university use. All rights reserved.
 
-## ���� Support
+## 💬 Support
 
-- **Documentation**: Start with /documentation/ for guides.
-- **Tests**: Review TESTING_GUIDE.md for issue reproduction.
-- **Contact**: Email university IT support or open issues on the repository (if public).
-- **Troubleshooting**: Check logs in storage/logs/; use `php artisan config:clear` for config issues.
-
-## 🏆 Project Status
-
-**Production Ready** ✅
-
-- **Tests**: 34+ with high coverage.
-- **Security**: Hardened against common vulnerabilities.
-- **Performance**: Optimized queries, caching.
-- **Documentation**: Extensive, with diagrams.
-- **UI/UX**: Professional, responsive design.
-
----
-
-## 📘 Highly Detailed Component Analysis
-
-This section provides an exhaustive, notebook-style analysis of the project's components, including file listings, key code elements, relationships, and usage insights. Derived from file structures, routes, migrations, and Laravel conventions.
-
-### Controllers (app/Http/Controllers)
-
-Controllers are thin, delegating to services and models. Organized by role for separation of concerns. Each handles validation, authorization, and response rendering/redirects.
-
-- **Top-Level**:
-  - **Controller.php**: Base class extending Laravel's Controller, shares common traits (e.g., AuthorizesRequests).
-  - **DashboardController.php**: Routes users to role-specific dashboards based on login_type.
-  - **DebugController.php**: Development-only tools for testing API connections or cache clearing.
-  - **HomeController.php**: Public routes for home page, report viewing (PDF view/download).
-  - **ProfileController.php**: Handles profile editing, updates, and deletion (uses ProfileRequest for validation).
-
-- **Admin/**:
-  - **AreaOfInterestController.php**: CRUD operations for AOIs (index, create, store, edit, update, destroy); bulk store for efficiency.
-  - **BatchController.php**: Syncs batches from API, toggles status, bulk actions, comparisons.
-  - **DashboardController.php**: Aggregates stats (e.g., group counts, assignment rates).
-  - **GroupManagementController.php**: Advanced group ops (assign/unassign students/supervisors, bulk delete).
-  - **PerformanceController.php**: Fetches metrics from service, handles cache clearing and exports.
-  - **SupervisorController.php**: Syncs supervisors, updates limits, toggles status/areas.
-
-- **Advisor/**:
-  - **AdminCreatedGroupController.php**: Manages admin-created groups for advisors.
-  - **DashboardController.php**: Displays synced student data, group summaries.
-  - **GroupController.php**: Creates groups, assigns students/AOIs, handles Excel uploads/downloads.
-  - **StudentController.php**: Lists students, shows details, refreshes from API.
-  - **SupervisorAssignmentController.php**: Runs lotteries, manual assignments, previews.
-
-- **Api/**:
-  - **NotificationController.php**: JSON endpoints for notifications (index, mark read, unread count).
-
-- **Auth/**:
-  - **AuthenticatedSessionController.php**: Login/store, logout/destroy with throttling.
-  - **ConfirmablePasswordController.php**: Password confirmation for sensitive actions.
-  - **EmailVerificationNotificationController.php**: Sends verification emails.
-  - **EmailVerificationPromptController.php**: Prompts for verification.
-  - **NewPasswordController.php**: Handles reset forms.
-  - **PasswordController.php**: Updates passwords.
-  - **PasswordResetLinkController.php**: Sends reset links.
-  - **VerifyEmailController.php**: Verifies emails via signed URLs.
-
-- **CoSupervisor/**:
-  - **DashboardController.php**: Overview of assigned groups/reports.
-  - **GroupController.php**: Views groups, toggles permissions.
-  - **MeetingController.php**: CRUD for meetings (index, store, show, edit, update).
-  - **ReportAnnotationController.php**: Annotates submissions, stores sessions, sends feedback.
-  - **ReportController.php**: Lists reports, marks under review, views/downloads submissions.
-
-- **PanelMember/**:
-  - **DashboardController.php**: Panel-specific metrics.
-  - **GroupController.php**: Views assigned groups.
-  - **ReportAnnotationController.php**: Similar to CoSupervisor, for panel feedback.
-  - **ReportController.php**: Reviews reports, marks status, downloads.
-
-- **Student/**:
-  - **DashboardController.php**: Shows personal data, meetings, throttled API calls.
-  - **ReportAnnotationController.php**: Views annotation history, downloads feedback.
-  - **ReportController.php**: Lists reports, shows details, handles notifications.
-  - **ReportSubmissionController.php**: CRUD for submissions (create, store, edit, update, destroy, download).
-
-- **Supervisor/**:
-  - **DashboardController.php**: Supervisor overview.
-  - **GroupController.php**: Manages groups, toggles co-supervisor perms.
-  - **MeetingController.php**: Meeting management, PDF exports.
-  - **ReportAnnotationController.php**: Annotates, stores, sends feedback.
-  - **ReportController.php**: CRUD for reports, finalizes, marks under review.
-
-- **Teacher/**:
-  - **DashboardController.php**: Multi-role entry point.
-  - **ReportCommentController.php**: Stores comments on reports.
-
-### Middleware (app/Http/Middleware)
-
-Custom middleware for RBAC, applied in route groups.
-
-- **EnsureUserIsAdmin.php**: Checks if user->login_type == 'admin', aborts 403 otherwise.
-- **EnsureUserIsAdvisor.php**: Validates advisor role.
-- **EnsureUserIsStudent.php**: Student role check.
-- **EnsureUserIsTeacher.php**: Teacher role validation (allows multi-role access).
-
-These extend Laravel's middleware pattern, using auth guard.
-
-### Views (resources/views)
-
-Blade templates with Tailwind classes for styling, Alpine for JS. Organized to mirror controllers.
-
-- **admin/**: Dashboards, forms for AOIs, batches, groups, performance metrics (tables, charts).
-- **advisor/**: Student lists, group editors, assignment wizards, Excel upload interfaces.
-- **auth/**: Login form, password reset, verification prompts (minimalist design).
-- **co-supervisor/**: Group overviews, meeting calendars, annotation editors (PDF viewers).
-- **components/**: Reusable (e.g., notification badges, modals, buttons with Alpine toggles).
-- **errors/**: Custom 403/404/500 pages with back links.
-- **layouts/**: app.blade.php (main layout with navbar, sidebar); guest.blade.php for public.
-- **panel-member/**: Report review interfaces, annotation tools.
-- **profile/**: Edit form with fields for name, email, password.
-- **reports/**: Show views with PDF embeds, comment sections, submission histories.
-- **student/**: Dashboard cards (group info, upcoming meetings), submission forms (file uploads).
-- **supervisor/**: Group management, meeting schedulers, report assignment UIs.
-- **teacher/**: Role switcher, comment forms.
-- **home.blade.php**: Public landing with report search.
-
-Views use @extends, @section for inheritance; responsive with Tailwind's mobile-first breakpoints.
-
-### Models (app/Models)
-
-Eloquent models with traits (e.g., HasFactory, Notifiable). Relationships defined via methods.
-
-- **AdminCreatedGroup.php**: View model for admin groups; no direct table.
-- **AreaOfInterest.php**: Table 'area_of_interests'; attributes: id, name; relationships: supervisors (belongsToMany), groups (hasMany).
-- **AssignmentHistory.php**: Logs assignments; attributes: group_id, supervisor_id, mode, timestamp.
-- **Batch.php**: Table 'batches'; attributes: id, name, status; relationships: students (hasMany via users).
-- **Group.php**: Table 'groups'; attributes: id, name, batch_number, advisor_id, supervisor_id, co_supervisor_id, area_of_interest_id; relationships: students (hasMany GroupStudent), supervisor (belongsTo), meetings (hasMany), reports (hasMany).
-- **GroupPanelMember.php**: Pivot for panel members; attributes: group_id, supervisor_id.
-- **GroupStudent.php**: Pivot; attributes: group_id, student_id (links to users).
-- **Meeting.php**: Table 'meetings'; attributes: id, group_id, date, notes; relationships: attendances (hasMany).
-- **MeetingAttendance.php**: Table 'meeting_attendances'; attributes: meeting_id, student_id, attended.
-- **Report.php**: Table 'reports'; attributes: id, group_id, title, due_date, status; relationships: submissions (hasMany), comments (hasMany), annotations (hasMany).
-- **ReportAnnotationSession.php**: Table 'report_annotation_sessions'; attributes: id, report_id, submission_id, annotations (JSON), created_by_type.
-- **ReportComment.php**: Table 'report_comments'; attributes: id, report_id, user_id, comment.
-- **StudentReportSubmission.php**: Table 'student_report_submissions'; attributes: id, report_id, file_path, version, submitted_at.
-- **Supervisor.php**: Table 'supervisors'; attributes: id, api_id, name, rank, capacity; relationships: areas (belongsToMany), groups (hasMany).
-- **User.php**: Table 'users'; attributes: id, api_id, username, name, email, password, login_type, department_id, cgpa, etc.; relationships: groups (belongsToMany via GroupStudent), reports (hasMany indirect), notifications (morphMany).
-
-Models use scopes for queries (e.g., active supervisors) and accessors/mutators for formatted data.
-
-### Services (app/Services)
-
-Decouple logic from controllers; injectable via dependency injection.
-
-- **BatchApiService.php**: Methods: fetchFromApi(), syncToDatabase(); handles API pagination, error retries.
-- **PerformanceMonitoringService.php**: Methods: getMetrics(), checkHealth(), exportData(); aggregates Laravel Telescope data if enabled.
-- **StudentApiService.php**: Methods: fetchStudent($id), syncStudents($batch); validates API responses, updates users table.
-- **SupervisorApiService.php**: Similar to StudentApiService but for supervisors; updates ranks and areas.
-- **SupervisorAssignmentService.php**: Core methods: runLottery($mode, $groups), previewAssignment(), assignManual(); implements algorithms with randomness seeded for reproducibility.
-
-Services use HTTP clients (Guzzle) for API calls, with configurable timeouts and retries.
-
-### Routes (routes/)
-
-Defined in web.php (main), auth.php (auth), console.php (CLI). Use named routes for links.
-
-- **web.php** (Excerpt):
-  - Public: '/', '/reports/{report}' (view/download PDF).
-  - Authenticated: '/dashboard' (redirects by role).
-  - Teacher group: Supervisor, Co-Supervisor, Panel Member routes (e.g., '/supervisor/reports' -> SupervisorReportController@index).
-  - Student group: Dashboards, reports, submissions (e.g., '/student/reports/{report}/submissions/create').
-  - Admin group: Management routes (e.g., '/admin/supervisors/sync' throttled).
-  - Advisor group: Group and assignment routes (e.g., '/advisor/supervisor-assignment/run-lottery').
-  - API prefix: Notifications (e.g., '/api/notifications' for JSON).
-
-- **auth.php**: Guest routes (login, register disabled, password reset); Auth routes (verify email, confirm password, logout).
-
-Routes use middleware groups (e.g., 'auth', 'teacher') and throttling for security.
-
-### Database (database/)
-
-SQLite file-based DB for dev (storage/database.sqlite); migrations define schema with indexes for performance.
-
-- **Key Tables and Columns** (from migrations):
-  - **users**: id, api_id, user_info_id, type_id, username, designation, salt, department_id, program_id, name, roll, status, department_name, cgpa, credit, total_credit, last_result_update, program_name, batch, profile_image_url, phone, login_type, address, advisor, email, email_verified_at, password, remember_token, created_at, updated_at.
-  - **groups**: id, name, batch_number, advisor_id, created_by_type, created_by_admin_id, advisor_auto_detected, max_students, area_of_interest_id, matched_area_of_interest_id, supervisor_id, co_supervisor_id, co_supervisor_assigned_at, co_supervisor_can_manage_meetings, is_manual_assignment, assignment_priority, assigned_at, created_at, updated_at.
-  - **supervisors**: id, api_id, name, rank, capacity, status, etc. (inferred from controller usage).
-  - **area_of_interests**: id, name.
-  - **group_students**: id, group_id, student_id (user_id).
-  - **reports**: id, group_id, title, description, due_date, status.
-  - **report_comments**: id, report_id, user_id, comment, created_at.
-  - **meetings**: id, group_id, date, time, location, notes.
-  - **Other**: assignment_history, batches, notifications, etc., with appropriate foreign keys and indexes.
-
-Use Eloquent for all DB interactions; seeders populate defaults.
+For issues or questions:
+- Check `/documentation` for detailed guides
+- Review test files for usage examples
+- Contact university IT department
 
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: January 2025  
+**Last Updated**: January 2026  
 **Maintained By**: University IT Department
