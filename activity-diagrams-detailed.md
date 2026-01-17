@@ -1181,4 +1181,4 @@ The activity diagrams complement the sequence diagrams by:
 - Highlighting **parallel activities** where applicable
 - Providing **implementation-level details** for developers
 
-These diagrams serve as comprehensive documentation for the Thesis Repository Management System, supporting both system understanding and implementation efforts.
+These diagrams serve as comprehensive documentation for the University Thesis Management System, supporting both system understanding and implementation efforts.

@@ -1,8 +1,8 @@
-# Activity Diagrams - Thesis Repository Management System (PlantUML)
+# Activity Diagrams - University Thesis Management System (PlantUML)
 ## IEEE Standard UML 2.5 Compliant Activity Diagrams
 
 ### Document Information
-- **System**: Thesis Repository Management System
+- **System**: University Thesis Management System
 - **Standard**: IEEE 1016-2009 (Software Design Descriptions)
 - **Notation**: UML 2.5 Activity Diagrams
 - **Tool**: PlantUML
@@ -1345,7 +1345,7 @@ This document adheres to the following IEEE standards:
 
 ## System Architecture Overview
 
-The Thesis Repository Management System implements a Laravel-based MVC architecture with:
+The University Thesis Management System implements a Laravel-based MVC architecture with:
 
 - **Models**: User, Supervisor, Group, Report, Meeting, Notification
 - **Controllers**: Authentication, Report, Meeting, Assignment
@@ -1769,4 +1769,4 @@ plantuml -tsvg *.puml
 
 ---
 
-*This document is part of the Thesis Repository Management System technical documentation suite.*
+*This document is part of the University Thesis Management System technical documentation suite.*

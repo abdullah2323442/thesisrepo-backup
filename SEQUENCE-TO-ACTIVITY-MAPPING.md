@@ -366,4 +366,4 @@ The activity diagrams successfully justify and expand upon the sequence diagrams
 4. **Handling Errors**: Error paths and exception handling are clearly illustrated
 5. **Supporting Implementation**: Developers can follow activity diagrams to implement features
 
-Together, the sequence and activity diagrams provide comprehensive documentation of the Thesis Repository Management System, supporting all stakeholders from business analysts to developers to testers.
+Together, the sequence and activity diagrams provide comprehensive documentation of the University Thesis Management System, supporting all stakeholders from business analysts to developers to testers.

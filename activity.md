@@ -1,4 +1,4 @@
-# Activity Diagrams - Thesis Repository Management System
+# Activity Diagrams - University Thesis Management System
 
 ## Table of Contents
 1. [User Authentication Activity](#1-user-authentication-activity)

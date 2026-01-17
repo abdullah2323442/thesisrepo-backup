@@ -1,4 +1,4 @@
-# Sequence Diagrams - Thesis Repository Management System
+# Sequence Diagrams - University Thesis Management System
 ## Academic Version for IEEE Documentation
 
 ## Table of Contents
@@ -1355,7 +1355,7 @@ sequenceDiagram
 
 ## Notes
 
-These sequence diagrams illustrate the primary interactions within the Thesis Repository Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and IEEE documentation guidelines, focusing on system behavior and user interactions rather than implementation details.
+These sequence diagrams illustrate the primary interactions within the University Thesis Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and IEEE documentation guidelines, focusing on system behavior and user interactions rather than implementation details.
 
 The diagrams are designed to be understood by both technical and non-technical stakeholders, including academic reviewers, system administrators, and end users. They provide a comprehensive view of the system's functionality while maintaining clarity and avoiding unnecessary technical complexity.
 

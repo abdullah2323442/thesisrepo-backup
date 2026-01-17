@@ -1,5 +1,5 @@
 # Data Flow Diagram - Level 0
-## Thesis Repository Management System
+## University Thesis Management System
 ### Academic Version for IEEE Documentation
 
 ---
@@ -30,7 +30,7 @@
 
 ### 1.1 Purpose
 
-This document presents the Level 0 Data Flow Diagram (Context Diagram) for the Thesis Repository Management System. The Level 0 DFD provides a high-level view of the system, showing the system as a single process and its interactions with external entities through data flows.
+This document presents the Level 0 Data Flow Diagram (Context Diagram) for the University Thesis Management System. The Level 0 DFD provides a high-level view of the system, showing the system as a single process and its interactions with external entities through data flows.
 
 ### 1.2 Scope
 
@@ -52,7 +52,7 @@ This diagram follows IEEE and structured analysis standards:
 
 ## 2. System Overview
 
-The Thesis Repository Management System is a centralized platform for managing thesis supervision, report submissions, feedback distribution, and administrative oversight. The system facilitates collaboration between students, supervisors, co-supervisors, panel members, advisors, and administrators while integrating with external university information systems.
+The University Thesis Management System is a centralized platform for managing thesis supervision, report submissions, feedback distribution, and administrative oversight. The system facilitates collaboration between students, supervisors, co-supervisors, panel members, advisors, and administrators while integrating with external university information systems.
 
 ### 2.1 System Boundary
 
@@ -242,7 +242,7 @@ graph TB
     class System processStyle
 ```
 
-**Figure 5.1:** Level 0 Data Flow Diagram (Context Diagram) showing the Thesis Repository Management System and its interactions with external entities
+**Figure 5.1:** Level 0 Data Flow Diagram (Context Diagram) showing the University Thesis Management System and its interactions with external entities
 
 ---
 
