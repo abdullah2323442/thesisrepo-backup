@@ -1661,7 +1661,7 @@ Requires Sanctum or another token mechanism; do not expose state-changing endpoi
 
 # SENIOR DEVELOPER REVIEW
 
-# Senior Developer Review: University Thesis Repository Management System
+# Senior Developer Review: University Thesis Management System
 
 ## 🎯 Executive Summary
 

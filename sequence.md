@@ -1,4 +1,4 @@
-# Sequence Diagrams - Thesis Repository Management System
+# Sequence Diagrams - University Thesis Management System
 
 ## Table of Contents
 1. [System Authentication](#1-system-authentication)
@@ -1293,7 +1293,7 @@ sequenceDiagram
 ---
 
 ## Notes
-These sequence diagrams illustrate the primary interactions within the Thesis Repository Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and IEEE documentation guidelines, focusing on essential system behaviors with implementation-specific details based on actual code analysis.
+These sequence diagrams illustrate the primary interactions within the University Thesis Management System, demonstrating the flow of information between system components and user roles. The diagrams follow UML 2.0 notation standards and IEEE documentation guidelines, focusing on essential system behaviors with implementation-specific details based on actual code analysis.
 
 ### Revision History
 - **Version 2.0**: Added 12 new diagrams based on code analysis

@@ -1,4 +1,4 @@
-# Activity Diagrams for IEEE Report - Thesis Repository Management System
+# Activity Diagrams for IEEE Report - University Thesis Management System
 ## Optimized for A4 Page Layout
 
 ### Document Information

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains **IEEE standard-compliant** activity diagrams for the Thesis Repository Management System. These diagrams are specifically designed for inclusion in A4-sized IEEE software project reports.
+This directory contains **IEEE standard-compliant** activity diagrams for the University Thesis Management System. These diagrams are specifically designed for inclusion in A4-sized IEEE software project reports.
 
 ## Design Principles
 
